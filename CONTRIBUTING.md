@@ -19,8 +19,8 @@ Please read and follow our [Code of Conduct](CODE_OF_CONDUCT.md) before contribu
 ## Getting Started
 
 1. Fork the repository on GitHub
-2. Clone your forked repository: `git clone https://github.com/eoussama/typewriter.js.git`
-3. Navigate to the project directory: `cd typewriter.js`
+2. Clone your forked repository: `git clone https://github.com/eoussama/eo-typewriterjs.git`
+3. Navigate to the project directory: `cd eo-typewriterjs`
 4. Install dependencies: `npm install`
 5. Create a new branch for your feature: `git checkout -b feature/your-feature-name`
 
@@ -28,7 +28,7 @@ Please read and follow our [Code of Conduct](CODE_OF_CONDUCT.md) before contribu
 
 ### Fixing Bugs
 
-1. Check the [Issues](https://github.com/eoussama/typewriter.js/issues) page for existing bug reports
+1. Check the [Issues](https://github.com/eoussama/eo-typewriterjs/issues) page for existing bug reports
 2. If the bug isn't reported, create a new issue describing the problem
 3. Fork the repository and create a branch for your fix
 4. Write tests for your fix if applicable
@@ -36,7 +36,7 @@ Please read and follow our [Code of Conduct](CODE_OF_CONDUCT.md) before contribu
 
 ### Adding Features
 
-1. Check the [Issues](https://github.com/eoussama/typewriter.js/issues) page for existing feature requests
+1. Check the [Issues](https://github.com/eoussama/eo-typewriterjs/issues) page for existing feature requests
 2. If the feature isn't requested, create a new issue to discuss it
 3. Fork the repository and create a branch for your feature
 4. Implement the feature and write tests

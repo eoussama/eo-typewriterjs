@@ -13,14 +13,14 @@
   ],
   "repository": {
 		"type": "git",
-    "url": "git+https://github.com/eoussama/typewriter.js.git"
+    "url": "git+https://github.com/eoussama/eo-typewriterjs.git"
 	},
   "author": "EOussama",
 	"license": "MIT",
 	"bugs": {
-		"url": "https://github.com/eoussama/typewriter.js/issues"
+		"url": "https://github.com/eoussama/eo-typewriterjs/issues"
 	},
-	"homepage": "https://github.com/eoussama/typewriter.js#readme",
+	"homepage": "https://github.com/eoussama/eo-typewriterjs#readme",
   "devEngines": {
     "packageManager": {
       "name": "pnpm",
