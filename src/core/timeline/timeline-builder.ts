@@ -6,6 +6,18 @@ import { ECommandKind } from "../commands/command-kind.enum";
 
 
 
+/**
+ * @description
+ * Options accepted by the `delete` builder method
+ */
+export type TDeleteOptions = {
+  readonly by?: TAdvanceModeInput;
+  readonly interval?: number;
+  readonly cursor?: TCursorSelector;
+};
+
+
+
 let commandCounter = 0;
 
 /**
@@ -49,6 +61,27 @@ export class TimelineBuilder {
       id: `cmd_${++commandCounter}`,
       kind: ECommandKind.WAIT,
       duration,
+    });
+
+    return this;
+  }
+
+  /**
+   * @description
+   * Schedule a delete command that removes text backward from the cursor
+   *
+   * @param count - The number of units to delete
+   * @param options - Optional delete configuration (advance mode, interval, cursor)
+   * @returns This builder instance for future chaining
+   */
+  delete(count: number, options?: TDeleteOptions): this {
+    this._commands.push({
+      id: `cmd_${++commandCounter}`,
+      kind: ECommandKind.DELETE,
+      cursor: options?.cursor ?? "main",
+      count,
+      by: options?.by,
+      interval: options?.interval,
     });
 
     return this;

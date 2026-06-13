@@ -1,8 +1,10 @@
+import type { TDeleteCommand } from "../commands/delete-command.type";
 import type { TTypeCommand } from "../commands/type-command.type";
 import type { TWaitCommand } from "../commands/wait-command.type";
 import type { TTimelineEvent } from "../events/timeline-event.type";
 
 import { ECommandKind } from "../commands/command-kind.enum";
+import { compileDelete } from "./compile-delete.helper";
 import { compileType } from "./compile-type.helper";
 
 
@@ -10,9 +12,8 @@ import { compileType } from "./compile-type.helper";
 /**
  * @description
  * A union of all supported command types.
- * Additional command kinds will be added in future phases.
  */
-export type TCommand = TTypeCommand | TWaitCommand;
+export type TCommand = TTypeCommand | TWaitCommand | TDeleteCommand;
 
 /**
  * @description
@@ -39,6 +40,14 @@ export function compile(commands: TCommand[]): TTimelineEvent[] {
 
       case ECommandKind.WAIT: {
         cursor += (command as TWaitCommand).duration;
+        break;
+      }
+
+      case ECommandKind.DELETE: {
+        const result = compileDelete(command as TDeleteCommand, cursor);
+
+        events.push(...result.events);
+        cursor = result.endTime;
         break;
       }
 

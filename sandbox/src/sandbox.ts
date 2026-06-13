@@ -216,8 +216,14 @@ export async function runSegmentsAnimation(segments: readonly TSnippetSegment[])
         interval: readInterval(),
       });
     }
-    else {
+    else if (segment.kind === "wait") {
       tw.timeline.wait(segment.duration);
+    }
+    else {
+      tw.timeline.delete(segment.count, {
+        by: readAdvanceMode(),
+        interval: readInterval(),
+      });
     }
   }
 

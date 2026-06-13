@@ -1,8 +1,10 @@
+import type { TDeleteEvent } from "../core/events/delete-event.type";
+import type { TInsertEvent } from "../core/events/insert-event.type";
 import { describe, expect, it } from "vitest";
 import { compile } from "../core/compiler/compile.helper";
+
 import { chunkSteps } from "../core/stepping/chunk-steps.helper";
 import { segmentText } from "../core/stepping/segment-text.helper";
-
 import { createTypewriter, stringRenderer } from "../index";
 
 
@@ -97,7 +99,7 @@ describe("compile", () => {
     ]);
 
     expect(events).toHaveLength(5);
-    expect(events.map(e => e.text)).toEqual(["H", "e", "l", "l", "o"]);
+    expect(events.map(e => (e as TInsertEvent).text)).toEqual(["H", "e", "l", "l", "o"]);
   });
 
   it("applies correct absolute timestamps for char typing", () => {
@@ -129,8 +131,8 @@ describe("compile", () => {
     ]);
 
     expect(events).toHaveLength(2);
-    expect(events[0]?.text).toBe("Hello ");
-    expect(events[1]?.text).toBe("world");
+    expect((events[0] as TInsertEvent | undefined)?.text).toBe("Hello ");
+    expect((events[1] as TInsertEvent | undefined)?.text).toBe("world");
     expect(events[0]?.time).toBe(0);
     expect(events[1]?.time).toBe(150);
   });
@@ -148,7 +150,7 @@ describe("compile", () => {
     ]);
 
     expect(events).toHaveLength(3);
-    expect(events.map(e => e.text)).toEqual(["He", "ll", "o"]);
+    expect(events.map(e => (e as TInsertEvent).text)).toEqual(["He", "ll", "o"]);
     expect(events[0]?.time).toBe(0);
     expect(events[1]?.time).toBe(50);
     expect(events[2]?.time).toBe(100);
@@ -188,8 +190,8 @@ describe("compile (wait)", () => {
     // "Hi" produces events at t=0 and t=100; end of "Hi" = t=200
     // wait 500 ms → next command starts at t=700
     // "AB" produces events at t=700 and t=750
-    const hiEvents = events.filter(e => e.text === "H" || e.text === "i");
-    const abEvents = events.filter(e => e.text === "A" || e.text === "B");
+    const hiEvents = events.filter(e => (e as TInsertEvent).text === "H" || (e as TInsertEvent).text === "i");
+    const abEvents = events.filter(e => (e as TInsertEvent).text === "A" || (e as TInsertEvent).text === "B");
 
     expect(hiEvents).toHaveLength(2);
     expect(abEvents).toHaveLength(2);
@@ -239,10 +241,108 @@ describe("compile (wait)", () => {
     ]);
 
     // "AB" ends at t=200; wait(0) → "CD" starts at t=200
-    const cdEvents = events.filter(e => e.text === "C" || e.text === "D");
+    const cdEvents = events.filter(e => (e as TInsertEvent).text === "C" || (e as TInsertEvent).text === "D");
 
     expect(cdEvents[0]?.time).toBe(200);
     expect(cdEvents[1]?.time).toBe(300);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Compiler — delete command
+// ---------------------------------------------------------------------------
+
+describe("compile (delete)", () => {
+  it("compiles a delete command into delete events with correct counts", () => {
+    const events = compile([
+      {
+        id: "cmd_d1",
+        kind: "delete",
+        cursor: "main",
+        count: 3,
+        by: "char",
+        interval: 50,
+      },
+    ]);
+
+    expect(events).toHaveLength(3);
+    events.forEach(e => expect((e as TDeleteEvent).count).toBe(1));
+  });
+
+  it("applies correct absolute timestamps for char deletion", () => {
+    const events = compile([
+      {
+        id: "cmd_d2",
+        kind: "delete",
+        cursor: "main",
+        count: 2,
+        by: "char",
+        interval: 100,
+      },
+    ]);
+
+    expect(events[0]?.time).toBe(0);
+    expect(events[1]?.time).toBe(100);
+  });
+
+  it("compiles amount:2 char deletion into correct step count", () => {
+    const events = compile([
+      {
+        id: "cmd_d3",
+        kind: "delete",
+        cursor: "main",
+        count: 5,
+        by: { unit: "char", amount: 2 },
+        interval: 50,
+      },
+    ]);
+
+    // ceil(5 / 2) = 3 events: counts [2, 2, 1]
+    expect(events).toHaveLength(3);
+    expect((events[0] as TDeleteEvent | undefined)?.count).toBe(2);
+    expect((events[1] as TDeleteEvent | undefined)?.count).toBe(2);
+    expect((events[2] as TDeleteEvent | undefined)?.count).toBe(1);
+  });
+
+  it("emits no events for a count of 0", () => {
+    const events = compile([
+      {
+        id: "cmd_d4",
+        kind: "delete",
+        cursor: "main",
+        count: 0,
+      },
+    ]);
+
+    expect(events).toHaveLength(0);
+  });
+
+  it("advances the time cursor after delete so subsequent commands are scheduled after it", () => {
+    const events = compile([
+      {
+        id: "cmd_d5",
+        kind: "delete",
+        cursor: "main",
+        count: 2,
+        by: "char",
+        interval: 100,
+      },
+      {
+        id: "cmd_d6",
+        kind: "type",
+        cursor: "main",
+        text: "AB",
+        by: "char",
+        interval: 50,
+      },
+    ]);
+
+    // delete: events at t=0, t=100; end = t=200
+    // type: events at t=200, t=250
+    const typeEvents = events.filter(e => e.kind === "insert");
+
+    expect(typeEvents[0]?.time).toBe(200);
+    expect(typeEvents[1]?.time).toBe(250);
   });
 });
 
@@ -300,6 +400,49 @@ describe("createTypewriter", () => {
     await tw.play();
 
     expect(renderer.toString()).toBe("Hello world");
+  });
+
+  it("deletes characters and resolves to the trimmed string", async () => {
+    const renderer = stringRenderer();
+    const tw = createTypewriter({ renderer });
+
+    tw.timeline.type("Hello world", { by: "char", interval: 1 }).delete(6, { by: "char", interval: 1 });
+    await tw.play();
+
+    expect(renderer.toString()).toBe("Hello");
+  });
+
+  it("deletes all characters and resolves to an empty string", async () => {
+    const renderer = stringRenderer();
+    const tw = createTypewriter({ renderer });
+
+    tw.timeline.type("Hi", { by: "char", interval: 1 }).delete(2, { by: "char", interval: 1 });
+    await tw.play();
+
+    expect(renderer.toString()).toBe("");
+  });
+
+  it("chains type, wait, and delete correctly", async () => {
+    const renderer = stringRenderer();
+    const tw = createTypewriter({ renderer });
+
+    tw.timeline
+      .type("Hello world", { by: "char", interval: 1 })
+      .wait(10)
+      .delete(6, { by: "char", interval: 1 });
+    await tw.play();
+
+    expect(renderer.toString()).toBe("Hello");
+  });
+
+  it("does not delete beyond the start of the document", async () => {
+    const renderer = stringRenderer();
+    const tw = createTypewriter({ renderer });
+
+    tw.timeline.type("Hi", { by: "char", interval: 1 }).delete(100, { by: "char", interval: 1 });
+    await tw.play();
+
+    expect(renderer.toString()).toBe("");
   });
 
   it("starts with an empty string before play", () => {
