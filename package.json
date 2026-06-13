@@ -43,6 +43,9 @@
     "lint": "dx lint",
     "lint:fix": "dx lint --fix"
   },
+  "dependencies": {
+    "@eoussama/core": "^0.0.4"
+  },
   "devDependencies": {
     "@eoussama/dx": "^0.0.4",
     "@types/node": "^25.9.3",

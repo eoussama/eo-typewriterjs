@@ -206,6 +206,10 @@ settings:
 importers:
 
   .:
+    dependencies:
+      '@eoussama/core':
+        specifier: ^0.0.4
+        version: 0.0.4(@typescript-eslint/rule-tester@8.61.0(eslint@9.39.4)(typescript@6.0.3))(@typescript-eslint/typescript-estree@8.61.0(typescript@6.0.3))(@typescript-eslint/utils@8.61.0(eslint@9.39.4)(typescript@6.0.3))(@vue/compiler-sfc@3.5.38)(typescript@6.0.3)(vitest@4.1.8)
     devDependencies:
       '@eoussama/dx':
         specifier: ^0.0.4
@@ -318,6 +322,9 @@ packages:
 
   '@emnapi/wasi-threads@1.2.1':
     resolution: {integrity: sha512-uTII7OYF+/Mes/MrcIOYp5yOtSMLBWSIoLPpcgwipoiKbli6k322tcoFsxoIIxPDqW01SQGAgko4EzZi2BNv2w==}
+
+  '@eoussama/core@0.0.4':
+    resolution: {integrity: sha512-TT8JHi1GyEAgt/E/mZxg6lHeycTl+/BfhdLJj0EvYGBZMt1lINN57W6QqsiqzmGkxlAXzuViN6J5n7wANr+HUg==}
 
   '@eoussama/dx@0.0.4':
     resolution: {integrity: sha512-E8UNtitGI1MMw1nArpUgjEfWk2eMXP+tUeTVeXZ0jtvn0r9ofj4Hnb8e59mtBPaisQk9spfxSgWUy2VE8bt+gg==}
@@ -2065,6 +2072,35 @@ snapshots:
     dependencies:
       tslib: 2.8.1
     optional: true
+
+  '@eoussama/core@0.0.4(@typescript-eslint/rule-tester@8.61.0(eslint@9.39.4)(typescript@6.0.3))(@typescript-eslint/typescript-estree@8.61.0(typescript@6.0.3))(@typescript-eslint/utils@8.61.0(eslint@9.39.4)(typescript@6.0.3))(@vue/compiler-sfc@3.5.38)(typescript@6.0.3)(vitest@4.1.8)':
+    dependencies:
+      '@eoussama/dx': 0.0.4(@typescript-eslint/rule-tester@8.61.0(eslint@9.39.4)(typescript@6.0.3))(@typescript-eslint/typescript-estree@8.61.0(typescript@6.0.3))(@typescript-eslint/utils@8.61.0(eslint@9.39.4)(typescript@6.0.3))(@vue/compiler-sfc@3.5.38)(typescript@6.0.3)(vitest@4.1.8)
+    transitivePeerDependencies:
+      - '@eslint-react/eslint-plugin'
+      - '@eslint/json'
+      - '@next/eslint-plugin-next'
+      - '@prettier/plugin-xml'
+      - '@typescript-eslint/rule-tester'
+      - '@typescript-eslint/typescript-estree'
+      - '@typescript-eslint/utils'
+      - '@unocss/eslint-plugin'
+      - '@vue/compiler-sfc'
+      - astro-eslint-parser
+      - eslint-plugin-astro
+      - eslint-plugin-format
+      - eslint-plugin-react-hooks
+      - eslint-plugin-react-refresh
+      - eslint-plugin-solid
+      - eslint-plugin-svelte
+      - eslint-plugin-vuejs-accessibility
+      - jiti
+      - prettier-plugin-astro
+      - prettier-plugin-slidev
+      - supports-color
+      - svelte-eslint-parser
+      - typescript
+      - vitest
 
   '@eoussama/dx@0.0.4(@typescript-eslint/rule-tester@8.61.0(eslint@9.39.4)(typescript@6.0.3))(@typescript-eslint/typescript-estree@8.61.0(typescript@6.0.3))(@typescript-eslint/utils@8.61.0(eslint@9.39.4)(typescript@6.0.3))(@vue/compiler-sfc@3.5.38)(typescript@6.0.3)(vitest@4.1.8)':
     dependencies:
