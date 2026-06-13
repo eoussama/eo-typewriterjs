@@ -1,4 +1,4 @@
-import { clearOutput, runAnimation, runSegmentsAnimation, stopAnimation } from "./sandbox";
+import { clearOutput, runAnimation, runSegmentsAnimation, setActiveSegments, stopAnimation } from "./sandbox";
 import { SNIPPETS } from "./snippets.const";
 
 
@@ -25,12 +25,21 @@ function boot(): void {
       editor.value = snippet.text;
 
       if (snippet.segments !== undefined) {
+        setActiveSegments(snippet.segments);
         void runSegmentsAnimation(snippet.segments);
+      }
+      else {
+        setActiveSegments(null);
       }
     });
 
     snippetList.appendChild(btn);
   }
+
+  // Clear active segments whenever the user manually edits the textarea
+  editor.addEventListener("input", () => {
+    setActiveSegments(null);
+  });
 
   // Run button
   btnRun.addEventListener("click", () => {
@@ -46,6 +55,7 @@ function boot(): void {
   btnClear.addEventListener("click", () => {
     stopAnimation();
     clearOutput();
+    setActiveSegments(null);
     editor.value = "";
   });
 

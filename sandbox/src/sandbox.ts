@@ -21,6 +21,14 @@ let _running = false;
 
 /**
  * @description
+ * The segments of the currently selected snippet, if any.
+ * When set, the Run button replays the segment sequence instead of plain text.
+ * Cleared when the user edits the textarea manually.
+ */
+let _activeSegments: readonly TSnippetSegment[] | null = null;
+
+/**
+ * @description
  * Build a renderer that delegates to the underlying domRenderer only while
  * the captured generation is still the active one
  *
@@ -117,12 +125,28 @@ export function stopAnimation(): void {
 
 /**
  * @description
- * Run the typewriter animation for the given text using the current control settings
+ * Set the active snippet segments so the Run button replays the full sequence.
+ * Pass null to clear and fall back to plain text mode.
  *
- * @param text - The text to animate
+ * @param segments - The ordered segment list, or null to clear
+ */
+export function setActiveSegments(segments: readonly TSnippetSegment[] | null): void {
+  _activeSegments = segments;
+}
+
+/**
+ * @description
+ * Run the typewriter animation for the given text using the current control settings.
+ * If active segments are set, the segment sequence is used instead of plain text.
+ *
+ * @param text - The fallback text to animate when no segments are active
  * @returns A promise that resolves when the animation completes or is superseded
  */
 export async function runAnimation(text: string): Promise<void> {
+  if (_activeSegments !== null) {
+    return runSegmentsAnimation(_activeSegments);
+  }
+
   if (_running) {
     return;
   }
