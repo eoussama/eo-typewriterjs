@@ -1,32 +1,54 @@
 {
   "name": "eo-typewriterjs",
+  "type": "module",
   "version": "6.0.0",
   "description": "JavaScript utility for advanced typewriter-like animations.",
-  "main": "index.js",
-  "scripts": {},
+  "author": "EOussama",
+  "license": "MIT",
+  "homepage": "https://github.com/eoussama/eo-typewriterjs#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/eoussama/eo-typewriterjs.git"
+  },
+  "bugs": {
+    "url": "https://github.com/eoussama/eo-typewriterjs/issues"
+  },
   "keywords": [
     "animation",
-		"typewriter",
-		"js",
-		"library",
-		"utility"
+    "typewriter",
+    "js",
+    "library",
+    "utility"
   ],
-  "repository": {
-		"type": "git",
-    "url": "git+https://github.com/eoussama/eo-typewriterjs.git"
-	},
-  "author": "EOussama",
-	"license": "MIT",
-	"bugs": {
-		"url": "https://github.com/eoussama/eo-typewriterjs/issues"
-	},
-	"homepage": "https://github.com/eoussama/eo-typewriterjs#readme",
-  "devEngines": {
-    "packageManager": {
-      "name": "pnpm",
-      "version": "^11.4.0",
-      "onFail": "download"
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
     }
   },
-  "type": "module"
+  "main": "dist/index.cjs",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "coverage": "vitest run --coverage",
+    "lint": "dx lint",
+    "lint:fix": "dx lint --fix"
+  },
+  "devDependencies": {
+    "@eoussama/dx": "^0.0.4",
+    "@types/node": "^25.9.3",
+    "@vitest/coverage-v8": "^4.1.8",
+    "typescript": "^6.0.3",
+    "vite": "^8.0.16",
+    "vitest": "^4.1.8"
+  }
 }
