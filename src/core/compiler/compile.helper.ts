@@ -1,4 +1,5 @@
 import type { TTypeCommand } from "../commands/type-command.type";
+import type { TWaitCommand } from "../commands/wait-command.type";
 import type { TTimelineEvent } from "../events/timeline-event.type";
 
 import { ECommandKind } from "../commands/command-kind.enum";
@@ -11,7 +12,7 @@ import { compileType } from "./compile-type.helper";
  * A union of all supported command types.
  * Additional command kinds will be added in future phases.
  */
-export type TCommand = TTypeCommand;
+export type TCommand = TTypeCommand | TWaitCommand;
 
 /**
  * @description
@@ -29,10 +30,15 @@ export function compile(commands: TCommand[]): TTimelineEvent[] {
   for (const command of commands) {
     switch (command.kind) {
       case ECommandKind.TYPE: {
-        const result = compileType(command, cursor);
+        const result = compileType(command as TTypeCommand, cursor);
 
         events.push(...result.events);
         cursor = result.endTime;
+        break;
+      }
+
+      case ECommandKind.WAIT: {
+        cursor += (command as TWaitCommand).duration;
         break;
       }
 

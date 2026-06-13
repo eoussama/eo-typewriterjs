@@ -4,6 +4,8 @@ import type { TStyleRef } from "../state/rich-text-document.type";
 
 import { ECommandKind } from "../commands/command-kind.enum";
 
+
+
 let commandCounter = 0;
 
 /**
@@ -33,6 +35,23 @@ export class TimelineBuilder {
    */
   get commands(): ReadonlyArray<TCommand> {
     return this._commands;
+  }
+
+  /**
+   * @description
+   * Schedule a wait command that pauses the timeline for a given duration
+   *
+   * @param duration - The duration to wait in milliseconds
+   * @returns This builder instance for future chaining
+   */
+  wait(duration: number): this {
+    this._commands.push({
+      id: `cmd_${++commandCounter}`,
+      kind: ECommandKind.WAIT,
+      duration,
+    });
+
+    return this;
   }
 
   /**

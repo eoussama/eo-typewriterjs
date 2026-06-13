@@ -4,6 +4,7 @@
  */
 export const ECommandKind = {
   TYPE: "type",
+  WAIT: "wait",
 } as const;
 
 export type TCommandKind = (typeof ECommandKind)[keyof typeof ECommandKind];

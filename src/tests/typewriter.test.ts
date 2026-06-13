@@ -156,6 +156,97 @@ describe("compile", () => {
 });
 
 // ---------------------------------------------------------------------------
+// Compiler — wait command
+// ---------------------------------------------------------------------------
+
+describe("compile (wait)", () => {
+  it("advances the time cursor by the wait duration between two type commands", () => {
+    const events = compile([
+      {
+        id: "cmd_w1",
+        kind: "type",
+        cursor: "main",
+        text: "Hi",
+        by: "char",
+        interval: 100,
+      },
+      {
+        id: "cmd_w2",
+        kind: "wait",
+        duration: 500,
+      },
+      {
+        id: "cmd_w3",
+        kind: "type",
+        cursor: "main",
+        text: "AB",
+        by: "char",
+        interval: 50,
+      },
+    ]);
+
+    // "Hi" produces events at t=0 and t=100; end of "Hi" = t=200
+    // wait 500 ms → next command starts at t=700
+    // "AB" produces events at t=700 and t=750
+    const hiEvents = events.filter(e => e.text === "H" || e.text === "i");
+    const abEvents = events.filter(e => e.text === "A" || e.text === "B");
+
+    expect(hiEvents).toHaveLength(2);
+    expect(abEvents).toHaveLength(2);
+
+    expect(hiEvents[0]?.time).toBe(0);
+    expect(hiEvents[1]?.time).toBe(100);
+
+    expect(abEvents[0]?.time).toBe(700);
+    expect(abEvents[1]?.time).toBe(750);
+  });
+
+  it("emits no events for a standalone wait command", () => {
+    const events = compile([
+      {
+        id: "cmd_w4",
+        kind: "wait",
+        duration: 1000,
+      },
+    ]);
+
+    expect(events).toHaveLength(0);
+  });
+
+  it("treats a zero-duration wait as a no-op on event timing", () => {
+    const events = compile([
+      {
+        id: "cmd_w5",
+        kind: "type",
+        cursor: "main",
+        text: "AB",
+        by: "char",
+        interval: 100,
+      },
+      {
+        id: "cmd_w6",
+        kind: "wait",
+        duration: 0,
+      },
+      {
+        id: "cmd_w7",
+        kind: "type",
+        cursor: "main",
+        text: "CD",
+        by: "char",
+        interval: 100,
+      },
+    ]);
+
+    // "AB" ends at t=200; wait(0) → "CD" starts at t=200
+    const cdEvents = events.filter(e => e.text === "C" || e.text === "D");
+
+    expect(cdEvents[0]?.time).toBe(200);
+    expect(cdEvents[1]?.time).toBe(300);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Integration — createTypewriter + stringRenderer
 // ---------------------------------------------------------------------------
 
@@ -196,6 +287,16 @@ describe("createTypewriter", () => {
 
     tw.timeline.type("Hello", { by: "char", interval: 1 });
     tw.timeline.type(" world", { by: "char", interval: 1 });
+    await tw.play();
+
+    expect(renderer.toString()).toBe("Hello world");
+  });
+
+  it("waits between two type commands and still produces the full output", async () => {
+    const renderer = stringRenderer();
+    const tw = createTypewriter({ renderer });
+
+    tw.timeline.type("Hello", { by: "char", interval: 1 }).wait(50).type(" world", { by: "char", interval: 1 });
     await tw.play();
 
     expect(renderer.toString()).toBe("Hello world");

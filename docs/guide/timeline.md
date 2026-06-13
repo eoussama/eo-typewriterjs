@@ -61,6 +61,28 @@ tw.timeline.type("🇺🇸🇬🇧🇲🇦", { by: "char" });
 
 ---
 
+## The `.wait()` command
+
+```ts
+tw.timeline.wait(duration: number): TimelineBuilder
+```
+
+Inserts a pause of `duration` milliseconds before the next command starts. Returns the builder so calls can be chained.
+
+```ts
+tw.timeline
+  .type("Hello", { by: "char", interval: 80 })
+  .wait(500)
+  .type(" world", { by: "char", interval: 80 });
+
+await tw.play();
+// types "Hello", pauses 500 ms, then types " world"
+```
+
+A `.wait()` command generates no playback events — it only advances the internal time cursor used during compilation. The player's existing timing loop handles the resulting gap automatically.
+
+---
+
 ## Chaining multiple commands
 
 ```ts
@@ -108,3 +130,4 @@ See the API reference for full details:
 - [`TAdvanceModeInput`](/api/type-aliases/TAdvanceModeInput)
 - [`TAdvanceUnit`](/api/type-aliases/TAdvanceUnit)
 - [`TTypeCommand`](/api/type-aliases/TTypeCommand)
+- [`TWaitCommand`](/api/type-aliases/TWaitCommand)
