@@ -41,7 +41,8 @@
     "test:watch": "vitest",
     "coverage": "vitest run --coverage",
     "lint": "dx lint",
-    "lint:fix": "dx lint --fix"
+    "lint:fix": "dx lint --fix",
+    "sandbox": "vite --config sandbox/vite.config.ts"
   },
   "dependencies": {
     "@eoussama/core": "^0.0.4"

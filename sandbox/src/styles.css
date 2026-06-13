@@ -1,0 +1,344 @@
+/* ─── Reset & base ──────────────────────────────────────────────────────── */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --color-bg: #0f1117;
+  --color-surface: #1a1d27;
+  --color-surface-alt: #22263a;
+  --color-border: #2e3245;
+  --color-accent: #6c8ef5;
+  --color-accent-hover: #859af7;
+  --color-text: #e2e8f0;
+  --color-text-muted: #8892a4;
+  --color-danger: #f56565;
+  --color-success: #68d391;
+  --radius: 10px;
+  --gap: 1.25rem;
+  --font-mono: "JetBrains Mono", "Fira Code", "Cascadia Code", monospace;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+/* ─── Layout ────────────────────────────────────────────────────────────── */
+
+#app {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 1.5rem var(--gap);
+  gap: var(--gap);
+}
+
+.main {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: auto auto 1fr;
+  gap: var(--gap);
+}
+
+/* ─── Header ────────────────────────────────────────────────────────────── */
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.header__title {
+  font-size: 1.4rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--color-text);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.header__badge {
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  background: var(--color-accent);
+  color: #fff;
+  padding: 0.15em 0.55em;
+  border-radius: 999px;
+  vertical-align: middle;
+}
+
+/* ─── Cards ─────────────────────────────────────────────────────────────── */
+
+.card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.875rem;
+}
+
+.card__title {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+/* ─── Grid placement ────────────────────────────────────────────────────── */
+
+.preview-card {
+  grid-column: 1 / 2;
+  grid-row: 1 / 2;
+}
+
+.controls-card {
+  grid-column: 2 / 3;
+  grid-row: 1 / 2;
+}
+
+.snippets-card {
+  grid-column: 1 / 3;
+  grid-row: 2 / 3;
+}
+
+.editor-card {
+  grid-column: 1 / 3;
+  grid-row: 3 / 4;
+}
+
+/* ─── Preview ───────────────────────────────────────────────────────────── */
+
+.preview {
+  display: flex;
+  align-items: flex-start;
+  gap: 2px;
+  background: var(--color-surface-alt);
+  border: 1px solid var(--color-border);
+  border-radius: calc(var(--radius) - 2px);
+  padding: 1rem 1.25rem;
+  min-height: 5rem;
+}
+
+.preview__output {
+  font-family: var(--font-mono);
+  font-size: 1.1rem;
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: var(--color-text);
+  flex: 1;
+}
+
+.preview__cursor {
+  width: 2px;
+  height: 1.3em;
+  background: var(--color-accent);
+  border-radius: 1px;
+  flex-shrink: 0;
+  margin-top: 0.15em;
+  animation: blink 1.1s step-end infinite;
+}
+
+@keyframes blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+}
+
+/* ─── Controls ──────────────────────────────────────────────────────────── */
+
+.controls {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.field__label {
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--color-text-muted);
+}
+
+.field__input {
+  background: var(--color-surface-alt);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  color: var(--color-text);
+  font-size: 0.875rem;
+  padding: 0.4rem 0.625rem;
+  outline: none;
+  transition: border-color 0.15s;
+  appearance: none;
+}
+
+.field__input:focus {
+  border-color: var(--color-accent);
+}
+
+/* ─── Snippets ──────────────────────────────────────────────────────────── */
+
+.snippet-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.snippet-btn {
+  background: var(--color-surface-alt);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  color: var(--color-text);
+  cursor: pointer;
+  font-size: 0.8rem;
+  padding: 0.35rem 0.75rem;
+  transition:
+    border-color 0.15s,
+    background 0.15s;
+}
+
+.snippet-btn:hover {
+  border-color: var(--color-accent);
+  background: var(--color-surface);
+  color: var(--color-accent-hover);
+}
+
+/* ─── Editor ────────────────────────────────────────────────────────────── */
+
+.editor-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.editor__textarea {
+  background: var(--color-surface-alt);
+  border: 1px solid var(--color-border);
+  border-radius: calc(var(--radius) - 2px);
+  color: var(--color-text);
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  line-height: 1.6;
+  min-height: 7rem;
+  outline: none;
+  padding: 0.875rem 1rem;
+  resize: vertical;
+  transition: border-color 0.15s;
+  width: 100%;
+}
+
+.editor__textarea:focus {
+  border-color: var(--color-accent);
+}
+
+.editor__textarea::placeholder {
+  color: var(--color-text-muted);
+}
+
+.editor-actions {
+  display: flex;
+  gap: 0.625rem;
+  flex-wrap: wrap;
+}
+
+/* ─── Buttons ───────────────────────────────────────────────────────────── */
+
+.btn {
+  border: 1px solid transparent;
+  border-radius: 7px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 0.45rem 1.1rem;
+  transition:
+    background 0.15s,
+    color 0.15s,
+    border-color 0.15s,
+    opacity 0.15s;
+}
+
+.btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+.btn--primary {
+  background: var(--color-accent);
+  color: #fff;
+  border-color: var(--color-accent);
+}
+
+.btn--primary:not(:disabled):hover {
+  background: var(--color-accent-hover);
+  border-color: var(--color-accent-hover);
+}
+
+.btn--secondary {
+  background: transparent;
+  color: var(--color-danger);
+  border-color: var(--color-danger);
+}
+
+.btn--secondary:not(:disabled):hover {
+  background: var(--color-danger);
+  color: #fff;
+}
+
+.btn--ghost {
+  background: transparent;
+  color: var(--color-text-muted);
+  border-color: var(--color-border);
+}
+
+.btn--ghost:not(:disabled):hover {
+  color: var(--color-text);
+  border-color: var(--color-text-muted);
+}
+
+/* ─── Responsive ────────────────────────────────────────────────────────── */
+
+@media (max-width: 600px) {
+  .main {
+    grid-template-columns: 1fr;
+  }
+
+  .preview-card,
+  .controls-card,
+  .snippets-card,
+  .editor-card {
+    grid-column: 1;
+    grid-row: auto;
+  }
+}

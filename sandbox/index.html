@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>EO TypewriterJS — Sandbox</title>
+    <link rel="stylesheet" href="/src/styles.css" />
+  </head>
+  <body>
+    <div id="app">
+      <header class="header">
+        <h1 class="header__title">EO TypewriterJS <span class="header__badge">Sandbox</span></h1>
+      </header>
+
+      <main class="main">
+        <!-- Preview -->
+        <section class="card preview-card">
+          <h2 class="card__title">Preview</h2>
+          <div class="preview">
+            <div id="typewriter-output" class="preview__output"></div>
+            <div class="preview__cursor" aria-hidden="true"></div>
+          </div>
+        </section>
+
+        <!-- Controls -->
+        <section class="card controls-card">
+          <h2 class="card__title">Controls</h2>
+          <div class="controls">
+            <label class="field">
+              <span class="field__label">Advance unit</span>
+              <select id="ctrl-unit" class="field__input">
+                <option value="char">char</option>
+                <option value="grapheme">grapheme</option>
+                <option value="word">word</option>
+                <option value="line">line</option>
+                <option value="custom">custom</option>
+              </select>
+            </label>
+
+            <label class="field">
+              <span class="field__label">Amount</span>
+              <input id="ctrl-amount" type="number" min="1" max="20" value="1" class="field__input" />
+            </label>
+
+            <label class="field">
+              <span class="field__label">Interval (ms)</span>
+              <input id="ctrl-interval" type="number" min="0" max="2000" value="80" class="field__input" />
+            </label>
+          </div>
+        </section>
+
+        <!-- Snippets -->
+        <section class="card snippets-card">
+          <h2 class="card__title">Snippets</h2>
+          <div class="snippet-list" id="snippet-list"></div>
+        </section>
+
+        <!-- Editor -->
+        <section class="card editor-card">
+          <div class="editor-header">
+            <h2 class="card__title">Custom text</h2>
+          </div>
+          <textarea id="editor" class="editor__textarea" spellcheck="false" placeholder="Type or paste text here…"></textarea>
+          <div class="editor-actions">
+            <button id="btn-run" class="btn btn--primary">▶ Run</button>
+            <button id="btn-stop" class="btn btn--secondary" disabled>■ Stop</button>
+            <button id="btn-clear" class="btn btn--ghost">✕ Clear</button>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
