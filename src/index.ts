@@ -15,6 +15,7 @@ export type { IRenderer } from "./core/renderer/index";
 export type { TCursorState } from "./core/state/index";
 export type { TRichTextDocument, TStyleObject, TStyleRef, TTextMark } from "./core/state/index";
 export type { TTypewriterState } from "./core/state/index";
+export { TimelineBuilder } from "./core/timeline/index";
 export type { TTypeOptions } from "./core/timeline/index";
 
 export { DomRenderer, domRenderer } from "./renderers/index";

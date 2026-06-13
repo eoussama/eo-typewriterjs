@@ -42,7 +42,11 @@
     "coverage": "vitest run --coverage",
     "lint": "dx lint",
     "lint:fix": "dx lint --fix",
-    "sandbox": "vite --config sandbox/vite.config.ts"
+    "sandbox": "vite --config sandbox/vite.config.ts",
+    "docs:api": "typedoc",
+    "docs:dev": "vitepress dev docs",
+    "docs:build": "pnpm docs:api && vitepress build docs",
+    "docs:preview": "vitepress preview docs"
   },
   "dependencies": {
     "@eoussama/core": "^0.0.4"
@@ -51,8 +55,11 @@
     "@eoussama/dx": "^0.0.4",
     "@types/node": "^25.9.3",
     "@vitest/coverage-v8": "^4.1.8",
+    "typedoc": "^0.28.19",
+    "typedoc-plugin-markdown": "^4.12.0",
     "typescript": "^6.0.3",
     "vite": "^8.0.16",
+    "vitepress": "^1.6.4",
     "vitest": "^4.1.8"
   }
 }
