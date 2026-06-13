@@ -1,6 +1,7 @@
 import type { TStyleRef } from "../state/rich-text-document.type";
 
-import type { TCommandKind } from "./command-kind.enum";
+import type { TBaseCommand } from "./base-command.type";
+import { ECommandKind } from "./command-kind.enum";
 
 
 
@@ -36,9 +37,8 @@ export type TCursorSelector = string;
  * @description
  * A command representing the user's intent to type text into the document
  */
-export type TTypeCommand = {
-  readonly id: string;
-  readonly kind: TCommandKind;
+export type TTypeCommand = TBaseCommand & {
+  readonly kind: typeof ECommandKind.TYPE;
   readonly cursor: TCursorSelector;
   readonly text: string;
   readonly by?: TAdvanceModeInput;

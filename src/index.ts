@@ -7,9 +7,11 @@ import { TimelineBuilder } from "./core/timeline/index";
 
 
 export { ECommandKind } from "./core/commands/index";
+export type { TBaseCommand } from "./core/commands/index";
 export type { TAdvanceMode, TAdvanceModeInput, TAdvanceUnit, TCommandKind, TCursorSelector, TTypeCommand, TWaitCommand } from "./core/commands/index";
 
 export { EEventKind } from "./core/events/index";
+export type { TBaseEvent } from "./core/events/index";
 export type { TEventKind, TInsertEvent, TTimelineEvent } from "./core/events/index";
 export type { IRenderer } from "./core/renderer/index";
 export type { TCursorState } from "./core/state/index";
