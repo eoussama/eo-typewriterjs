@@ -1,4 +1,4 @@
-import { clearOutput, runAnimation, stopAnimation } from "./sandbox";
+import { clearOutput, runAnimation, runSegmentsAnimation, stopAnimation } from "./sandbox";
 import { SNIPPETS } from "./snippets.const";
 
 
@@ -23,6 +23,10 @@ function boot(): void {
 
     btn.addEventListener("click", () => {
       editor.value = snippet.text;
+
+      if (snippet.segments !== undefined) {
+        void runSegmentsAnimation(snippet.segments);
+      }
     });
 
     snippetList.appendChild(btn);

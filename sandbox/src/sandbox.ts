@@ -1,4 +1,6 @@
 import type { IRenderer, TAdvanceModeInput, TTypewriterState } from "@eo-typewriterjs";
+import type { TSnippetSegment } from "./snippets.const";
+
 import { createTypewriter, domRenderer } from "@eo-typewriterjs";
 
 
@@ -145,6 +147,55 @@ export async function runAnimation(text: string): Promise<void> {
     by: readAdvanceMode(),
     interval: readInterval(),
   });
+
+  await tw.play();
+
+  // Only update UI if this generation is still current
+  if (_generation === myGen) {
+    setRunning(false);
+  }
+}
+
+/**
+ * @description
+ * Run the typewriter animation for a sequence of typed and wait segments.
+ * The advance mode and interval controls are applied to each type segment.
+ *
+ * @param segments - The ordered list of type and wait segments to animate
+ * @returns A promise that resolves when the animation completes or is superseded
+ */
+export async function runSegmentsAnimation(segments: readonly TSnippetSegment[]): Promise<void> {
+  if (_running) {
+    return;
+  }
+
+  const outputEl = document.getElementById("typewriter-output");
+
+  if (outputEl === null) {
+    return;
+  }
+
+  // Advance generation — invalidates any lingering previous play() timers
+  _generation += 1;
+  const myGen = _generation;
+
+  clearOutput();
+  setRunning(true);
+
+  const renderer = makeGuardedRenderer(outputEl, myGen);
+  const tw = createTypewriter({ renderer });
+
+  for (const segment of segments) {
+    if (segment.kind === "type") {
+      tw.timeline.type(segment.text, {
+        by: readAdvanceMode(),
+        interval: readInterval(),
+      });
+    }
+    else {
+      tw.timeline.wait(segment.duration);
+    }
+  }
 
   await tw.play();
 

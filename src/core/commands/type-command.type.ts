@@ -1,7 +1,7 @@
 import type { TStyleRef } from "../state/rich-text-document.type";
 
 import type { TBaseCommand } from "./base-command.type";
-import { ECommandKind } from "./command-kind.enum";
+import type { ECommandKind } from "./command-kind.enum";
 
 
 
