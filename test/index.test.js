@@ -1,1 +1,0 @@
-describe('Typewriter.js Tests', () => {});
