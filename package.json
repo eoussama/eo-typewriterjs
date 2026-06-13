@@ -1,0 +1,32 @@
+{
+  "name": "eo-typewriterjs",
+  "version": "6.0.0",
+  "description": "JavaScript utility for advanced typewriter-like animations.",
+  "main": "index.js",
+  "scripts": {},
+  "keywords": [
+    "animation",
+		"typewriter",
+		"js",
+		"library",
+		"utility"
+  ],
+  "repository": {
+		"type": "git",
+    "url": "git+https://github.com/eoussama/typewriter.js.git"
+	},
+  "author": "EOussama",
+	"license": "MIT",
+	"bugs": {
+		"url": "https://github.com/eoussama/typewriter.js/issues"
+	},
+	"homepage": "https://github.com/eoussama/typewriter.js#readme",
+  "devEngines": {
+    "packageManager": {
+      "name": "pnpm",
+      "version": "^11.4.0",
+      "onFail": "download"
+    }
+  },
+  "type": "module"
+}
