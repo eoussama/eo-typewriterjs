@@ -46,7 +46,8 @@
     "docs:api": "typedoc",
     "docs:dev": "vitepress dev docs",
     "docs:build": "pnpm docs:api && vitepress build docs",
-    "docs:preview": "vitepress preview docs"
+    "docs:preview": "vitepress preview docs",
+    "prod": "pnpm audit && pnpm lint && pnpm build && pnpm test && pnpm coverage && pnpm docs:build"
   },
   "dependencies": {
     "@eoussama/core": "^0.0.4"
