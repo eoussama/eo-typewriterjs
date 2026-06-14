@@ -1,3 +1,4 @@
+export { applyMark } from "./apply-mark.helper";
 export { deleteTextAtCursor } from "./delete-text-at-cursor.helper";
 export { insertTextAtCursor } from "./insert.helper";
 export { moveCursor } from "./move-cursor.helper";

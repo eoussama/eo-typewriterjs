@@ -32,7 +32,7 @@ export type TRecipe = {
   readonly id: string;
   readonly title: string;
   readonly description: string;
-  readonly category: "basics" | "timing" | "editing" | "cursor" | "advanced";
+  readonly category: "basics" | "timing" | "editing" | "cursor" | "styling" | "advanced";
   readonly variants: readonly TRecipeVariant[];
 };
 
@@ -346,6 +346,107 @@ tw.timeline.type("Blisteringly fast!", { by: "char", interval: 80 });`,
   .type("Hello!", { cursor: ["a", "b"] });`,
         build(tw, d) {
           tw.timeline.type("Hello!", { cursor: ["a", "b"], by: unit(d), interval: d.interval });
+        },
+      },
+    ],
+  },
+
+  // ── Styling ─────────────────────────────────────────────────────────────
+  {
+    id: "style-while-typing",
+    title: "Style While Typing",
+    description: "Attach a CSS class to each character as it is typed using the style option.",
+    category: "styling",
+    variants: [
+      {
+        label: "class name",
+        defaults: { unit: "char", amount: 1, interval: 80 },
+        source: `tw.timeline
+  .type("Hello ", { style: "tw-muted", interval: 80 })
+  .type("World!", { style: "tw-accent", interval: 80 });`,
+        build(tw, d) {
+          tw.timeline
+            .type("Hello ", { style: "tw-muted", by: unit(d), interval: d.interval })
+            .type("World!", { style: "tw-accent", by: unit(d), interval: d.interval });
+        },
+      },
+      {
+        label: "inline CSS",
+        defaults: { unit: "char", amount: 1, interval: 80 },
+        source: `tw.timeline
+  .type("Danger zone", {
+    style: { css: { color: "#ef4444", fontWeight: "bold" } },
+    interval: 80,
+  });`,
+        build(tw, d) {
+          tw.timeline
+            .type("Danger zone", {
+              style: { css: { color: "#ef4444", fontWeight: "bold" } },
+              by: unit(d),
+              interval: d.interval,
+            });
+        },
+      },
+    ],
+  },
+  {
+    id: "mark-fixed-range",
+    title: "Mark Fixed Range",
+    description: "Type text first, then apply a style mark to an absolute character range.",
+    category: "styling",
+    variants: [
+      {
+        label: "highlight word",
+        defaults: { unit: "char", amount: 1, interval: 80 },
+        source: `tw.timeline
+  .type("Hello World", { interval: 80 })
+  .mark("tw-highlight", { from: 6, to: 11 });`,
+        build(tw, d) {
+          tw.timeline
+            .type("Hello World", { by: unit(d), interval: d.interval })
+            .mark("tw-highlight", { from: 6, to: 11 });
+        },
+      },
+      {
+        label: "multiple marks",
+        defaults: { unit: "char", amount: 1, interval: 60 },
+        source: `tw.timeline
+  .type("Error: file not found", { interval: 60 })
+  .mark("tw-error",  { from: 0,  to: 5  })
+  .mark("tw-muted",  { from: 7,  to: 21 });`,
+        build(tw, d) {
+          tw.timeline
+            .type("Error: file not found", { by: unit(d), interval: d.interval })
+            .mark("tw-error", { from: 0, to: 5 })
+            .mark("tw-muted", { from: 7, to: 21 });
+        },
+      },
+    ],
+  },
+  {
+    id: "mark-selection",
+    title: "Mark Selection",
+    description: "Select a range then apply a style mark to that selection instantly.",
+    category: "styling",
+    variants: [
+      {
+        label: "select + mark",
+        defaults: { unit: "char", amount: 1, interval: 80 },
+        source: `tw.timeline
+  .type("Hello World", { interval: 80 })
+  .wait(600)
+  .moveCursor(6)
+  .select(5)                        // selects "World"
+  .mark("tw-highlight", "selection")
+  .moveCursor(11);                  // clear selection`,
+        build(tw, d) {
+          tw.timeline
+            .type("Hello World", { by: unit(d), interval: d.interval })
+            .wait(600)
+            .moveCursor(6)
+            .select(5)
+            .mark("tw-highlight", "selection")
+            .moveCursor(11);
         },
       },
     ],

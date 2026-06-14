@@ -1,4 +1,5 @@
 export { compileDelete } from "./compile-delete.helper";
+export { compileMark } from "./compile-mark.helper";
 export { compileMoveCursor } from "./compile-move-cursor.helper";
 export { compileSelect } from "./compile-select.helper";
 export { compileType } from "./compile-type.helper";

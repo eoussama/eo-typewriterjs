@@ -3,6 +3,7 @@ export { ECommandKind } from "./command-kind.enum";
 
 export type { TCommandKind } from "./command-kind.enum";
 export type { TDeleteCommand } from "./delete-command.type";
+export type { TMarkCommand, TMarkRange } from "./mark-command.type";
 export type { TMoveCursorCommand } from "./move-cursor-command.type";
 export { normalizeCursors } from "./normalize-cursors.helper";
 export type { TSelectCommand } from "./select-command.type";

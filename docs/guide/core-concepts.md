@@ -26,12 +26,14 @@ You add **commands** to the timeline using the fluent builder methods:
 | `.wait(duration)` | Pause before the next command |
 | `.delete(count, options?)` | Remove text backward from the cursor |
 | `.moveCursor(index, options?)` | Teleport the cursor to an absolute index |
+| `.mark(style, range, options?)` | Apply a style mark to a document range |
 
 At play time, `compile()` converts the ordered command list into a flat array of **timeline events** — one event per step — each stamped with an absolute timestamp.
 
-`wait` and `moveCursor` are special:
+`wait`, `moveCursor`, and `mark` are special:
 - `wait` generates no events but advances the internal clock
 - `moveCursor` generates a single instant event and does **not** advance the clock
+- `mark` generates one or more instant mark events (one per cursor when `range` is `"selection"`) and does **not** advance the clock
 
 ### 2. Events → State (reduce)
 
@@ -49,12 +51,42 @@ After each state update, the **renderer** is called with the new state. The buil
 
 | Field | Description |
 |---|---|
-| `document` | A `TRichTextDocument` — the current text content with optional style marks |
+| `document` | A `TRichTextDocument` — the current text content and its style marks |
 | `cursors` | A `Record<string, TCursorState>` — named cursors, each with an `index` and `visible` flag |
+| `selections` | A `Record<string, TSelectionState>` — per-cursor active selection ranges |
 
 The default initial state has a single cursor named `"main"` at index `0`.
 
 The document text grows as insert events are applied and shrinks as delete events are applied. The cursor index tracks where the next insert or delete will occur.
+
+### `TRichTextDocument`
+
+```ts
+type TRichTextDocument = {
+  readonly text: string;
+  readonly marks: readonly TTextMark[];
+};
+```
+
+`marks` is an append-only list of style annotations. Each `TTextMark` carries:
+
+| Field | Type | Description |
+|---|---|---|
+| `from` | `number` | Start index (inclusive) |
+| `to` | `number` | End index (exclusive) |
+| `style` | `TStyleRef` | A class-name string or a `TStyleObject` |
+
+Marks can overlap freely. The `segmentRichText()` helper (exported from `eo-typewriterjs`) slices the document into non-overlapping `TRichTextSegment` values, each carrying the ordered stack of active styles for that slice.
+
+```ts
+import { segmentRichText, mergeStyles } from "eo-typewriterjs";
+
+const segments = segmentRichText(state.document);
+// [{ text: "Hello", from: 0, to: 5, styles: ["greeting"] }, ...]
+
+const merged = mergeStyles(segments[0].styles);
+// { className: "greeting" }
+```
 
 ---
 
@@ -95,11 +127,12 @@ You can implement this interface to write to a canvas, a terminal, a virtual DOM
 
 ```ts
 tw.timeline
-  .type("Hello")
+  .type("Hello World")
   .wait(300)
-  .delete(2, { by: "char", interval: 60 })
-  .moveCursor(0)
-  .type("EO ");
+  .moveCursor(6)
+  .select(5)
+  .mark("highlight", "selection")
+  .delete(2, { by: "char", interval: 60 });
 
 await tw.play(); // compiles fresh each time
 await tw.play(); // replays the same sequence

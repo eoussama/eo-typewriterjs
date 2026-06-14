@@ -1,3 +1,4 @@
+import type { TMarkRange } from "../commands/mark-command.type";
 import type { TAdvanceModeInput, TCursorSelector } from "../commands/type-command.type";
 import type { TCommand } from "../compiler/compile.helper";
 import type { TStyleRef } from "../state/rich-text-document.type";
@@ -41,6 +42,14 @@ export type TTypeOptions = {
   readonly by?: TAdvanceModeInput;
   readonly interval?: number;
   readonly style?: TStyleRef;
+  readonly cursor?: TCursorSelector;
+};
+
+/**
+ * @description
+ * Options accepted by the `mark` builder method
+ */
+export type TMarkOptions = {
   readonly cursor?: TCursorSelector;
 };
 
@@ -186,6 +195,32 @@ export class TimelineBuilder {
       by: options?.by,
       interval: options?.interval,
       style: options?.style,
+    });
+
+    this._version++;
+
+    return this;
+  }
+
+  /**
+   * @description
+   * Schedule a mark command that applies a style to a document range or cursor selection.
+   * When `range` is `"selection"`, the style is applied to each targeted cursor's current selection.
+   * When `range` is a `{ from, to }` object, the style is applied to those absolute document indices.
+   * This command is instant and does not advance the timeline clock.
+   *
+   * @param style - The style reference to apply (class name string or TStyleObject)
+   * @param range - The target range — either absolute `{ from, to }` indices or `"selection"`
+   * @param options - Optional configuration (cursor id, used only for selection-based marks)
+   * @returns This builder instance for future chaining
+   */
+  mark(style: TStyleRef, range: TMarkRange | "selection", options?: TMarkOptions): this {
+    this._commands.push({
+      id: `cmd_${++commandCounter}`,
+      kind: ECommandKind.MARK,
+      cursor: options?.cursor ?? "main",
+      style,
+      range,
     });
 
     this._version++;

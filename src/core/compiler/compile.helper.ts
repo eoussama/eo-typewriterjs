@@ -1,4 +1,5 @@
 import type { TDeleteCommand } from "../commands/delete-command.type";
+import type { TMarkCommand } from "../commands/mark-command.type";
 import type { TMoveCursorCommand } from "../commands/move-cursor-command.type";
 import type { TSelectCommand } from "../commands/select-command.type";
 import type { TTypeCommand } from "../commands/type-command.type";
@@ -7,6 +8,7 @@ import type { TTimelineEvent } from "../events/timeline-event.type";
 
 import { ECommandKind } from "../commands/command-kind.enum";
 import { compileDelete } from "./compile-delete.helper";
+import { compileMark } from "./compile-mark.helper";
 import { compileMoveCursor } from "./compile-move-cursor.helper";
 import { compileSelect } from "./compile-select.helper";
 import { compileType } from "./compile-type.helper";
@@ -17,7 +19,7 @@ import { compileType } from "./compile-type.helper";
  * @description
  * A union of all supported command types.
  */
-export type TCommand = TTypeCommand | TWaitCommand | TDeleteCommand | TMoveCursorCommand | TSelectCommand;
+export type TCommand = TTypeCommand | TWaitCommand | TDeleteCommand | TMoveCursorCommand | TSelectCommand | TMarkCommand;
 
 /**
  * @description
@@ -68,6 +70,14 @@ export function compile(commands: TCommand[]): TTimelineEvent[] {
 
         events.push(...result.events);
         // endTime unchanged — select is instant
+        break;
+      }
+
+      case ECommandKind.MARK: {
+        const result = compileMark(command as TMarkCommand, cursor);
+
+        events.push(...result.events);
+        // endTime unchanged — mark is instant
         break;
       }
 

@@ -223,12 +223,13 @@ function updateSourcePanel(): void {
 // Recipe list rendering
 // ---------------------------------------------------------------------------
 
-const CATEGORY_ORDER: TRecipe["category"][] = ["basics", "timing", "editing", "cursor", "advanced"];
+const CATEGORY_ORDER: TRecipe["category"][] = ["basics", "timing", "editing", "cursor", "styling", "advanced"];
 const CATEGORY_LABELS: Record<TRecipe["category"], string> = {
   basics: "Basics",
   timing: "Timing",
   editing: "Editing",
   cursor: "Cursor",
+  styling: "Styling",
   advanced: "Advanced",
 };
 

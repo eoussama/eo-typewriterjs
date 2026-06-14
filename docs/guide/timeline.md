@@ -10,6 +10,7 @@ The `TimelineBuilder` is the primary interface for scheduling what the typewrite
 | Wait | `.wait(duration)` | Pause the timeline for a given number of milliseconds |
 | Delete | `.delete(count, options?)` | Remove characters backward from the cursor |
 | Move cursor | `.moveCursor(index, options?)` | Teleport the cursor to an absolute document index |
+| Mark | `.mark(style, range, options?)` | Apply a style to a range of already-typed text |
 
 All methods return `this`, so calls can be chained fluently:
 
@@ -19,7 +20,8 @@ tw.timeline
   .wait(500)
   .delete(5, { by: "char", interval: 60 })
   .moveCursor(0)
-  .type("EO TypewriterJS", { by: "char", interval: 80 });
+  .type("EO TypewriterJS", { by: "char", interval: 80 })
+  .mark("highlight", { from: 3, to: 16 });
 ```
 
 ---
@@ -193,6 +195,122 @@ await tw.play();
 
 ---
 
+## `.mark()` — apply a style to typed text
+
+```ts
+tw.timeline.mark(style: TStyleRef, range: TMarkRange | "selection", options?: TMarkOptions): TimelineBuilder
+```
+
+Applies a style mark to a range of document text. The mark is stored on the document's `marks` array and consumed by renderers to produce styled output (DOM spans, ANSI codes, etc.).
+
+`.mark()` is **instantaneous** — it does not advance the timeline clock and produces no visible delay.
+
+### `TMarkOptions`
+
+| Option | Type | Default | Description |
+|---|---|---|---|
+| `cursor` | `string` | `"main"` | Which cursor's selection to use when `range` is `"selection"` |
+
+### `TMarkRange`
+
+```ts
+type TMarkRange = { from: number; to: number };
+```
+
+An absolute character-index range within the document text (`from` inclusive, `to` exclusive).
+
+### `TStyleRef`
+
+A style reference can be either a plain CSS class name string or a `TStyleObject`:
+
+```ts
+// class name shorthand
+tw.timeline.mark("highlight", { from: 0, to: 5 });
+
+// full style object
+tw.timeline.mark(
+  { className: "tag", css: { color: "#ef4444" }, attrs: { "data-label": "error" } },
+  { from: 0, to: 5 }
+);
+```
+
+`TStyleObject` fields:
+
+| Field | Type | Description |
+|---|---|---|
+| `className` | `string` | One or more CSS class names (space-separated) |
+| `css` | `Record<string, string>` | Inline CSS properties applied to the span |
+| `attrs` | `Record<string, string>` | HTML attributes set on the span |
+| `ansi` | `Record<string, string>` | ANSI escape code segments used by `StringRenderer.toAnsiString()` |
+| `meta` | `Record<string, unknown>` | Arbitrary metadata; renderers may inspect this for custom behaviour |
+
+---
+
+### Styling as text is typed
+
+Pass `style` to `.type()` to attach a mark to every character as it is inserted:
+
+```ts
+tw.timeline
+  .type("Hello", { style: "greeting", interval: 80 })
+  .type(" World", { style: { css: { color: "#3b82f6" } }, interval: 80 });
+
+await tw.play();
+// "Hello" will carry the "greeting" class
+// " World" will carry the blue-colour inline style
+```
+
+---
+
+### Styling a fixed range
+
+Type text first, then apply a mark at absolute indices:
+
+```ts
+tw.timeline
+  .type("Hello World", { by: "char", interval: 80 })
+  .mark("highlight", { from: 6, to: 11 });
+
+await tw.play();
+// "World" (indices 6–11) receives the "highlight" class
+```
+
+---
+
+### Styling the current selection
+
+Combine `.select()` and `.mark()` to style whatever the cursor has selected:
+
+```ts
+tw.timeline
+  .type("Hello World", { by: "char", interval: 80 })
+  .moveCursor(6)
+  .select(5)                       // selects "World"
+  .mark("highlight", "selection"); // applies style to the selection range
+
+await tw.play();
+// "World" receives the "highlight" class; selection UI clears on next command
+```
+
+> **Note:** `"selection"` reads the cursor's current selection at play time. The mark is permanent — it persists even after the selection is cleared by subsequent commands.
+
+---
+
+### ANSI styling in the terminal
+
+Use the `ansi` field to drive `StringRenderer.toAnsiString()`:
+
+```ts
+tw.timeline
+  .type("Error: file not found", { by: "char", interval: 20 })
+  .mark({ ansi: { fg: "31", bold: "1" } }, { from: 0, to: 5 });
+
+// After play:
+renderer.toAnsiString(); // "\x1B[31;1mError\x1B[0m: file not found"
+```
+
+---
+
 ## Chaining multiple commands
 
 Commands are applied in the order they are added. The timeline clock advances only for commands that produce events with durations (`type`, `delete`). `wait` advances the clock by its duration. `moveCursor` does not advance the clock at all.
@@ -226,7 +344,7 @@ await tw.play(); // plays the same sequence again
 
 ```ts
 console.log(tw.timeline.commands);
-// ReadonlyArray<TTypeCommand | TWaitCommand | TDeleteCommand | TMoveCursorCommand>
+// ReadonlyArray<TTypeCommand | TWaitCommand | TDeleteCommand | TMoveCursorCommand | TMarkCommand>
 ```
 
 This is the raw ordered list that gets compiled when `play()` is called. You can inspect it for debugging.
@@ -238,6 +356,8 @@ This is the raw ordered list that gets compiled when `play()` is called. You can
 - [`TimelineBuilder`](/api/classes/TimelineBuilder)
 - [`TTypeOptions`](/api/type-aliases/TTypeOptions)
 - [`TDeleteOptions`](/api/type-aliases/TDeleteOptions)
+- [`TMarkOptions`](/api/type-aliases/TMarkOptions)
+- [`TMarkRange`](/api/type-aliases/TMarkRange)
 - [`TAdvanceMode`](/api/type-aliases/TAdvanceMode)
 - [`TAdvanceModeInput`](/api/type-aliases/TAdvanceModeInput)
 - [`TAdvanceUnit`](/api/type-aliases/TAdvanceUnit)
@@ -245,3 +365,6 @@ This is the raw ordered list that gets compiled when `play()` is called. You can
 - [`TWaitCommand`](/api/type-aliases/TWaitCommand)
 - [`TDeleteCommand`](/api/type-aliases/TDeleteCommand)
 - [`TMoveCursorCommand`](/api/type-aliases/TMoveCursorCommand)
+- [`TMarkCommand`](/api/type-aliases/TMarkCommand)
+- [`TStyleRef`](/api/type-aliases/TStyleRef)
+- [`TStyleObject`](/api/type-aliases/TStyleObject)

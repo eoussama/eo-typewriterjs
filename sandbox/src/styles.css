@@ -40,6 +40,7 @@
   --color-cat-timing:   #b47cf8;
   --color-cat-editing:  #f6ad55;
   --color-cat-cursor:   #4dd0e1;
+  --color-cat-styling:  #56c798;
   --color-cat-advanced: #f56565;
 
   --radius:   10px;
@@ -513,6 +514,7 @@ body {
 .recipe-item__cat--timing   { color: var(--color-cat-timing);   border-color: currentColor; background: color-mix(in srgb, var(--color-cat-timing)   15%, transparent); }
 .recipe-item__cat--editing  { color: var(--color-cat-editing);  border-color: currentColor; background: color-mix(in srgb, var(--color-cat-editing)  15%, transparent); }
 .recipe-item__cat--cursor   { color: var(--color-cat-cursor);   border-color: currentColor; background: color-mix(in srgb, var(--color-cat-cursor)   15%, transparent); }
+.recipe-item__cat--styling  { color: var(--color-cat-styling);  border-color: currentColor; background: color-mix(in srgb, var(--color-cat-styling)  15%, transparent); }
 .recipe-item__cat--advanced { color: var(--color-cat-advanced); border-color: currentColor; background: color-mix(in srgb, var(--color-cat-advanced) 15%, transparent); }
 
 /* Variant chips */
@@ -658,6 +660,63 @@ body {
 .btn--ghost:not(:disabled):hover {
   color: var(--color-text);
   border-color: var(--color-border-hi);
+}
+
+/* ─── Sandbox demo style classes (used by styling recipes) ─────────────── */
+
+/* tw-accent — primary blue accent text */
+.tw-accent {
+  color: var(--color-accent);
+}
+
+/* tw-muted — dimmed secondary text */
+.tw-muted {
+  color: var(--color-text-muted);
+}
+
+/* tw-highlight — yellow background highlight */
+.tw-highlight {
+  background: color-mix(in srgb, #f6e05e 25%, transparent);
+  border-radius: 2px;
+  color: #f6e05e;
+  padding: 0 1px;
+}
+
+/* tw-error — red text for error tokens */
+.tw-error {
+  color: var(--color-danger);
+  font-weight: 700;
+}
+
+/* tw-success — green text for success tokens */
+.tw-success {
+  color: var(--color-success);
+}
+
+/* tw-bold — bold text */
+.tw-bold {
+  font-weight: 700;
+}
+
+/* tw-underline — underlined text */
+.tw-underline {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* tw-strike — strikethrough text */
+.tw-strike {
+  text-decoration: line-through;
+}
+
+/* tw-code — inline code style */
+.tw-code {
+  font-family: var(--font-mono);
+  background: var(--color-surface-hi);
+  border: 1px solid var(--color-border);
+  border-radius: 3px;
+  padding: 0 3px;
+  font-size: 0.9em;
 }
 
 /* ─── Responsive ────────────────────────────────────────────────────────── */

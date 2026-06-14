@@ -1,7 +1,10 @@
 import type { TNullable } from "@eoussama/core";
 import type { IRenderer } from "../../core/renderer/renderer.interface";
+import type { TRichTextSegment } from "../../core/state/segment-rich-text.helper";
 
 import type { TSelectionState, TTypewriterState } from "../../core/state/typewriter-state.type";
+
+import { mergeStyles, segmentRichText } from "../../core/state/segment-rich-text.helper";
 
 
 
@@ -20,6 +23,8 @@ type TBoundary = {
  * A DOM renderer that writes the current typewriter state into a target HTML element.
  * All active cursors are rendered as inline elements at their correct document positions.
  * All active per-cursor selections are rendered as highlighted spans.
+ * Style marks from the rich-text document are applied as span attributes, CSS classes,
+ * and/or inline styles — renderer-agnostic style objects are fully honoured.
  *
  * The target may be specified as a CSS selector string or a direct element reference.
  */
@@ -74,9 +79,42 @@ export class DomRenderer implements IRenderer {
 
   /**
    * @description
+   * Apply a TRichTextSegment's styles to a DOM span element.
+   * Merges all active style refs and applies className, attrs, and css.
+   *
+   * @param el - The span element to style
+   * @param segment - The rich-text segment whose styles should be applied
+   */
+  private _applySegmentStyles(el: HTMLElement, segment: TRichTextSegment): void {
+    if (segment.styles.length === 0) {
+      return;
+    }
+
+    const merged = mergeStyles(segment.styles);
+
+    if (merged.className !== undefined) {
+      el.classList.add(...merged.className.split(/\s+/).filter(Boolean));
+    }
+
+    if (merged.attrs !== undefined) {
+      for (const [key, value] of Object.entries(merged.attrs)) {
+        el.setAttribute(key, value);
+      }
+    }
+
+    if (merged.css !== undefined) {
+      for (const [prop, value] of Object.entries(merged.css)) {
+        (el.style as unknown as Record<string, string>)[prop] = value;
+      }
+    }
+  }
+
+  /**
+   * @description
    * Paint the document text into the target element.
-   * Segments the text at every cursor position and selection boundary,
+   * Segments the text at every style mark boundary, cursor position, and selection boundary,
    * rendering cursor markers and selection highlights at their correct positions.
+   * Style marks are applied as className, inline CSS, and/or HTML attributes on spans.
    *
    * @param state - The typewriter state to render
    */
@@ -85,9 +123,9 @@ export class DomRenderer implements IRenderer {
       return;
     }
 
-    const text = state.document.text;
+    const richSegments = segmentRichText(state.document);
 
-    // Collect all boundaries (cursor positions + selection start/end)
+    // Collect all cursor/selection boundaries
     const boundaries: TBoundary[] = [];
 
     for (const cursor of Object.values(state.cursors)) {
@@ -99,69 +137,95 @@ export class DomRenderer implements IRenderer {
       boundaries.push({ index: sel.to, kind: "selEnd", cursorId });
     }
 
-    // Sort boundaries by index; within same index: selStart < cursor < selEnd
+    // Sort boundaries: within same index: selStart < cursor < selEnd
     const kindOrder: Record<TBoundary["kind"], number> = { selStart: 0, cursor: 1, selEnd: 2 };
 
     boundaries.sort((a, b) => a.index - b.index || kindOrder[a.kind] - kindOrder[b.kind]);
 
-    // Build fragment
+    // Build fragment by iterating rich segments and splitting them at boundaries
     const fragment = document.createDocumentFragment();
-    let pos = 0;
     const openSelections = new Set<string>();
 
-    for (const boundary of boundaries) {
-      // Flush text from pos to boundary.index
-      const segment = text.slice(pos, boundary.index);
+    for (const segment of richSegments) {
+      // Find all boundaries within this segment's range
+      const segBoundaries = boundaries.filter(b => b.index >= segment.from && b.index <= segment.to);
 
-      if (segment.length > 0) {
-        if (openSelections.size > 0) {
-          const selEl = document.createElement("span");
+      let pos = segment.from;
 
-          selEl.className = "typewriter-selection";
-          selEl.textContent = segment;
-          fragment.appendChild(selEl);
+      for (const boundary of segBoundaries) {
+        // Flush text from pos to boundary.index within this segment
+        if (boundary.index > pos) {
+          const sliceText = segment.text.slice(pos - segment.from, boundary.index - segment.from);
+
+          if (sliceText.length > 0) {
+            this._appendTextNode(fragment, sliceText, segment, openSelections);
+          }
         }
-        else {
-          fragment.appendChild(document.createTextNode(segment));
+
+        pos = boundary.index;
+
+        if (boundary.kind === "selStart") {
+          openSelections.add(boundary.cursorId);
+        }
+        else if (boundary.kind === "selEnd") {
+          openSelections.delete(boundary.cursorId);
+        }
+        else if (boundary.kind === "cursor") {
+          const cursorEl = document.createElement("span");
+
+          cursorEl.className = "typewriter-cursor";
+          cursorEl.setAttribute("aria-hidden", "true");
+          cursorEl.dataset.cursorId = boundary.cursorId;
+          fragment.appendChild(cursorEl);
         }
       }
 
-      pos = boundary.index;
+      // Flush remaining text in this segment after all boundaries
+      if (pos < segment.to) {
+        const remainingText = segment.text.slice(pos - segment.from);
 
-      if (boundary.kind === "selStart") {
-        openSelections.add(boundary.cursorId);
-      }
-      else if (boundary.kind === "selEnd") {
-        openSelections.delete(boundary.cursorId);
-      }
-      else if (boundary.kind === "cursor") {
-        const cursorEl = document.createElement("span");
-
-        cursorEl.className = "typewriter-cursor";
-        cursorEl.setAttribute("aria-hidden", "true");
-        cursorEl.dataset.cursorId = boundary.cursorId;
-        fragment.appendChild(cursorEl);
-      }
-    }
-
-    // Flush remaining text
-    const tail = text.slice(pos);
-
-    if (tail.length > 0) {
-      if (openSelections.size > 0) {
-        const selEl = document.createElement("span");
-
-        selEl.className = "typewriter-selection";
-        selEl.textContent = tail;
-        fragment.appendChild(selEl);
-      }
-      else {
-        fragment.appendChild(document.createTextNode(tail));
+        if (remainingText.length > 0) {
+          this._appendTextNode(fragment, remainingText, segment, openSelections);
+        }
       }
     }
 
     this._target.innerHTML = "";
     this._target.appendChild(fragment);
+  }
+
+  /**
+   * @description
+   * Append a text node (or styled span) to the fragment, wrapping in selection/style spans as needed
+   *
+   * @param fragment - The document fragment to append to
+   * @param text - The text content to append
+   * @param segment - The rich-text segment providing style context
+   * @param openSelections - The set of currently open selection cursor ids
+   */
+  private _appendTextNode(
+    fragment: DocumentFragment,
+    text: string,
+    segment: TRichTextSegment,
+    openSelections: Set<string>,
+  ): void {
+    const hasStyle = segment.styles.length > 0;
+    const hasSelection = openSelections.size > 0;
+
+    if (hasStyle || hasSelection) {
+      const el = document.createElement("span");
+
+      if (hasSelection) {
+        el.classList.add("typewriter-selection");
+      }
+
+      this._applySegmentStyles(el, segment);
+      el.textContent = text;
+      fragment.appendChild(el);
+    }
+    else {
+      fragment.appendChild(document.createTextNode(text));
+    }
   }
 }
 

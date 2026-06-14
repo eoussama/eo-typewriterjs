@@ -8,6 +8,7 @@ export const ECommandKind = {
   DELETE: "delete",
   MOVE_CURSOR: "moveCursor",
   SELECT: "select",
+  MARK: "mark",
 } as const;
 
 /**
