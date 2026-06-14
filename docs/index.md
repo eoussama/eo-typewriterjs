@@ -36,6 +36,6 @@ features:
     title: TypeScript-first
     details: Fully typed public API with explicit type exports. No any, no surprises.
   - icon: 📦
-    title: Zero runtime dependencies
-    details: Ships with no required production dependencies beyond @eoussama/core utilities.
+    title: Minimal dependencies
+    details: Ships with a single lightweight runtime dependency — @eoussama/core — for shared utilities.
 ---

@@ -69,21 +69,33 @@ await tw.play();
 
 ## Collecting all rendered frames
 
-Use `stringRenderer` to capture every intermediate state:
+Use a custom renderer to capture every intermediate state:
 
 ```ts
-import { createTypewriter, stringRenderer } from "eo-typewriterjs";
+import type { IRenderer, TTypewriterState } from "eo-typewriterjs";
+import { createTypewriter } from "eo-typewriterjs";
 
-const frames: string[] = [];
+class FrameCapture implements IRenderer {
+  readonly frames: string[] = [];
 
-const tw = createTypewriter({
-  renderer: stringRenderer(text => frames.push(text)),
-});
+  mount(state: TTypewriterState): void {
+    this.frames.push(state.document.text);
+  }
+
+  render(state: TTypewriterState): void {
+    this.frames.push(state.document.text);
+  }
+
+  unmount(): void {}
+}
+
+const capture = new FrameCapture();
+const tw = createTypewriter({ renderer: capture });
 
 tw.timeline.type("Hi!", { by: "char", interval: 0 });
 await tw.play();
 
-console.log(frames); // ["H", "Hi", "Hi!"]
+console.log(capture.frames); // ["", "H", "Hi", "Hi!"]
 ```
 
 This is useful for testing animations or generating CSS keyframes.
@@ -107,16 +119,14 @@ await tw.play();
 import { createTypewriter, stringRenderer } from "eo-typewriterjs";
 
 async function renderFinal(text: string): Promise<string> {
-  let result = "";
+  const renderer = stringRenderer();
 
-  const tw = createTypewriter({
-    renderer: stringRenderer(t => { result = t; }),
-  });
+  const tw = createTypewriter({ renderer });
 
   tw.timeline.type(text, { by: "custom", interval: 0 }); // instant
   await tw.play();
 
-  return result;
+  return renderer.toString();
 }
 ```
 
@@ -143,9 +153,8 @@ class CanvasRenderer implements IRenderer {
   }
 
   render(state: TTypewriterState): void {
-    const text = state.document.characters.map(c => c.value).join("");
     this.ctx.clearRect(0, 0, this.ctx.canvas.width, this.ctx.canvas.height);
-    this.ctx.fillText(text, 20, 40);
+    this.ctx.fillText(state.document.text, 20, 40);
   }
 
   unmount(): void { /* no-op */ }

@@ -26,6 +26,7 @@ You add **commands** to the timeline using the fluent builder methods:
 | `.wait(duration)` | Pause before the next command |
 | `.delete(count, options?)` | Remove text backward from the cursor |
 | `.moveCursor(index, options?)` | Teleport the cursor to an absolute index |
+| `.select(count, options?)` | Create a text selection relative to the cursor |
 | `.mark(style, range, options?)` | Apply a style mark to a document range |
 
 At play time, `compile()` converts the ordered command list into a flat array of **timeline events** — one event per step — each stamped with an absolute timestamp.

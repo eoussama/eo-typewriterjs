@@ -83,4 +83,4 @@ The `commands` property exposes the raw ordered command list for debugging or in
 ## Type reference
 
 - [`TimelineBuilder`](/api/classes/TimelineBuilder)
-- [`TCommand`](/api/type-aliases/TCommandKind)
+- [`TCommand`](/api/type-aliases/TCommand)

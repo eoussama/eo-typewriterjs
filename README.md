@@ -59,13 +59,14 @@ pnpm docs:build
 
 ## Documentation
 
-- Guide: `docs/guide/getting-started.md`
-- Core concepts: `docs/guide/core-concepts.md`
-- Timeline API: `docs/guide/timeline.md`
-- Renderers: `docs/guide/renderers.md`
-- Recipes: `docs/guide/recipes.md`
-- Sandbox notes: `docs/sandbox.md`
-- API docs: `docs/api/`
+Full documentation is available at the [docs site](https://eoussama.github.io/eo-typewriterjs/).
+
+- [Getting Started](https://eoussama.github.io/eo-typewriterjs/guide/getting-started)
+- [Core Concepts](https://eoussama.github.io/eo-typewriterjs/guide/core-concepts)
+- [Timeline & Commands](https://eoussama.github.io/eo-typewriterjs/guide/timeline)
+- [Renderers](https://eoussama.github.io/eo-typewriterjs/guide/renderers)
+- [Recipes](https://eoussama.github.io/eo-typewriterjs/guide/recipes)
+- [API Reference](https://eoussama.github.io/eo-typewriterjs/api/)
 
 ## License
 
