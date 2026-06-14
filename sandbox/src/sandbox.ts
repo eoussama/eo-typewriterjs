@@ -225,6 +225,10 @@ export async function runSegmentsAnimation(segments: readonly TSnippetSegment[])
             interval: readInterval(),
           });
           break;
+
+        case "moveCursor":
+          tw.timeline.moveCursor(segment.index);
+          break;
       }
     }
   });
