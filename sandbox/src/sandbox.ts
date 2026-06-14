@@ -229,6 +229,10 @@ export async function runSegmentsAnimation(segments: readonly TSnippetSegment[])
         case "moveCursor":
           tw.timeline.moveCursor(segment.index);
           break;
+
+        case "select":
+          tw.timeline.select(segment.count);
+          break;
       }
     }
   });

@@ -56,5 +56,6 @@ export function deleteTextAtCursor(state: TTypewriterState, event: TDeleteEvent)
         index: nextIndex,
       },
     },
+    selection: null,
   };
 }

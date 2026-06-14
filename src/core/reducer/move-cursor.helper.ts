@@ -32,5 +32,6 @@ export function moveCursor(state: TTypewriterState, event: TMoveCursorEvent): TT
         index: clampedIndex,
       },
     },
+    selection: null,
   };
 }

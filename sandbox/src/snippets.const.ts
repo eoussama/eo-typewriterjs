@@ -1,12 +1,13 @@
 /**
  * @description
- * A single playback segment — a type step, a wait pause, a delete step, or a cursor move
+ * A single playback segment — a type step, a wait pause, a delete step, a cursor move, or a selection
  */
 export type TSnippetSegment
   = | { readonly kind: "type"; readonly text: string }
     | { readonly kind: "wait"; readonly duration: number }
     | { readonly kind: "delete"; readonly count: number }
-    | { readonly kind: "moveCursor"; readonly index: number };
+    | { readonly kind: "moveCursor"; readonly index: number }
+    | { readonly kind: "select"; readonly count: number };
 
 /**
  * @description
@@ -71,6 +72,16 @@ export const SNIPPETS: readonly TSnippet[] = [
       { kind: "wait", duration: 600 },
       { kind: "moveCursor", index: 0 },
       { kind: "type", text: "Hello " },
+    ],
+  },
+  {
+    label: "Select",
+    text: "Hello world → select world",
+    segments: [
+      { kind: "type", text: "Hello world" },
+      { kind: "wait", duration: 600 },
+      { kind: "moveCursor", index: 6 },
+      { kind: "select", count: 5 },
     ],
   },
 ] as const;

@@ -1,8 +1,22 @@
-import type { TCursorState } from "./cursor-state.type";
+import type { TNullable } from "@eoussama/core";
 
+import type { TCursorState } from "./cursor-state.type";
 import type { TRichTextDocument } from "./rich-text-document.type";
 
 
+
+/**
+ * @description
+ * An active text selection range within the document.
+ * `from` is the start index (inclusive) and `to` is the end index (exclusive),
+ * always in document string index space.
+ * `cursorId` identifies which cursor anchored the selection.
+ */
+export type TSelectionState = {
+  readonly cursorId: string;
+  readonly from: number;
+  readonly to: number;
+};
 
 /**
  * @description
@@ -11,6 +25,7 @@ import type { TRichTextDocument } from "./rich-text-document.type";
 export type TTypewriterState = {
   readonly document: TRichTextDocument;
   readonly cursors: Readonly<Record<string, TCursorState>>;
+  readonly selection: TNullable<TSelectionState>;
 };
 
 /**
@@ -32,5 +47,6 @@ export function createInitialState(): TTypewriterState {
         visible: true,
       },
     },
+    selection: null,
   };
 }

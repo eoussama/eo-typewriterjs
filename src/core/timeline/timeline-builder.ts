@@ -8,6 +8,17 @@ import { ECommandKind } from "../commands/command-kind.enum";
 
 /**
  * @description
+ * Options accepted by the `select` builder method
+ */
+export type TSelectOptions = {
+  readonly by?: TAdvanceModeInput;
+  readonly cursor?: TCursorSelector;
+};
+
+
+
+/**
+ * @description
  * Options accepted by the `delete` builder method
  */
 export type TDeleteOptions = {
@@ -69,6 +80,28 @@ export class TimelineBuilder {
       id: `cmd_${++commandCounter}`,
       kind: ECommandKind.WAIT,
       duration,
+    });
+
+    return this;
+  }
+
+  /**
+   * @description
+   * Schedule a select command that creates a text selection relative to the cursor's
+   * current position. A positive `count` selects forward; a negative `count` selects backward.
+   * The selection is cleared by any subsequent type, delete, or moveCursor command.
+   *
+   * @param count - Number of units to select; positive = forward, negative = backward
+   * @param options - Optional configuration (advance mode, cursor id)
+   * @returns This builder instance for future chaining
+   */
+  select(count: number, options?: TSelectOptions): this {
+    this._commands.push({
+      id: `cmd_${++commandCounter}`,
+      kind: ECommandKind.SELECT,
+      cursor: options?.cursor ?? "main",
+      count,
+      by: options?.by,
     });
 
     return this;

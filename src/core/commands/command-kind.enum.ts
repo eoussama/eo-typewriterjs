@@ -7,6 +7,7 @@ export const ECommandKind = {
   WAIT: "wait",
   DELETE: "delete",
   MOVE_CURSOR: "moveCursor",
+  SELECT: "select",
 } as const;
 
 /**

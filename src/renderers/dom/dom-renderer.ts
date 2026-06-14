@@ -76,24 +76,48 @@ export class DomRenderer implements IRenderer {
 
     const text = state.document.text;
     const cursorIndex = state.cursors.main?.index ?? text.length;
-
-    const before = text.slice(0, cursorIndex);
-    const after = text.slice(cursorIndex);
+    const sel = state.selection;
 
     this._target.innerHTML = "";
 
-    if (before.length > 0) {
-      this._target.appendChild(document.createTextNode(before));
+    if (sel !== null && sel.from < sel.to) {
+      // Render: [pre-selection][selection][post-selection], with cursor inline
+      const preSelText = text.slice(0, sel.from);
+      const selText = text.slice(sel.from, sel.to);
+      const postSelText = text.slice(sel.to);
+
+      if (preSelText.length > 0) {
+        this._target.appendChild(document.createTextNode(preSelText));
+      }
+
+      const selEl = document.createElement("span");
+
+      selEl.className = "typewriter-selection";
+      selEl.textContent = selText;
+      this._target.appendChild(selEl);
+
+      if (postSelText.length > 0) {
+        this._target.appendChild(document.createTextNode(postSelText));
+      }
     }
+    else {
+      // No selection — render text split at cursor
+      const before = text.slice(0, cursorIndex);
+      const after = text.slice(cursorIndex);
 
-    const cursorEl = document.createElement("span");
+      if (before.length > 0) {
+        this._target.appendChild(document.createTextNode(before));
+      }
 
-    cursorEl.className = "typewriter-cursor";
-    cursorEl.setAttribute("aria-hidden", "true");
-    this._target.appendChild(cursorEl);
+      const cursorEl = document.createElement("span");
 
-    if (after.length > 0) {
-      this._target.appendChild(document.createTextNode(after));
+      cursorEl.className = "typewriter-cursor";
+      cursorEl.setAttribute("aria-hidden", "true");
+      this._target.appendChild(cursorEl);
+
+      if (after.length > 0) {
+        this._target.appendChild(document.createTextNode(after));
+      }
     }
   }
 }

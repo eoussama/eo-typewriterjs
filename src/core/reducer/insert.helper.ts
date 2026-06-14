@@ -55,5 +55,6 @@ export function insertTextAtCursor(state: TTypewriterState, event: TInsertEvent)
         index: nextIndex,
       },
     },
+    selection: null,
   };
 }

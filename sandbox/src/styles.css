@@ -158,6 +158,12 @@ body {
   animation: blink 1.1s step-end infinite;
 }
 
+.typewriter-selection {
+  background: color-mix(in srgb, var(--color-accent) 30%, transparent);
+  border-radius: 2px;
+  color: inherit;
+}
+
 @keyframes blink {
   0%,
   100% {

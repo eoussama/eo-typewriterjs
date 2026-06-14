@@ -403,6 +403,62 @@ describe("compile (moveCursor)", () => {
 });
 
 // ---------------------------------------------------------------------------
+// Compiler — select command
+// ---------------------------------------------------------------------------
+
+describe("compile (select)", () => {
+  it("compiles a select command into a single event", () => {
+    const events = compile([
+      {
+        id: "cmd_sel1",
+        kind: "select",
+        cursor: "main",
+        count: 3,
+        by: "char",
+      },
+    ]);
+
+    expect(events).toHaveLength(1);
+    expect(events[0]?.kind).toBe("select");
+  });
+
+  it("does not advance the clock", () => {
+    const events = compile([
+      {
+        id: "cmd_sel2",
+        kind: "type",
+        cursor: "main",
+        text: "Hi",
+        by: "char",
+        interval: 100,
+      },
+      {
+        id: "cmd_sel3",
+        kind: "select",
+        cursor: "main",
+        count: 2,
+        by: "char",
+      },
+      {
+        id: "cmd_sel4",
+        kind: "type",
+        cursor: "main",
+        text: "AB",
+        by: "char",
+        interval: 50,
+      },
+    ]);
+
+    const selectEvents = events.filter(e => e.kind === "select");
+    const abEvents = events.filter(e => (e as TInsertEvent).text === "A" || (e as TInsertEvent).text === "B");
+
+    expect(selectEvents).toHaveLength(1);
+    expect(selectEvents[0]?.time).toBe(200);
+    expect(abEvents[0]?.time).toBe(200);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Integration — createTypewriter + stringRenderer
 // ---------------------------------------------------------------------------
 
@@ -551,6 +607,93 @@ describe("createTypewriter", () => {
     await tw.play();
 
     expect(renderer.toString()).toBe("Hi!");
+  });
+
+  it("select forward sets selection from/to on state", async () => {
+    const { createInitialState } = await import("../core/state/index");
+    const { compile } = await import("../core/compiler/compile.helper");
+    const { reduce } = await import("../core/reducer/reduce.helper");
+
+    const commands = [
+      { id: "c1", kind: "type" as const, cursor: "main", text: "Hello world", by: "char" as const, interval: 1 },
+      { id: "c2", kind: "moveCursor" as const, cursor: "main", index: 6 },
+      { id: "c3", kind: "select" as const, cursor: "main", count: 5, by: "char" as const },
+    ];
+
+    const events = compile(commands);
+    let state = createInitialState();
+
+    for (const event of events) {
+      state = reduce(state, event);
+    }
+
+    expect(state.selection).not.toBeNull();
+    expect(state.selection?.from).toBe(6);
+    expect(state.selection?.to).toBe(11);
+  });
+
+  it("select backward sets selection from/to on state", async () => {
+    const { createInitialState } = await import("../core/state/index");
+    const { compile } = await import("../core/compiler/compile.helper");
+    const { reduce } = await import("../core/reducer/reduce.helper");
+
+    const commands = [
+      { id: "c1", kind: "type" as const, cursor: "main", text: "Hello world", by: "char" as const, interval: 1 },
+      { id: "c2", kind: "select" as const, cursor: "main", count: -5, by: "char" as const },
+    ];
+
+    const events = compile(commands);
+    let state = createInitialState();
+
+    for (const event of events) {
+      state = reduce(state, event);
+    }
+
+    expect(state.selection).not.toBeNull();
+    expect(state.selection?.from).toBe(6);
+    expect(state.selection?.to).toBe(11);
+  });
+
+  it("selection is cleared after a type command", async () => {
+    const { createInitialState } = await import("../core/state/index");
+    const { compile } = await import("../core/compiler/compile.helper");
+    const { reduce } = await import("../core/reducer/reduce.helper");
+
+    const commands = [
+      { id: "c1", kind: "type" as const, cursor: "main", text: "Hello", by: "char" as const, interval: 1 },
+      { id: "c2", kind: "select" as const, cursor: "main", count: 3, by: "char" as const },
+      { id: "c3", kind: "type" as const, cursor: "main", text: "X", by: "char" as const, interval: 1 },
+    ];
+
+    const events = compile(commands);
+    let state = createInitialState();
+
+    for (const event of events) {
+      state = reduce(state, event);
+    }
+
+    expect(state.selection).toBeNull();
+  });
+
+  it("selection is cleared after a moveCursor command", async () => {
+    const { createInitialState } = await import("../core/state/index");
+    const { compile } = await import("../core/compiler/compile.helper");
+    const { reduce } = await import("../core/reducer/reduce.helper");
+
+    const commands = [
+      { id: "c1", kind: "type" as const, cursor: "main", text: "Hello", by: "char" as const, interval: 1 },
+      { id: "c2", kind: "select" as const, cursor: "main", count: 3, by: "char" as const },
+      { id: "c3", kind: "moveCursor" as const, cursor: "main", index: 0 },
+    ];
+
+    const events = compile(commands);
+    let state = createInitialState();
+
+    for (const event of events) {
+      state = reduce(state, event);
+    }
+
+    expect(state.selection).toBeNull();
   });
 
   it("starts with an empty string before play", () => {
