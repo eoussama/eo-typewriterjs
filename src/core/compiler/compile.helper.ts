@@ -1,10 +1,12 @@
 import type { TDeleteCommand } from "../commands/delete-command.type";
+import type { TMoveCursorCommand } from "../commands/move-cursor-command.type";
 import type { TTypeCommand } from "../commands/type-command.type";
 import type { TWaitCommand } from "../commands/wait-command.type";
 import type { TTimelineEvent } from "../events/timeline-event.type";
 
 import { ECommandKind } from "../commands/command-kind.enum";
 import { compileDelete } from "./compile-delete.helper";
+import { compileMoveCursor } from "./compile-move-cursor.helper";
 import { compileType } from "./compile-type.helper";
 
 
@@ -13,7 +15,7 @@ import { compileType } from "./compile-type.helper";
  * @description
  * A union of all supported command types.
  */
-export type TCommand = TTypeCommand | TWaitCommand | TDeleteCommand;
+export type TCommand = TTypeCommand | TWaitCommand | TDeleteCommand | TMoveCursorCommand;
 
 /**
  * @description
@@ -48,6 +50,14 @@ export function compile(commands: TCommand[]): TTimelineEvent[] {
 
         events.push(...result.events);
         cursor = result.endTime;
+        break;
+      }
+
+      case ECommandKind.MOVE_CURSOR: {
+        const result = compileMoveCursor(command as TMoveCursorCommand, cursor);
+
+        events.push(...result.events);
+        // endTime unchanged — moveCursor is instant
         break;
       }
 

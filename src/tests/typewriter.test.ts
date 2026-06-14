@@ -347,6 +347,62 @@ describe("compile (delete)", () => {
 });
 
 // ---------------------------------------------------------------------------
+// Compiler — moveCursor command
+// ---------------------------------------------------------------------------
+
+describe("compile (moveCursor)", () => {
+  it("compiles a moveCursor command into a single event", () => {
+    const events = compile([
+      {
+        id: "cmd_mc1",
+        kind: "moveCursor",
+        cursor: "main",
+        index: 3,
+      },
+    ]);
+
+    expect(events).toHaveLength(1);
+    expect(events[0]?.kind).toBe("moveCursor");
+  });
+
+  it("places the moveCursor event at the current time without advancing the clock", () => {
+    const events = compile([
+      {
+        id: "cmd_mc2",
+        kind: "type",
+        cursor: "main",
+        text: "Hi",
+        by: "char",
+        interval: 100,
+      },
+      {
+        id: "cmd_mc3",
+        kind: "moveCursor",
+        cursor: "main",
+        index: 0,
+      },
+      {
+        id: "cmd_mc4",
+        kind: "type",
+        cursor: "main",
+        text: "AB",
+        by: "char",
+        interval: 50,
+      },
+    ]);
+
+    // "Hi" ends at t=200; moveCursor at t=200 (no clock advance); "AB" starts at t=200
+    const moveEvents = events.filter(e => e.kind === "moveCursor");
+    const abEvents = events.filter(e => (e as TInsertEvent).text === "A" || (e as TInsertEvent).text === "B");
+
+    expect(moveEvents).toHaveLength(1);
+    expect(moveEvents[0]?.time).toBe(200);
+    expect(abEvents[0]?.time).toBe(200);
+    expect(abEvents[1]?.time).toBe(250);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Integration — createTypewriter + stringRenderer
 // ---------------------------------------------------------------------------
 
@@ -443,6 +499,58 @@ describe("createTypewriter", () => {
     await tw.play();
 
     expect(renderer.toString()).toBe("");
+  });
+
+  it("moves cursor to position 0 and types there, prepending text", async () => {
+    const renderer = stringRenderer();
+    const tw = createTypewriter({ renderer });
+
+    tw.timeline
+      .type("world", { by: "char", interval: 1 })
+      .moveCursor(0)
+      .type("Hello ", { by: "char", interval: 1 });
+    await tw.play();
+
+    expect(renderer.toString()).toBe("Hello world");
+  });
+
+  it("moves cursor to middle and types there, inserting text", async () => {
+    const renderer = stringRenderer();
+    const tw = createTypewriter({ renderer });
+
+    tw.timeline
+      .type("Helloworld", { by: "char", interval: 1 })
+      .moveCursor(5)
+      .type(" ", { by: "char", interval: 1 });
+    await tw.play();
+
+    expect(renderer.toString()).toBe("Hello world");
+  });
+
+  it("clamps moveCursor index below 0 to 0", async () => {
+    const renderer = stringRenderer();
+    const tw = createTypewriter({ renderer });
+
+    tw.timeline
+      .type("Hi", { by: "char", interval: 1 })
+      .moveCursor(-99)
+      .type("!", { by: "char", interval: 1 });
+    await tw.play();
+
+    expect(renderer.toString()).toBe("!Hi");
+  });
+
+  it("clamps moveCursor index beyond document length to end", async () => {
+    const renderer = stringRenderer();
+    const tw = createTypewriter({ renderer });
+
+    tw.timeline
+      .type("Hi", { by: "char", interval: 1 })
+      .moveCursor(999)
+      .type("!", { by: "char", interval: 1 });
+    await tw.play();
+
+    expect(renderer.toString()).toBe("Hi!");
   });
 
   it("starts with an empty string before play", () => {

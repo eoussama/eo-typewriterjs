@@ -16,6 +16,14 @@ export type TDeleteOptions = {
   readonly cursor?: TCursorSelector;
 };
 
+/**
+ * @description
+ * Options accepted by the `moveCursor` builder method
+ */
+export type TMoveCursorOptions = {
+  readonly cursor?: TCursorSelector;
+};
+
 
 
 let commandCounter = 0;
@@ -61,6 +69,26 @@ export class TimelineBuilder {
       id: `cmd_${++commandCounter}`,
       kind: ECommandKind.WAIT,
       duration,
+    });
+
+    return this;
+  }
+
+  /**
+   * @description
+   * Schedule a move-cursor command that teleports the cursor to an absolute document index.
+   * This command is instant and does not advance the timeline clock.
+   *
+   * @param index - The absolute document index to move the cursor to
+   * @param options - Optional configuration (cursor id)
+   * @returns This builder instance for future chaining
+   */
+  moveCursor(index: number, options?: TMoveCursorOptions): this {
+    this._commands.push({
+      id: `cmd_${++commandCounter}`,
+      kind: ECommandKind.MOVE_CURSOR,
+      cursor: options?.cursor ?? "main",
+      index,
     });
 
     return this;

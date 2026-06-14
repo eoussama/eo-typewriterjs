@@ -9,17 +9,18 @@ import { TimelineBuilder } from "./core/timeline/index";
 
 export { ECommandKind } from "./core/commands/index";
 export type { TBaseCommand } from "./core/commands/index";
-export type { TAdvanceMode, TAdvanceModeInput, TAdvanceUnit, TCommandKind, TCursorSelector, TDeleteCommand, TTypeCommand, TWaitCommand } from "./core/commands/index";
+export type { TAdvanceMode, TAdvanceModeInput, TAdvanceUnit, TCommandKind, TCursorSelector, TDeleteCommand, TMoveCursorCommand, TTypeCommand, TWaitCommand } from "./core/commands/index";
 
 export { EEventKind } from "./core/events/index";
 export type { TBaseEvent } from "./core/events/index";
-export type { TDeleteEvent, TEventKind, TInsertEvent, TTimelineEvent } from "./core/events/index";
+export type { TDeleteEvent, TEventKind, TInsertEvent, TMoveCursorEvent, TTimelineEvent } from "./core/events/index";
 export type { IRenderer } from "./core/renderer/index";
 export type { TCursorState } from "./core/state/index";
 export type { TRichTextDocument, TStyleObject, TStyleRef, TTextMark } from "./core/state/index";
 export type { TTypewriterState } from "./core/state/index";
 export { TimelineBuilder } from "./core/timeline/index";
 export type { TDeleteOptions, TTypeOptions } from "./core/timeline/index";
+export type { TMoveCursorOptions } from "./core/timeline/timeline-builder";
 
 export { DomRenderer, domRenderer } from "./renderers/index";
 export { StringRenderer, stringRenderer } from "./renderers/index";

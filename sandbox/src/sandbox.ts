@@ -136,6 +136,43 @@ export function setActiveSegments(segments: readonly TSnippetSegment[] | null): 
 
 /**
  * @description
+ * Shared animation runner. Increments the generation, creates a guarded renderer,
+ * invokes the provided builder callback to populate the timeline, then plays it.
+ *
+ * @param build - A callback that receives the timeline builder and populates it
+ * @returns A promise that resolves when the animation completes or is superseded
+ */
+async function runWithBuilder(build: (tw: ReturnType<typeof createTypewriter>) => void): Promise<void> {
+  if (_running) {
+    return;
+  }
+
+  const outputEl = document.getElementById("typewriter-output");
+
+  if (outputEl === null) {
+    return;
+  }
+
+  _generation += 1;
+  const myGen = _generation;
+
+  clearOutput();
+  setRunning(true);
+
+  const renderer = makeGuardedRenderer(outputEl, myGen);
+  const tw = createTypewriter({ renderer });
+
+  build(tw);
+
+  await tw.play();
+
+  if (_generation === myGen) {
+    setRunning(false);
+  }
+}
+
+/**
+ * @description
  * Run the typewriter animation for the given text using the current control settings.
  * If active segments are set, the segment sequence is used instead of plain text.
  *
@@ -147,90 +184,48 @@ export async function runAnimation(text: string): Promise<void> {
     return runSegmentsAnimation(_activeSegments);
   }
 
-  if (_running) {
+  if (text.trim() === "") {
     return;
   }
 
-  const outputEl = document.getElementById("typewriter-output");
-
-  if (outputEl === null || text.trim() === "") {
-    return;
-  }
-
-  // Advance generation — invalidates any lingering previous play() timers
-  _generation += 1;
-  const myGen = _generation;
-
-  clearOutput();
-  setRunning(true);
-
-  const renderer = makeGuardedRenderer(outputEl, myGen);
-  const tw = createTypewriter({ renderer });
-
-  tw.timeline.type(text, {
-    by: readAdvanceMode(),
-    interval: readInterval(),
+  return runWithBuilder((tw) => {
+    tw.timeline.type(text, {
+      by: readAdvanceMode(),
+      interval: readInterval(),
+    });
   });
-
-  await tw.play();
-
-  // Only update UI if this generation is still current
-  if (_generation === myGen) {
-    setRunning(false);
-  }
 }
 
 /**
  * @description
- * Run the typewriter animation for a sequence of typed and wait segments.
- * The advance mode and interval controls are applied to each type segment.
+ * Run the typewriter animation for a sequence of typed, wait, and delete segments.
+ * The advance mode and interval controls are applied to each type and delete segment.
  *
- * @param segments - The ordered list of type and wait segments to animate
+ * @param segments - The ordered list of segments to animate
  * @returns A promise that resolves when the animation completes or is superseded
  */
 export async function runSegmentsAnimation(segments: readonly TSnippetSegment[]): Promise<void> {
-  if (_running) {
-    return;
-  }
+  return runWithBuilder((tw) => {
+    for (const segment of segments) {
+      switch (segment.kind) {
+        case "type":
+          tw.timeline.type(segment.text, {
+            by: readAdvanceMode(),
+            interval: readInterval(),
+          });
+          break;
 
-  const outputEl = document.getElementById("typewriter-output");
+        case "wait":
+          tw.timeline.wait(segment.duration);
+          break;
 
-  if (outputEl === null) {
-    return;
-  }
-
-  // Advance generation — invalidates any lingering previous play() timers
-  _generation += 1;
-  const myGen = _generation;
-
-  clearOutput();
-  setRunning(true);
-
-  const renderer = makeGuardedRenderer(outputEl, myGen);
-  const tw = createTypewriter({ renderer });
-
-  for (const segment of segments) {
-    if (segment.kind === "type") {
-      tw.timeline.type(segment.text, {
-        by: readAdvanceMode(),
-        interval: readInterval(),
-      });
+        case "delete":
+          tw.timeline.delete(segment.count, {
+            by: readAdvanceMode(),
+            interval: readInterval(),
+          });
+          break;
+      }
     }
-    else if (segment.kind === "wait") {
-      tw.timeline.wait(segment.duration);
-    }
-    else {
-      tw.timeline.delete(segment.count, {
-        by: readAdvanceMode(),
-        interval: readInterval(),
-      });
-    }
-  }
-
-  await tw.play();
-
-  // Only update UI if this generation is still current
-  if (_generation === myGen) {
-    setRunning(false);
-  }
+  });
 }
