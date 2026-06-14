@@ -73,7 +73,6 @@ export class DomRenderer implements IRenderer {
    * @description
    * Release the reference to the target element
    */
-  /* v8 ignore next 3 */
   unmount(): void {
     this._target = null;
   }

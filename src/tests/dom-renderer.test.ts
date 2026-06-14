@@ -1,13 +1,16 @@
 // @vitest-environment happy-dom
 import { describe, expect, it } from "vitest";
 import { createTypewriter } from "../index";
+
 import { DomRenderer, domRenderer } from "../renderers/dom/dom-renderer";
+
+
 
 // ---------------------------------------------------------------------------
 // DomRenderer — basic rendering
 // ---------------------------------------------------------------------------
 
-describe("DomRenderer", () => {
+describe("domRenderer", () => {
   it("mounts and renders plain text into a target element", async () => {
     const el = document.createElement("div");
     const renderer = new DomRenderer(el);
@@ -131,6 +134,19 @@ describe("DomRenderer", () => {
     // Should not throw even if selector doesn't match
     tw.timeline.type("Hi", { by: "char", interval: 1 });
     await expect(tw.play()).resolves.toBeUndefined();
+  });
+
+  it("unmount() releases the target reference (no render after unmount)", () => {
+    const el = document.createElement("div");
+    const renderer = new DomRenderer(el);
+
+    // Mount with initial state then unmount
+    renderer.mount({ document: { text: "", marks: [] }, cursors: { main: { id: "main", index: 0, visible: true } }, selections: {} });
+    renderer.unmount();
+
+    // After unmount, render should not throw (target is null, _paint returns early)
+    expect(() => renderer.render({ document: { text: "X", marks: [] }, cursors: { main: { id: "main", index: 1, visible: true } }, selections: {} })).not.toThrow();
+    expect(el.textContent).toBe(""); // el was set before unmount but render is no-op after
   });
 
   it("renders multiple cursors", async () => {

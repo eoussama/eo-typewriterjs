@@ -1,4 +1,3 @@
-import type { TNullable } from "@eoussama/core";
 import type { TInsertEvent } from "../events/insert-event.type";
 import type { TCursorState } from "../state/cursor-state.type";
 import type { TTextMark } from "../state/rich-text-document.type";

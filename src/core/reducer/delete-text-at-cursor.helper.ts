@@ -1,4 +1,3 @@
-import type { TNullable } from "@eoussama/core";
 import type { TDeleteEvent } from "../events/delete-event.type";
 import type { TCursorState } from "../state/cursor-state.type";
 import type { TTypewriterState } from "../state/typewriter-state.type";

@@ -4,13 +4,16 @@ import type { TMarkEvent } from "../core/events/mark-event.type";
 import { describe, expect, it } from "vitest";
 import { compile } from "../core/compiler/compile.helper";
 import { play } from "../core/player/player.helper";
-import { reduce } from "../core/reducer/reduce.helper";
 import { applyMark } from "../core/reducer/apply-mark.helper";
-import { mergeStyles, resolveStyleRef, segmentRichText } from "../core/state/segment-rich-text.helper";
+import { reduce } from "../core/reducer/reduce.helper";
 import { createInitialState, getSelection, withSelection, withSelectionCleared } from "../core/state/index";
+import { mergeStyles, resolveStyleRef, segmentRichText } from "../core/state/segment-rich-text.helper";
 import { chunkSteps } from "../core/stepping/chunk-steps.helper";
 import { segmentText } from "../core/stepping/segment-text.helper";
+
 import { createTypewriter, EPlaybackStatus, stringRenderer, StringRenderer } from "../index";
+
+
 
 // ---------------------------------------------------------------------------
 // Stepping — segmentText
@@ -338,7 +341,7 @@ describe("compile (mark)", () => {
     const markEvents = events.filter(e => e.kind === "mark") as TMarkEvent[];
 
     expect(markEvents).toHaveLength(2);
-    markEvents.forEach(e => {
+    markEvents.forEach((e) => {
       expect(e.from).toBe(-1);
       expect(e.to).toBe(-1);
     });
@@ -825,7 +828,7 @@ describe("mergeStyles", () => {
       { attrs: { "aria-label": "x" } },
     ]);
 
-    expect(result.attrs).toStrictEqual({ role: "label", "aria-label": "x" });
+    expect(result.attrs).toStrictEqual({ "role": "label", "aria-label": "x" });
   });
 
   it("merges ansi from multiple styles", () => {
@@ -848,7 +851,7 @@ describe("mergeStyles", () => {
 // StringRenderer — toAnsiString
 // ---------------------------------------------------------------------------
 
-describe("StringRenderer.toAnsiString", () => {
+describe("stringRenderer.toAnsiString", () => {
   it("returns empty string when nothing rendered", () => {
     const renderer = new StringRenderer();
 
@@ -918,13 +921,25 @@ describe("StringRenderer.toAnsiString", () => {
     // empty ansi map — no codes to emit, treated as plain text
     expect(renderer.toAnsiString()).toBe("AB");
   });
+
+  it("returns empty string when document text is empty (segments.length === 0)", async () => {
+    const renderer = stringRenderer();
+    const tw = createTypewriter({ renderer });
+
+    tw.timeline.type("Hi", { by: "char", interval: 1 });
+    await tw.play();
+    tw.stop(); // resets state to empty text and re-renders
+
+    // _state is set (not null) but text is empty → segmentRichText returns []
+    expect(renderer.toAnsiString()).toBe("");
+  });
 });
 
 // ---------------------------------------------------------------------------
 // Timeline builder — select method
 // ---------------------------------------------------------------------------
 
-describe("TimelineBuilder.select", () => {
+describe("timelineBuilder.select", () => {
   it("select with default cursor adds a select command", async () => {
     const renderer = stringRenderer();
     const tw = createTypewriter({ renderer });
@@ -1486,6 +1501,23 @@ describe("playback controls — stepping", () => {
     tw.stepBackward();
 
     expect(renderer.toString()).toBe("He");
+    expect(tw.getState().status).toBe(EPlaybackStatus.PAUSED);
+  });
+
+  it("stepBackward walks back through multi-event group at same timestamp", () => {
+    const renderer = stringRenderer();
+    const tw = createTypewriter({ renderer });
+
+    // Multi-cursor: both "a" and "b" produce events at t=0 (same timestamp)
+    tw.timeline.type("H", { cursor: ["a", "b"], by: "char", interval: 100 });
+    tw.stepForward(); // applies all events at t=0 (2 events: a→H, b→H), currentEventIndex=2
+
+    // stepBackward: lastAppliedTime=0, groupStart=1
+    // while: groupStart(1) > 0 && events[0].time(0) === 0 → TRUE → groupStart-- → groupStart=0
+    // if(groupStart===0) → TRUE → reset to initialState
+    tw.stepBackward();
+
+    expect(renderer.toString()).toBe("");
     expect(tw.getState().status).toBe(EPlaybackStatus.PAUSED);
   });
 });

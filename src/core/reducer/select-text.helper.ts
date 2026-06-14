@@ -1,4 +1,3 @@
-import type { TNullable } from "@eoussama/core";
 import type { TAdvanceModeInput } from "../commands/type-command.type";
 import type { TSelectEvent } from "../events/select-event.type";
 import type { TCursorState } from "../state/cursor-state.type";
