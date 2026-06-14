@@ -9,4 +9,8 @@ export const ECommandKind = {
   MOVE_CURSOR: "moveCursor",
 } as const;
 
+/**
+ * @description
+ * Union of all valid command kind string values
+ */
 export type TCommandKind = (typeof ECommandKind)[keyof typeof ECommandKind];

@@ -8,4 +8,8 @@ export const EEventKind = {
   MOVE_CURSOR: "moveCursor",
 } as const;
 
+/**
+ * @description
+ * Union of all valid event kind string values
+ */
 export type TEventKind = (typeof EEventKind)[keyof typeof EEventKind];
