@@ -6,7 +6,7 @@ A **renderer** is the bridge between the typewriter state and your output target
 
 ### `domRenderer` — browser DOM
 
-The most common renderer for web applications. It writes the current text directly into a DOM element's `textContent`.
+The most common renderer for web applications. It writes the current document text into a DOM element and renders the cursor inline at the correct character position.
 
 ```ts
 import { createTypewriter, domRenderer } from "eo-typewriterjs";
@@ -21,14 +21,55 @@ tw.timeline.type("Hello, DOM!");
 await tw.play();
 ```
 
-`domRenderer(element)` returns a [`DomRenderer`](/api/classes/DomRenderer) instance that:
-- On `mount` — clears the element and sets `textContent` to the initial empty state
-- On `render` — updates `textContent` with the current accumulated text
-- On `unmount` — no-op (leaves the final text in place)
+`domRenderer(element)` returns a [`DomRenderer`](/api/classes/DomRenderer) instance.
+
+#### How the cursor is rendered
+
+On every render call, `DomRenderer` splits the document text at the active cursor index (`state.cursors.main.index`) and injects three inline nodes into the target element:
+
+```html
+<!-- example state: text = "Hello world", cursor.index = 5 -->
+Hello
+<span class="typewriter-cursor" aria-hidden="true"></span>
+ world
+```
+
+This means the cursor always appears at the **correct visual position** in the text, including mid-word and after `moveCursor()` repositioning.
+
+#### Cursor styling
+
+Add the `.typewriter-cursor` class to your CSS to style the blinking cursor:
+
+```css
+.typewriter-cursor {
+  display: inline-block;
+  width: 2px;
+  height: 1em;
+  background: currentColor;
+  border-radius: 1px;
+  vertical-align: text-bottom;
+  animation: blink 1.1s step-end infinite;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0; }
+}
+```
+
+#### Lifecycle
+
+| Method | When called | Behaviour |
+|---|---|---|
+| `mount(state)` | Once, before the first event | Paints initial state (empty text + cursor) into the element |
+| `render(state)` | After every event | Repaints text and cursor at the new position |
+| `unmount()` | Once, after the last event | Releases the element reference (final content stays in place) |
+
+---
 
 ### `stringRenderer` — Node.js / testing
 
-For server-side rendering, testing, or any context without a DOM. Accepts a callback that receives the current text on every update.
+For server-side rendering, testing, or any context without a DOM. Accepts an optional callback that receives the current plain text on every update, and exposes a `.toString()` method.
 
 ```ts
 import { createTypewriter, stringRenderer } from "eo-typewriterjs";
@@ -47,7 +88,21 @@ await tw.play();
 console.log(frames); // ["H", "Hi"]
 ```
 
-`stringRenderer(callback)` returns a [`StringRenderer`](/api/classes/StringRenderer) instance. The callback is invoked on every `render` call with the accumulated plain text.
+`stringRenderer(callback?)` returns a [`StringRenderer`](/api/classes/StringRenderer) instance.
+
+The callback is optional — you can omit it and read the final value via `.toString()`:
+
+```ts
+const renderer = stringRenderer();
+const tw = createTypewriter({ renderer });
+
+tw.timeline.type("Hello world");
+await tw.play();
+
+console.log(renderer.toString()); // "Hello world"
+```
+
+> `StringRenderer` outputs plain text only. It does not include any cursor marker.
 
 ---
 
@@ -89,16 +144,16 @@ await tw.play();
 
 ## Reading state
 
-Both `mount` and `render` receive the full `TTypewriterState`. You can use it for more advanced rendering:
+Both `mount` and `render` receive the full `TTypewriterState`. You can use it for advanced rendering:
 
 ```ts
 render(state: TTypewriterState): void {
-  const text = state.document.characters
-    .map(c => c.value)
-    .join("");
+  const { text } = state.document;
+  const cursorIndex = state.cursors["main"]?.index ?? text.length;
 
-  this.outputEl.textContent = text;
+  // render text before cursor, the cursor itself, and text after
+  this.outputEl.textContent = text.slice(0, cursorIndex) + "|" + text.slice(cursorIndex);
 }
 ```
 
-See [`TTypewriterState`](/api/type-aliases/TTypewriterState) and [`TRichTextDocument`](/api/type-aliases/TRichTextDocument) in the API reference for the full shape.
+See [`TTypewriterState`](/api/type-aliases/TTypewriterState), [`TRichTextDocument`](/api/type-aliases/TRichTextDocument), and [`TCursorState`](/api/type-aliases/TCursorState) in the API reference for the full shape.

@@ -18,17 +18,28 @@ Timeline commands
 
 ### 1. Commands → Events (compile)
 
-You add **commands** to the timeline via `tw.timeline.type(text, options)`. Each command describes what to type and how to type it.
+You add **commands** to the timeline using the fluent builder methods:
 
-At play time, `compile()` converts commands into a flat list of **timeline events** — one event per "step" (character, word, line, etc.) — each stamped with an absolute timestamp.
+| Method | Description |
+|---|---|
+| `.type(text, options?)` | Insert text step by step |
+| `.wait(duration)` | Pause before the next command |
+| `.delete(count, options?)` | Remove text backward from the cursor |
+| `.moveCursor(index, options?)` | Teleport the cursor to an absolute index |
+
+At play time, `compile()` converts the ordered command list into a flat array of **timeline events** — one event per step — each stamped with an absolute timestamp.
+
+`wait` and `moveCursor` are special:
+- `wait` generates no events but advances the internal clock
+- `moveCursor` generates a single instant event and does **not** advance the clock
 
 ### 2. Events → State (reduce)
 
-The **player** advances through events in timestamp order. For each event it calls the **reducer**, which updates the immutable `TTypewriterState` (the rich-text document plus cursor position).
+The **player** advances through events in timestamp order. For each event it calls the **reducer**, which produces a new immutable `TTypewriterState` (the rich-text document plus the cursor map).
 
 ### 3. State → Output (render)
 
-After each state update, the **renderer** is called with the new state. The built-in renderers extract the plain text from the state and write it to their target (a DOM element or a string callback).
+After each state update, the **renderer** is called with the new state. The built-in DOM renderer reads both the document text and the active cursor index to paint the output correctly.
 
 ---
 
@@ -38,25 +49,27 @@ After each state update, the **renderer** is called with the new state. The buil
 
 | Field | Description |
 |---|---|
-| `document` | A `TRichTextDocument` — the list of typed characters with optional style marks |
-| `cursor` | A `TCursorState` — the current cursor position within the document |
+| `document` | A `TRichTextDocument` — the current text content with optional style marks |
+| `cursors` | A `Record<string, TCursorState>` — named cursors, each with an `index` and `visible` flag |
 
-The document is append-only during a forward animation. Each render receives the complete state including all characters typed so far.
+The default initial state has a single cursor named `"main"` at index `0`.
+
+The document text grows as insert events are applied and shrinks as delete events are applied. The cursor index tracks where the next insert or delete will occur.
 
 ---
 
 ## Advance modes
 
-The `by` option of `.type()` controls how the text is segmented before being dispatched as events:
+The `by` option on `.type()` and `.delete()` controls how text is segmented:
 
 | Value | Description |
 |---|---|
-| `"char"` | One event per ASCII character |
-| `"grapheme"` | One event per Unicode grapheme cluster (handles emoji 🎉) |
-| `"word"` | One event per word (trailing whitespace is attached to the preceding word) |
-| `"line"` | One event per line (newline character is attached to the preceding line) |
+| `"char"` | One event per ASCII character or grapheme cluster |
+| `"grapheme"` | One event per Unicode grapheme cluster (handles composite emoji 🎉) |
+| `"word"` | One event per word (trailing whitespace attached to the preceding word) |
+| `"line"` | One event per line (newline attached to the preceding line) |
 | `"custom"` | Entire text as a single event |
-| `{ unit, amount }` | `amount` consecutive segments joined per event |
+| `{ unit, amount }` | `amount` consecutive segments joined into one event |
 
 ---
 
@@ -78,13 +91,18 @@ You can implement this interface to write to a canvas, a terminal, a virtual DOM
 
 ## Timeline builder
 
-`TimelineBuilder` is a fluent builder. Commands are stored in a readonly array and only compiled when `play()` is called, so the same timeline can be replayed.
+`TimelineBuilder` is a fluent builder. Commands are stored in a readonly array and only compiled when `play()` is called, so the same timeline can be replayed:
 
 ```ts
 tw.timeline
   .type("Hello")
-  .type(", ")
-  .type("World!");
+  .wait(300)
+  .delete(2, { by: "char", interval: 60 })
+  .moveCursor(0)
+  .type("EO ");
 
 await tw.play(); // compiles fresh each time
 await tw.play(); // replays the same sequence
+```
+
+See [Timeline & Commands](/guide/timeline) for the full command reference.
