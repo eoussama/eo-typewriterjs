@@ -7,7 +7,7 @@ import { reduce } from "../core/reducer/reduce.helper";
 import { createInitialState } from "../core/state/index";
 import { chunkSteps } from "../core/stepping/chunk-steps.helper";
 import { segmentText } from "../core/stepping/segment-text.helper";
-import { createTypewriter, stringRenderer } from "../index";
+import { createTypewriter, EPlaybackStatus, stringRenderer } from "../index";
 
 
 
@@ -841,5 +841,337 @@ describe("createTypewriter", () => {
     await tw.play();
 
     expect(renderer.toString()).toBe("👨‍👩‍👧‍👦🇲🇦");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Playback controls — getState / status transitions
+// ---------------------------------------------------------------------------
+
+describe("playback controls — status", () => {
+  it("starts in idle status", () => {
+    const tw = createTypewriter({ renderer: stringRenderer() });
+
+    expect(tw.getState().status).toBe(EPlaybackStatus.IDLE);
+  });
+
+  it("transitions to playing while playing", async () => {
+    const renderer = stringRenderer();
+    const tw = createTypewriter({ renderer });
+
+    tw.timeline.type("Hello", { by: "char", interval: 20 });
+
+    const playing = tw.play();
+
+    expect(tw.getState().status).toBe(EPlaybackStatus.PLAYING);
+    await playing;
+  });
+
+  it("transitions to completed after natural finish", async () => {
+    const tw = createTypewriter({ renderer: stringRenderer() });
+
+    tw.timeline.type("Hi", { by: "char", interval: 1 });
+    await tw.play();
+
+    expect(tw.getState().status).toBe(EPlaybackStatus.COMPLETED);
+  });
+
+  it("transitions to paused after pause()", async () => {
+    const renderer = stringRenderer();
+    const tw = createTypewriter({ renderer });
+
+    tw.timeline.type("Hello world", { by: "char", interval: 20 });
+    const playing = tw.play();
+
+    tw.pause();
+
+    expect(tw.getState().status).toBe(EPlaybackStatus.PAUSED);
+    await playing;
+  });
+
+  it("transitions to stopped after stop()", async () => {
+    const renderer = stringRenderer();
+    const tw = createTypewriter({ renderer });
+
+    tw.timeline.type("Hello world", { by: "char", interval: 20 });
+    const playing = tw.play();
+
+    tw.stop();
+
+    expect(tw.getState().status).toBe(EPlaybackStatus.STOPPED);
+    await playing;
+  });
+
+  it("stop() resets rendered output to empty", async () => {
+    const renderer = stringRenderer();
+    const tw = createTypewriter({ renderer });
+
+    tw.timeline.type("Hello", { by: "char", interval: 1 });
+    await tw.play();
+
+    tw.stop();
+
+    expect(renderer.toString()).toBe("");
+  });
+
+  it("replay() restarts from empty and completes with full text", async () => {
+    const renderer = stringRenderer();
+    const tw = createTypewriter({ renderer });
+
+    tw.timeline.type("Hi", { by: "char", interval: 1 });
+    await tw.play();
+
+    expect(renderer.toString()).toBe("Hi");
+
+    await tw.replay();
+
+    expect(renderer.toString()).toBe("Hi");
+    expect(tw.getState().status).toBe(EPlaybackStatus.COMPLETED);
+  });
+
+  it("calling play() again after completed replays from start", async () => {
+    const renderer = stringRenderer();
+    const tw = createTypewriter({ renderer });
+
+    tw.timeline.type("Hi", { by: "char", interval: 1 });
+    await tw.play();
+    await tw.play(); // should replay
+
+    expect(renderer.toString()).toBe("Hi");
+    expect(tw.getState().status).toBe(EPlaybackStatus.COMPLETED);
+  });
+
+  it("pause() then play() resumes and completes", async () => {
+    const renderer = stringRenderer();
+    const tw = createTypewriter({ renderer });
+
+    tw.timeline.type("Hello", { by: "char", interval: 10 });
+    const firstPlay = tw.play();
+
+    // Pause shortly after start
+    await new Promise(r => setTimeout(r, 5));
+    tw.pause();
+    await firstPlay;
+
+    const partial = renderer.toString();
+
+    expect(partial.length).toBeGreaterThanOrEqual(0);
+    expect(partial.length).toBeLessThan(5);
+
+    // Resume
+    await tw.play();
+
+    expect(renderer.toString()).toBe("Hello");
+    expect(tw.getState().status).toBe(EPlaybackStatus.COMPLETED);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Playback controls — rate
+// ---------------------------------------------------------------------------
+
+describe("playback controls — rate", () => {
+  it("getState() reports default rate of 1", () => {
+    const tw = createTypewriter({ renderer: stringRenderer() });
+
+    expect(tw.getState().rate).toBe(1);
+  });
+
+  it("setRate() updates the rate", () => {
+    const tw = createTypewriter({ renderer: stringRenderer() });
+
+    tw.setRate(2);
+
+    expect(tw.getState().rate).toBe(2);
+  });
+
+  it("setRate(0) is ignored", () => {
+    const tw = createTypewriter({ renderer: stringRenderer() });
+
+    tw.setRate(0);
+
+    expect(tw.getState().rate).toBe(1);
+  });
+
+  it("setRate(-1) is ignored", () => {
+    const tw = createTypewriter({ renderer: stringRenderer() });
+
+    tw.setRate(-1);
+
+    expect(tw.getState().rate).toBe(1);
+  });
+
+  it("double rate completes faster than normal rate", async () => {
+    const fastRenderer = stringRenderer();
+    const slowRenderer = stringRenderer();
+
+    const fast = createTypewriter({ renderer: fastRenderer });
+    const slow = createTypewriter({ renderer: slowRenderer });
+
+    fast.timeline.type("Hello", { by: "char", interval: 50 });
+    slow.timeline.type("Hello", { by: "char", interval: 50 });
+
+    fast.setRate(4);
+
+    const t0 = Date.now();
+
+    await fast.play();
+    const fastTime = Date.now() - t0;
+
+    const t1 = Date.now();
+
+    await slow.play();
+    const slowTime = Date.now() - t1;
+
+    expect(fastTime).toBeLessThan(slowTime);
+    expect(fastRenderer.toString()).toBe("Hello");
+    expect(slowRenderer.toString()).toBe("Hello");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Playback controls — seek
+// ---------------------------------------------------------------------------
+
+describe("playback controls — seek", () => {
+  it("seek to 0 applies the t=0 event (first char)", () => {
+    const renderer = stringRenderer();
+    const tw = createTypewriter({ renderer });
+
+    // First event is at t=0 so seeking to time 0 applies it → "H"
+    tw.timeline.type("Hello", { by: "char", interval: 100 });
+    tw.seek(0);
+
+    expect(renderer.toString()).toBe("H");
+  });
+
+  it("seek to duration shows full text", () => {
+    const renderer = stringRenderer();
+    const tw = createTypewriter({ renderer });
+
+    tw.timeline.type("Hello", { by: "char", interval: 100 });
+    tw.seek(Infinity); // clamps to duration
+
+    expect(renderer.toString()).toBe("Hello");
+  });
+
+  it("seek to middle shows partial text", () => {
+    const renderer = stringRenderer();
+    const tw = createTypewriter({ renderer });
+
+    // "Hello" with interval:100 → events at t=0,100,200,300,400
+    tw.timeline.type("Hello", { by: "char", interval: 100 });
+    tw.seek(250); // after H,e,l → "Hel"
+
+    expect(renderer.toString()).toBe("Hel");
+  });
+
+  it("seek clamps negative values to 0 and applies t=0 event", () => {
+    const renderer = stringRenderer();
+    const tw = createTypewriter({ renderer });
+
+    // -999 clamps to 0, first event is at t=0 → "H"
+    tw.timeline.type("Hi", { by: "char", interval: 100 });
+    tw.seek(-999);
+
+    expect(renderer.toString()).toBe("H");
+  });
+
+  it("seek marks completed when seeking to the end", () => {
+    const tw = createTypewriter({ renderer: stringRenderer() });
+
+    tw.timeline.type("Hi", { by: "char", interval: 100 });
+    tw.seek(Infinity);
+
+    expect(tw.getState().status).toBe(EPlaybackStatus.COMPLETED);
+  });
+
+  it("getState().duration reflects the total timeline duration", () => {
+    const tw = createTypewriter({ renderer: stringRenderer() });
+
+    // "Hi" with interval:100 → events at t=0 and t=100 → duration=100
+    tw.timeline.type("Hi", { by: "char", interval: 100 });
+    tw.seek(0); // forces load
+
+    expect(tw.getState().duration).toBe(100);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Playback controls — stepForward / stepBackward
+// ---------------------------------------------------------------------------
+
+describe("playback controls — stepping", () => {
+  it("stepForward applies one event group and pauses", () => {
+    const renderer = stringRenderer();
+    const tw = createTypewriter({ renderer });
+
+    // "Hello" char by char at interval 100 → group per char
+    tw.timeline.type("Hello", { by: "char", interval: 100 });
+    tw.stepForward();
+
+    expect(renderer.toString()).toBe("H");
+    expect(tw.getState().status).toBe(EPlaybackStatus.PAUSED);
+  });
+
+  it("stepForward all the way completes the animation", () => {
+    const renderer = stringRenderer();
+    const tw = createTypewriter({ renderer });
+
+    tw.timeline.type("Hi", { by: "char", interval: 100 });
+
+    tw.stepForward();
+    tw.stepForward();
+
+    expect(renderer.toString()).toBe("Hi");
+    expect(tw.getState().status).toBe(EPlaybackStatus.COMPLETED);
+  });
+
+  it("stepForward past the end stays completed", () => {
+    const tw = createTypewriter({ renderer: stringRenderer() });
+
+    tw.timeline.type("X", { by: "char", interval: 1 });
+    tw.stepForward();
+    tw.stepForward(); // already at end
+
+    expect(tw.getState().status).toBe(EPlaybackStatus.COMPLETED);
+  });
+
+  it("stepBackward from beginning stays at index 0 and pauses", () => {
+    const tw = createTypewriter({ renderer: stringRenderer() });
+
+    tw.timeline.type("Hello", { by: "char", interval: 100 });
+    tw.stepBackward(); // nothing to undo
+
+    expect(tw.getState().status).toBe(EPlaybackStatus.PAUSED);
+  });
+
+  it("stepForward then stepBackward returns to empty state", () => {
+    const renderer = stringRenderer();
+    const tw = createTypewriter({ renderer });
+
+    tw.timeline.type("Hello", { by: "char", interval: 100 });
+    tw.stepForward();
+
+    expect(renderer.toString()).toBe("H");
+
+    tw.stepBackward();
+
+    expect(renderer.toString()).toBe("");
+    expect(tw.getState().status).toBe(EPlaybackStatus.PAUSED);
+  });
+
+  it("step forward multiple times then backward ends up at correct state", () => {
+    const renderer = stringRenderer();
+    const tw = createTypewriter({ renderer });
+
+    tw.timeline.type("Hello", { by: "char", interval: 100 });
+    tw.stepForward(); // "H"
+    tw.stepForward(); // "He"
+    tw.stepForward(); // "Hel"
+    tw.stepBackward(); // "He"
+
+    expect(renderer.toString()).toBe("He");
+    expect(tw.getState().status).toBe(EPlaybackStatus.PAUSED);
   });
 });

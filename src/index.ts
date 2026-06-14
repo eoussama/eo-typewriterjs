@@ -1,7 +1,8 @@
+import type { TPlaybackControllerState } from "./core/player/index";
 import type { IRenderer } from "./core/renderer/index";
 
 import { compile } from "./core/compiler/index";
-import { play } from "./core/player/index";
+import { PlaybackController } from "./core/player/index";
 import { createInitialState } from "./core/state/index";
 import { TimelineBuilder } from "./core/timeline/index";
 
@@ -15,11 +16,17 @@ export type { TAdvanceMode, TAdvanceModeInput, TAdvanceUnit, TCommandKind, TCurs
 export { EEventKind } from "./core/events/index";
 export type { TBaseEvent } from "./core/events/index";
 export type { TDeleteEvent, TEventKind, TInsertEvent, TMoveCursorEvent, TSelectEvent, TTimelineEvent } from "./core/events/index";
+
+export { EPlaybackStatus } from "./core/player/index";
+export type { TCheckpoint, TPlaybackControllerState, TPlaybackStatus } from "./core/player/index";
+
 export type { IRenderer } from "./core/renderer/index";
+
 export type { TCursorState } from "./core/state/index";
 export type { TRichTextDocument, TStyleObject, TStyleRef, TTextMark } from "./core/state/index";
 export type { TSelectionState, TTypewriterState } from "./core/state/index";
 export { getSelection, withCursor, withSelection, withSelectionCleared } from "./core/state/index";
+
 export { TimelineBuilder } from "./core/timeline/index";
 export type { TDeleteOptions, TMoveCursorOptions, TSelectOptions, TTypeOptions } from "./core/timeline/index";
 
@@ -36,34 +43,93 @@ export type TTypewriterOptions = {
 
 /**
  * @description
- * A typewriter instance returned by createTypewriter
+ * A typewriter instance returned by createTypewriter.
+ * Provides a fluent timeline builder and full playback controls.
  */
 export type TTypewriter = {
   readonly timeline: TimelineBuilder;
-  readonly play: () => Promise<void>;
+  play: () => Promise<void>;
+  pause: () => void;
+  stop: () => void;
+  replay: () => Promise<void>;
+  seek: (time: number) => void;
+  stepForward: () => void;
+  stepBackward: () => void;
+  setRate: (rate: number) => void;
+  getState: () => TPlaybackControllerState;
 };
 
 /**
  * @description
  * Create a new typewriter instance with the given renderer.
  * Use `tw.timeline.type(...)` to schedule commands, then call `tw.play()` to execute them.
+ * All playback controls (pause, stop, seek, step, rate) are available on the returned object.
  *
  * @param options - Configuration options including the renderer to use
- * @returns A TTypewriter instance with a timeline builder and play method
+ * @returns A TTypewriter instance with a timeline builder and full playback controls
  */
 export function createTypewriter(options: TTypewriterOptions): TTypewriter {
   const { renderer } = options;
   const timeline = new TimelineBuilder();
+  const controller = new PlaybackController(renderer, createInitialState());
+
+  let cachedVersion = -1;
+
+  /**
+   * @description
+   * Recompile the timeline if the version has changed since last load
+   */
+  function ensureLoaded(): void {
+    if (timeline.version !== cachedVersion) {
+      controller.load(compile([...timeline.commands]));
+      cachedVersion = timeline.version;
+    }
+  }
 
   return {
     timeline,
-    async play(): Promise<void> {
-      const events = compile([...timeline.commands]);
 
-      await play(events, {
-        renderer,
-        initialState: createInitialState(),
-      });
+    play(): Promise<void> {
+      ensureLoaded();
+
+      return controller.play();
+    },
+
+    pause(): void {
+      controller.pause();
+    },
+
+    stop(): void {
+      controller.stop();
+    },
+
+    replay(): Promise<void> {
+      ensureLoaded();
+
+      return controller.replay();
+    },
+
+    seek(time: number): void {
+      ensureLoaded();
+      controller.seek(time);
+    },
+
+    stepForward(): void {
+      ensureLoaded();
+      controller.stepForward();
+    },
+
+    stepBackward(): void {
+      ensureLoaded();
+      controller.stepBackward();
+    },
+
+    setRate(rate: number): void {
+      controller.setRate(rate);
+    },
+
+    getState() {
+      return controller.getState();
     },
   };
 }

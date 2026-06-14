@@ -15,8 +15,6 @@ export type TSelectOptions = {
   readonly cursor?: TCursorSelector;
 };
 
-
-
 /**
  * @description
  * Options accepted by the `delete` builder method
@@ -35,10 +33,6 @@ export type TMoveCursorOptions = {
   readonly cursor?: TCursorSelector;
 };
 
-
-
-let commandCounter = 0;
-
 /**
  * @description
  * Options accepted by the `type` builder method
@@ -50,13 +44,21 @@ export type TTypeOptions = {
   readonly cursor?: TCursorSelector;
 };
 
+
+
+let commandCounter = 0;
+
 /**
  * @description
  * Fluent builder that accumulates user commands into an ordered command list.
  * Commands are not executed immediately — they are compiled and played by the player.
+ *
+ * A monotonic `version` counter is incremented whenever commands are appended,
+ * allowing playback controllers to detect when their compiled cache is stale.
  */
 export class TimelineBuilder {
   private readonly _commands: TCommand[] = [];
+  private _version = 0;
 
   /**
    * @description
@@ -66,6 +68,17 @@ export class TimelineBuilder {
    */
   get commands(): ReadonlyArray<TCommand> {
     return this._commands;
+  }
+
+  /**
+   * @description
+   * Monotonically increasing version counter.
+   * Incremented on every command append.
+   *
+   * @returns The current version number
+   */
+  get version(): number {
+    return this._version;
   }
 
   /**
@@ -81,6 +94,8 @@ export class TimelineBuilder {
       kind: ECommandKind.WAIT,
       duration,
     });
+
+    this._version++;
 
     return this;
   }
@@ -104,6 +119,8 @@ export class TimelineBuilder {
       by: options?.by,
     });
 
+    this._version++;
+
     return this;
   }
 
@@ -123,6 +140,8 @@ export class TimelineBuilder {
       cursor: options?.cursor ?? "main",
       index,
     });
+
+    this._version++;
 
     return this;
   }
@@ -145,6 +164,8 @@ export class TimelineBuilder {
       interval: options?.interval,
     });
 
+    this._version++;
+
     return this;
   }
 
@@ -166,6 +187,8 @@ export class TimelineBuilder {
       interval: options?.interval,
       style: options?.style,
     });
+
+    this._version++;
 
     return this;
   }
