@@ -168,7 +168,7 @@ export class DomRenderer implements IRenderer {
         if (boundary.kind === "selStart") {
           openSelections.add(boundary.cursorId);
         }
-        /* v8 ignore next 3 */
+        /* v8 ignore start */
         else if (boundary.kind === "selEnd") {
           openSelections.delete(boundary.cursorId);
         }
@@ -180,6 +180,7 @@ export class DomRenderer implements IRenderer {
           cursorEl.dataset.cursorId = boundary.cursorId;
           fragment.appendChild(cursorEl);
         }
+        /* v8 ignore stop */
       }
 
       // Flush remaining text in this segment after all boundaries

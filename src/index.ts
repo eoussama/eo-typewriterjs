@@ -13,6 +13,8 @@ export type { TBaseCommand } from "./core/commands/index";
 export { normalizeCursors } from "./core/commands/index";
 export type { TAdvanceMode, TAdvanceModeInput, TAdvanceUnit, TCommandKind, TCursorSelector, TDeleteCommand, TMarkCommand, TMarkRange, TMoveCursorCommand, TSelectCommand, TTypeCommand, TWaitCommand } from "./core/commands/index";
 
+export type { TCommand } from "./core/compiler/index";
+
 export { EEventKind } from "./core/events/index";
 export type { TBaseEvent } from "./core/events/index";
 export type { TDeleteEvent, TEventKind, TInsertEvent, TMarkEvent, TMoveCursorEvent, TSelectEvent, TTimelineEvent } from "./core/events/index";

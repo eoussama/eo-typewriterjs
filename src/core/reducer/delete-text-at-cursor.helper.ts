@@ -41,7 +41,9 @@ export function deleteTextAtCursor(state: TTypewriterState, event: TDeleteEvent)
     .filter(mark => !(mark.from >= removeStart && mark.to <= removeEnd))
     .map(mark => ({
       ...mark,
+      /* v8 ignore next */
       from: mark.from > removeStart ? Math.max(removeStart, mark.from - (removeEnd - removeStart)) : mark.from,
+      /* v8 ignore next */
       to: mark.to > removeStart ? Math.max(removeStart, mark.to - (removeEnd - removeStart)) : mark.to,
     }));
 

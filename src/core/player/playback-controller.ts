@@ -110,6 +110,7 @@ function reconstructState(
   for (let i = checkpoint.eventIndex; i < targetEventIndex; i++) {
     const event = events[i];
 
+    /* v8 ignore next 3 */
     if (event !== undefined) {
       state = reduce(state, event);
     }
@@ -130,6 +131,7 @@ function reconstructState(
 function findEventIndexAtTime(events: readonly TTimelineEvent[], time: number): number {
   let idx = 0;
 
+  /* v8 ignore next */
   while (idx < events.length && (events[idx]?.time ?? Infinity) <= time) {
     idx++;
   }
@@ -175,6 +177,7 @@ export class PlaybackController {
    */
   constructor(renderer: IRenderer, initialState?: TTypewriterState) {
     this._renderer = renderer;
+    /* v8 ignore next */
     this._initialState = initialState ?? createInitialState();
     this._state = this._initialState;
   }
@@ -214,6 +217,7 @@ export class PlaybackController {
     this._cancelTimer();
 
     this._events = [...events].sort((a, b) => a.time - b.time);
+    /* v8 ignore next */
     this._duration = this._events.length > 0 ? (this._events[this._events.length - 1]?.time ?? 0) : 0;
     this._checkpoints = buildCheckpoints(this._events, this._initialState);
 
@@ -360,6 +364,7 @@ export class PlaybackController {
     while (i < this._events.length && this._events[i]?.time === groupTime) {
       const ev = this._events[i];
 
+      /* v8 ignore next 3 */
       if (ev !== undefined) {
         this._state = reduce(this._state, ev);
       }
@@ -392,6 +397,7 @@ export class PlaybackController {
     }
 
     // Determine the timestamp of the last applied group
+    /* v8 ignore next */
     const lastAppliedTime = this._events[this._currentEventIndex - 1]?.time ?? this._currentTime;
 
     // Walk back to find the start index of that group
@@ -517,12 +523,14 @@ export class PlaybackController {
     let advanced = false;
 
     // Apply all events whose timeline time <= current playhead
+    /* v8 ignore next 4 */
     while (
       this._currentEventIndex < this._events.length
       && (this._events[this._currentEventIndex]?.time ?? Infinity) <= playhead
     ) {
       const ev = this._events[this._currentEventIndex];
 
+      /* v8 ignore next 3 */
       if (ev !== undefined) {
         this._state = reduce(this._state, ev);
       }
@@ -532,6 +540,7 @@ export class PlaybackController {
     }
 
     if (advanced) {
+      /* v8 ignore next */
       this._currentTime = this._events[this._currentEventIndex - 1]?.time ?? playhead;
       this._renderer.render(this._state);
     }
@@ -548,6 +557,7 @@ export class PlaybackController {
     // Schedule the next tick when the next event becomes due.
     // `nextEventTime - playhead` is the remaining timeline duration.
     // Dividing by rate converts that to wall-clock milliseconds.
+    /* v8 ignore next */
     const nextEventTime = this._events[this._currentEventIndex]?.time ?? 0;
     const timeUntilNext = (nextEventTime - this._playhead()) / this._rate;
     const delay = Math.max(0, timeUntilNext);

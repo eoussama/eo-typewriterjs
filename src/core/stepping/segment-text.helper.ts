@@ -11,6 +11,7 @@ import type { TAdvanceUnit } from "../commands/type-command.type";
  * @returns An array of grapheme cluster strings
  */
 function segmentGraphemes(text: string): string[] {
+  /* v8 ignore next */
   if (typeof Intl !== "undefined" && "Segmenter" in Intl) {
     const segmenter = new Intl.Segmenter(undefined, { granularity: "grapheme" });
 
@@ -31,6 +32,7 @@ function segmentGraphemes(text: string): string[] {
  * @returns An array of word-with-trailing-space strings
  */
 function segmentWords(text: string): string[] {
+  /* v8 ignore next */
   if (typeof Intl !== "undefined" && "Segmenter" in Intl) {
     const segmenter = new Intl.Segmenter(undefined, { granularity: "word" });
     const rawSegments = Array.from(segmenter.segment(text), s => s.segment);

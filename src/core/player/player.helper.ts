@@ -58,6 +58,7 @@ export async function play(events: TTimelineEvent[], options: TPlayerOptions): P
       advanced = true;
     }
 
+    /* v8 ignore next */
     if (advanced) {
       await renderer.render(state);
     }

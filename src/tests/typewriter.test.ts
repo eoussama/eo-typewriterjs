@@ -446,6 +446,44 @@ describe("reduce (default branch)", () => {
 // ---------------------------------------------------------------------------
 
 describe("reduce (selectText edge cases)", () => {
+  it("select forward with object by {unit, amount} resolves unit and amount correctly", () => {
+    const commands = [
+      { id: "c1", kind: "type" as const, cursor: "main", text: "Hello world", by: "char" as const, interval: 1 },
+      { id: "c2", kind: "select" as const, cursor: "main", count: 2, by: { unit: "word" as const, amount: 1 } },
+    ];
+
+    const events = compile(commands);
+    let state = createInitialState();
+
+    for (const event of events) {
+      state = reduce(state, event);
+    }
+
+    // Cursor is at index 11 (end of "Hello world"), select forward 2 words → clamped to 11
+    // selection from=11, to=11 → empty → undefined
+    // Actually: select forward 2 words from index 11 → tail="" → 0 segments → taken=0 → endIndex=11
+    // from=min(11,11)=11, to=max(11,11)=11 → withSelection clears
+    expect(state.selections.main).toBeUndefined();
+  });
+
+  it("select backward with object by {unit, amount} resolves unit and amount correctly", () => {
+    const commands = [
+      { id: "c1", kind: "type" as const, cursor: "main", text: "Hello world", by: "char" as const, interval: 1 },
+      { id: "c2", kind: "select" as const, cursor: "main", count: -1, by: { unit: "word" as const, amount: 1 } },
+    ];
+
+    const events = compile(commands);
+    let state = createInitialState();
+
+    for (const event of events) {
+      state = reduce(state, event);
+    }
+
+    // Cursor at 11 (end), select backward 1 word → "world" (5 chars) → endIndex = 11-5 = 6
+    // from=6, to=11
+    expect(state.selections.main).toStrictEqual({ from: 6, to: 11 });
+  });
+
   it("selecting count=0 leaves selection unchanged (returns startIndex)", () => {
     const commands = [
       { id: "c1", kind: "type" as const, cursor: "main", text: "Hello", by: "char" as const, interval: 1 },
@@ -547,6 +585,30 @@ describe("reduce (delete mark clamp branches)", () => {
     }
 
     expect(state.document.text).toBe("Hello ");
+  });
+
+  it("preserves a mark entirely before the deleted range (mark.from and mark.to both <= removeStart)", () => {
+    // Text: "Hello world", mark covers [0,4], delete last 5 chars → removeStart=6, removeEnd=11
+    // mark [0,4]: filter passes (not fully within [6,11])
+    // mark.from=0 <= removeStart=6 → from stays 0 (false branch of mark.from > removeStart)
+    // mark.to=4 <= removeStart=6 → to stays 4 (false branch of mark.to > removeStart)
+    const commands = [
+      { id: "c1", kind: "type" as const, cursor: "main", text: "Hello world", by: "char" as const, interval: 1 },
+      { id: "c2", kind: "mark" as const, cursor: "main", style: "tw-before", range: { from: 0, to: 4 } },
+      { id: "c3", kind: "delete" as const, cursor: "main", count: 5, by: "char" as const, interval: 1 },
+    ];
+
+    const events = compile(commands);
+    let state = createInitialState();
+
+    for (const event of events) {
+      state = reduce(state, event);
+    }
+
+    expect(state.document.text).toBe("Hello ");
+    expect(state.document.marks).toHaveLength(1);
+    expect(state.document.marks[0]?.from).toBe(0);
+    expect(state.document.marks[0]?.to).toBe(4);
   });
 });
 
