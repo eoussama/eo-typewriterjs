@@ -1,247 +1,522 @@
-import type { IRenderer, TAdvanceModeInput, TTypewriterState } from "@eo-typewriterjs";
-import type { TSnippetSegment } from "./snippets.const";
+import type { TTypewriter } from "@eo-typewriterjs";
+import type { TRecipe, TRecipeVariant } from "./recipes.const";
 
-import { createTypewriter, domRenderer } from "@eo-typewriterjs";
+import { createTypewriter, domRenderer, EPlaybackStatus } from "@eo-typewriterjs";
+import { RECIPES } from "./recipes.const";
 
 
 
-/**
- * @description
- * Monotonically incrementing generation counter.
- * Each new animation run captures a snapshot; any render call from an older
- * generation is silently discarded, preventing flickering after Stop.
- */
-let _generation = 0;
+// ---------------------------------------------------------------------------
+// State
+// ---------------------------------------------------------------------------
 
-/**
- * @description
- * Whether an animation is currently in flight for the active generation
- */
-let _running = false;
+let _tw: TTypewriter | null = null;
+let _rafId: number | null = null;
+let _isScrubbing = false;
 
 /**
  * @description
- * The segments of the currently selected snippet, if any.
- * When set, the Run button replays the segment sequence instead of plain text.
- * Cleared when the user edits the textarea manually.
+ * The currently selected recipe and variant indices
  */
-let _activeSegments: readonly TSnippetSegment[] | null = null;
+let _recipeIndex = 0;
+let _variantIndex = 0;
 
-/**
- * @description
- * Build a renderer that delegates to the underlying domRenderer only while
- * the captured generation is still the active one
- *
- * @param el - The target DOM element
- * @param gen - The generation this renderer belongs to
- * @returns A guarded IRenderer instance
- */
-function makeGuardedRenderer(el: Element, gen: number): IRenderer {
-  const inner = domRenderer(el);
+// ---------------------------------------------------------------------------
+// DOM helpers
+// ---------------------------------------------------------------------------
 
-  return {
-    mount(state: TTypewriterState): void {
-      if (_generation === gen) {
-        inner.mount(state);
-      }
-    },
-    render(state: TTypewriterState): void {
-      if (_generation === gen) {
-        inner.render(state);
-      }
-    },
-    unmount(): void {
-      inner.unmount();
-    },
-  };
+function el<T extends HTMLElement>(id: string): T {
+  return document.getElementById(id) as T;
 }
 
-/**
- * @description
- * Read the current advance mode from the UI controls
- *
- * @returns The resolved advance mode input built from the current controls
- */
-function readAdvanceMode(): TAdvanceModeInput {
-  const unit = (document.getElementById("ctrl-unit") as HTMLSelectElement).value as
-    | "char"
-    | "grapheme"
-    | "word"
-    | "line"
-    | "custom";
-  const amount = Number.parseInt((document.getElementById("ctrl-amount") as HTMLInputElement).value, 10) || 1;
+function outputEl(): HTMLElement {
+  return el("typewriter-output");
+}
 
-  if (amount === 1) {
-    return unit;
+// ---------------------------------------------------------------------------
+// Control readback
+// ---------------------------------------------------------------------------
+
+function readDefaults() {
+  const unit = (el<HTMLSelectElement>("ctrl-unit").value || "char") as "char" | "grapheme" | "word" | "line";
+  const amount = Math.max(1, Number.parseInt(el<HTMLInputElement>("ctrl-amount").value, 10) || 1);
+  const interval = Math.max(0, Number.parseInt(el<HTMLInputElement>("ctrl-interval").value, 10) || 80);
+  const rate = Math.max(0.1, Number.parseFloat(el<HTMLInputElement>("ctrl-rate").value) || 1);
+
+  return { unit, amount, interval, rate };
+}
+
+// ---------------------------------------------------------------------------
+// Apply variant defaults to the control panel
+// ---------------------------------------------------------------------------
+
+function applyDefaults(variant: TRecipeVariant): void {
+  const d = variant.defaults ?? {};
+
+  if (d.unit !== undefined) {
+    el<HTMLSelectElement>("ctrl-unit").value = d.unit;
   }
 
-  return { unit, amount };
-}
+  if (d.amount !== undefined) {
+    el<HTMLInputElement>("ctrl-amount").value = String(d.amount);
+  }
 
-/**
- * @description
- * Read the interval value from the UI
- *
- * @returns The interval in milliseconds
- */
-function readInterval(): number {
-  return Number.parseInt((document.getElementById("ctrl-interval") as HTMLInputElement).value, 10) || 80;
-}
+  if (d.interval !== undefined) {
+    el<HTMLInputElement>("ctrl-interval").value = String(d.interval);
+  }
 
-/**
- * @description
- * Sync the Run / Stop button states with the running flag
- *
- * @param running - Whether an animation is currently running
- */
-function setRunning(running: boolean): void {
-  _running = running;
-  (document.getElementById("btn-run") as HTMLButtonElement).disabled = running;
-  (document.getElementById("btn-stop") as HTMLButtonElement).disabled = !running;
-}
-
-/**
- * @description
- * Clear the typewriter output element
- */
-export function clearOutput(): void {
-  const el = document.getElementById("typewriter-output");
-
-  if (el !== null) {
-    el.textContent = "";
+  if (d.rate !== undefined) {
+    el<HTMLInputElement>("ctrl-rate").value = String(d.rate);
+    el("ctrl-rate-label").textContent = `${d.rate}×`;
   }
 }
 
-/**
- * @description
- * Stop the currently running animation by advancing the generation counter.
- * Any scheduled renderer calls from the previous generation become no-ops.
- */
-export function stopAnimation(): void {
-  _generation += 1;
-  setRunning(false);
-  clearOutput();
-}
+// ---------------------------------------------------------------------------
+// Playback UI sync
+// ---------------------------------------------------------------------------
 
 /**
  * @description
- * Set the active snippet segments so the Run button replays the full sequence.
- * Pass null to clear and fall back to plain text mode.
- *
- * @param segments - The ordered segment list, or null to clear
+ * Update every piece of playback UI from the current tw state (called in rAF loop)
  */
-export function setActiveSegments(segments: readonly TSnippetSegment[] | null): void {
-  _activeSegments = segments;
-}
-
-/**
- * @description
- * Shared animation runner. Increments the generation, creates a guarded renderer,
- * invokes the provided builder callback to populate the timeline, then plays it.
- *
- * @param build - A callback that receives the timeline builder and populates it
- * @returns A promise that resolves when the animation completes or is superseded
- */
-async function runWithBuilder(build: (tw: ReturnType<typeof createTypewriter>) => void): Promise<void> {
-  if (_running) {
+function syncPlaybackUI(): void {
+  if (_tw === null) {
     return;
   }
 
-  const outputEl = document.getElementById("typewriter-output");
+  const state = _tw.getState();
+  const { status, currentTime, duration, rate } = state;
 
-  if (outputEl === null) {
-    return;
+  // Status badge
+  const badge = el("status-badge");
+
+  badge.textContent = status;
+  badge.dataset.status = status;
+
+  // Time / duration
+  el("time-current").textContent = formatMs(currentTime);
+  el("time-duration").textContent = formatMs(duration);
+
+  // Seek slider — only update when user is not scrubbing
+  if (!_isScrubbing) {
+    const slider = el<HTMLInputElement>("seek-slider");
+
+    slider.max = String(Math.max(1, duration));
+    slider.value = String(currentTime);
   }
 
-  _generation += 1;
-  const myGen = _generation;
+  // Rate label
+  el("ctrl-rate-label").textContent = `${rate}×`;
 
-  clearOutput();
-  setRunning(true);
+  // Button states
+  const playing = status === EPlaybackStatus.PLAYING;
+  const paused = status === EPlaybackStatus.PAUSED;
+  const idle = status === EPlaybackStatus.IDLE;
+  const stopped = status === EPlaybackStatus.STOPPED;
+  const completed = status === EPlaybackStatus.COMPLETED;
 
-  const renderer = makeGuardedRenderer(outputEl, myGen);
-  const tw = createTypewriter({ renderer });
+  el<HTMLButtonElement>("btn-play").disabled = playing;
+  el<HTMLButtonElement>("btn-pause").disabled = !playing;
+  el<HTMLButtonElement>("btn-stop").disabled = idle || stopped;
+  el<HTMLButtonElement>("btn-replay").disabled = idle;
+  el<HTMLButtonElement>("btn-step-back").disabled = playing || (idle && !paused && !completed);
+  el<HTMLButtonElement>("btn-step-fwd").disabled = playing || completed;
 
-  build(tw);
-
-  await tw.play();
-
-  if (_generation === myGen) {
-    setRunning(false);
+  // Continue rAF while playing
+  if (playing) {
+    _rafId = requestAnimationFrame(syncPlaybackUI);
+  }
+  else {
+    _rafId = null;
   }
 }
 
-/**
- * @description
- * Run the typewriter animation for the given text using the current control settings.
- * If active segments are set, the segment sequence is used instead of plain text.
- *
- * @param text - The fallback text to animate when no segments are active
- * @returns A promise that resolves when the animation completes or is superseded
- */
-export async function runAnimation(text: string): Promise<void> {
-  if (_activeSegments !== null) {
-    return runSegmentsAnimation(_activeSegments);
+function startRaf(): void {
+  if (_rafId !== null) {
+    cancelAnimationFrame(_rafId);
   }
 
-  if (text.trim() === "") {
+  _rafId = requestAnimationFrame(syncPlaybackUI);
+}
+
+function formatMs(ms: number): string {
+  if (ms < 1000) {
+    return `${Math.round(ms)}ms`;
+  }
+
+  return `${(ms / 1000).toFixed(1)}s`;
+}
+
+// ---------------------------------------------------------------------------
+// Build the typewriter for the active recipe+variant
+// ---------------------------------------------------------------------------
+
+function buildTypewriter(): TTypewriter {
+  const recipe = RECIPES[_recipeIndex];
+  const variant = recipe?.variants[_variantIndex];
+
+  const tw = createTypewriter({ renderer: domRenderer(outputEl()) });
+
+  if (recipe !== undefined && variant !== undefined) {
+    const defaults = {
+      unit: readDefaults().unit,
+      amount: readDefaults().amount,
+      interval: readDefaults().interval,
+      rate: readDefaults().rate,
+    };
+
+    tw.setRate(defaults.rate);
+    variant.build(tw, defaults);
+  }
+
+  return tw;
+}
+
+// ---------------------------------------------------------------------------
+// Playback controls
+// ---------------------------------------------------------------------------
+
+/**
+ * @description
+ * Create a fresh typewriter from the active recipe+variant and play it.
+ * Stops any currently playing instance first.
+ */
+function loadAndPlay(): void {
+  stopCurrent();
+  _tw = buildTypewriter();
+  startRaf();
+  void _tw.play().then(() => syncPlaybackUI());
+}
+
+function stopCurrent(): void {
+  if (_tw !== null) {
+    _tw.stop();
+    _tw = null;
+  }
+
+  if (_rafId !== null) {
+    cancelAnimationFrame(_rafId);
+    _rafId = null;
+  }
+}
+
+function ensureTw(): TTypewriter {
+  if (_tw === null) {
+    _tw = buildTypewriter();
+  }
+
+  return _tw;
+}
+
+// ---------------------------------------------------------------------------
+// Source panel
+// ---------------------------------------------------------------------------
+
+function updateSourcePanel(): void {
+  const recipe = RECIPES[_recipeIndex];
+  const variant = recipe?.variants[_variantIndex];
+
+  el("source-code").textContent = variant?.source ?? "";
+}
+
+// ---------------------------------------------------------------------------
+// Recipe list rendering
+// ---------------------------------------------------------------------------
+
+const CATEGORY_ORDER: TRecipe["category"][] = ["basics", "timing", "editing", "cursor", "advanced"];
+const CATEGORY_LABELS: Record<TRecipe["category"], string> = {
+  basics: "Basics",
+  timing: "Timing",
+  editing: "Editing",
+  cursor: "Cursor",
+  advanced: "Advanced",
+};
+
+/**
+ * @description
+ * Render the recipe list, optionally filtered by category and search term
+ *
+ * @param filterCategory - Active category filter or null for all
+ * @param search - Search query string (lowercased)
+ */
+function renderRecipeList(filterCategory: TRecipe["category"] | null, search: string): void {
+  const list = el("recipe-list");
+
+  list.innerHTML = "";
+
+  const filtered = RECIPES.filter((r, i) => {
+    const matchCat = filterCategory === null || r.category === filterCategory;
+    const matchSearch = search === "" || r.title.toLowerCase().includes(search) || r.description.toLowerCase().includes(search);
+
+    return matchCat && matchSearch ? (i >= 0) : false;
+  });
+
+  if (filtered.length === 0) {
+    const empty = document.createElement("p");
+
+    empty.className = "recipe-empty";
+    empty.textContent = "No recipes match your search.";
+    list.appendChild(empty);
+
     return;
   }
 
-  return runWithBuilder((tw) => {
-    tw.timeline.type(text, {
-      by: readAdvanceMode(),
-      interval: readInterval(),
+  for (const recipe of filtered) {
+    const realIndex = RECIPES.indexOf(recipe);
+    const item = document.createElement("button");
+
+    item.className = "recipe-item";
+    item.dataset.id = recipe.id;
+
+    if (realIndex === _recipeIndex) {
+      item.classList.add("recipe-item--active");
+    }
+
+    const title = document.createElement("span");
+
+    title.className = "recipe-item__title";
+    title.textContent = recipe.title;
+
+    const desc = document.createElement("span");
+
+    desc.className = "recipe-item__desc";
+    desc.textContent = recipe.description;
+
+    const catBadge = document.createElement("span");
+
+    catBadge.className = `recipe-item__cat recipe-item__cat--${recipe.category}`;
+    catBadge.textContent = CATEGORY_LABELS[recipe.category];
+
+    item.appendChild(title);
+    item.appendChild(catBadge);
+    item.appendChild(desc);
+
+    item.addEventListener("click", () => {
+      _recipeIndex = realIndex;
+      _variantIndex = 0;
+      applyDefaults(RECIPES[_recipeIndex]!.variants[0]!);
+      renderRecipeList(filterCategory, search);
+      renderVariantChips();
+      updateSourcePanel();
+      loadAndPlay();
     });
+
+    list.appendChild(item);
+  }
+}
+
+/**
+ * @description
+ * Render the variant chip strip for the active recipe
+ */
+function renderVariantChips(): void {
+  const strip = el("variant-chips");
+
+  strip.innerHTML = "";
+
+  const recipe = RECIPES[_recipeIndex];
+
+  if (recipe === undefined) {
+    return;
+  }
+
+  recipe.variants.forEach((variant, i) => {
+    const chip = document.createElement("button");
+
+    chip.className = "variant-chip";
+    chip.textContent = variant.label;
+
+    if (i === _variantIndex) {
+      chip.classList.add("variant-chip--active");
+    }
+
+    chip.addEventListener("click", () => {
+      _variantIndex = i;
+      applyDefaults(variant);
+      renderVariantChips();
+      updateSourcePanel();
+      loadAndPlay();
+    });
+
+    strip.appendChild(chip);
   });
 }
 
+// ---------------------------------------------------------------------------
+// Custom editor
+// ---------------------------------------------------------------------------
+
+function runCustomEditor(): void {
+  const text = el<HTMLTextAreaElement>("editor").value.trim();
+
+  if (text === "") {
+    return;
+  }
+
+  stopCurrent();
+  _recipeIndex = -1;
+
+  const tw = createTypewriter({ renderer: domRenderer(outputEl()) });
+  const defaults = readDefaults();
+
+  tw.setRate(defaults.rate);
+  tw.timeline.type(text, {
+    by: defaults.amount === 1 ? defaults.unit : { unit: defaults.unit, amount: defaults.amount },
+    interval: defaults.interval,
+  });
+
+  _tw = tw;
+  startRaf();
+  void tw.play().then(() => syncPlaybackUI());
+}
+
+// ---------------------------------------------------------------------------
+// Boot
+// ---------------------------------------------------------------------------
+
 /**
  * @description
- * Run the typewriter animation for a sequence of typed, wait, and delete segments.
- * The advance mode and interval controls are applied to each type and delete segment.
- *
- * @param segments - The ordered list of segments to animate
- * @returns A promise that resolves when the animation completes or is superseded
+ * Bootstrap the sandbox — wire up all UI elements and start the first recipe
  */
-export async function runSegmentsAnimation(segments: readonly TSnippetSegment[]): Promise<void> {
-  return runWithBuilder((tw) => {
-    for (const segment of segments) {
-      switch (segment.kind) {
-        case "type":
-          tw.timeline.type(segment.text, {
-            by: readAdvanceMode(),
-            interval: readInterval(),
-          });
-          break;
+export function boot(): void {
+  let activeCategory: TRecipe["category"] | null = null;
+  let searchQuery = "";
 
-        case "wait":
-          tw.timeline.wait(segment.duration);
-          break;
+  // ── Category filter chips ──────────────────────────────────────────────
+  const filterBar = el("category-filter");
 
-        case "delete":
-          tw.timeline.delete(segment.count, {
-            by: readAdvanceMode(),
-            interval: readInterval(),
-          });
-          break;
+  const allChip = document.createElement("button");
 
-        case "moveCursor":
-          tw.timeline.moveCursor(segment.index);
-          break;
+  allChip.className = "cat-chip cat-chip--active";
+  allChip.textContent = "All";
+  allChip.addEventListener("click", () => {
+    activeCategory = null;
+    filterBar.querySelectorAll(".cat-chip").forEach(c => c.classList.remove("cat-chip--active"));
+    allChip.classList.add("cat-chip--active");
+    renderRecipeList(activeCategory, searchQuery);
+  });
+  filterBar.appendChild(allChip);
 
-        case "select":
-          tw.timeline.select(segment.count);
-          break;
+  for (const cat of CATEGORY_ORDER) {
+    const chip = document.createElement("button");
 
-        case "multiType":
-          tw.timeline.type(segment.text, {
-            cursor: segment.cursors,
-            by: readAdvanceMode(),
-            interval: readInterval(),
-          });
-          break;
-      }
+    chip.className = "cat-chip";
+    chip.textContent = CATEGORY_LABELS[cat];
+    chip.addEventListener("click", () => {
+      activeCategory = cat;
+      filterBar.querySelectorAll(".cat-chip").forEach(c => c.classList.remove("cat-chip--active"));
+      chip.classList.add("cat-chip--active");
+      renderRecipeList(activeCategory, searchQuery);
+    });
+    filterBar.appendChild(chip);
+  }
+
+  // ── Search ─────────────────────────────────────────────────────────────
+  el<HTMLInputElement>("recipe-search").addEventListener("input", (e) => {
+    searchQuery = (e.target as HTMLInputElement).value.toLowerCase();
+    renderRecipeList(activeCategory, searchQuery);
+  });
+
+  // ── Playback buttons ───────────────────────────────────────────────────
+  el("btn-play").addEventListener("click", () => {
+    const tw = ensureTw();
+
+    _tw = tw;
+    startRaf();
+    void tw.play().then(() => syncPlaybackUI());
+  });
+
+  el("btn-pause").addEventListener("click", () => {
+    _tw?.pause();
+    syncPlaybackUI();
+  });
+
+  el("btn-stop").addEventListener("click", () => {
+    stopCurrent();
+    _tw = buildTypewriter();
+    syncPlaybackUI();
+  });
+
+  el("btn-replay").addEventListener("click", () => {
+    const tw = ensureTw();
+
+    _tw = tw;
+    startRaf();
+    void tw.replay().then(() => syncPlaybackUI());
+  });
+
+  el("btn-step-back").addEventListener("click", () => {
+    const tw = ensureTw();
+
+    _tw = tw;
+    tw.stepBackward();
+    syncPlaybackUI();
+  });
+
+  el("btn-step-fwd").addEventListener("click", () => {
+    const tw = ensureTw();
+
+    _tw = tw;
+    tw.stepForward();
+    syncPlaybackUI();
+  });
+
+  // ── Seek slider ────────────────────────────────────────────────────────
+  const seekSlider = el<HTMLInputElement>("seek-slider");
+
+  seekSlider.addEventListener("mousedown", () => {
+    _isScrubbing = true;
+  });
+
+  seekSlider.addEventListener("touchstart", () => {
+    _isScrubbing = true;
+  });
+
+  seekSlider.addEventListener("input", () => {
+    const tw = ensureTw();
+
+    _tw = tw;
+    tw.seek(Number(seekSlider.value));
+    el("time-current").textContent = formatMs(Number(seekSlider.value));
+  });
+
+  seekSlider.addEventListener("mouseup", () => {
+    _isScrubbing = false;
+    syncPlaybackUI();
+  });
+
+  seekSlider.addEventListener("touchend", () => {
+    _isScrubbing = false;
+    syncPlaybackUI();
+  });
+
+  // ── Rate slider ────────────────────────────────────────────────────────
+  el<HTMLInputElement>("ctrl-rate").addEventListener("input", (e) => {
+    const rate = Number.parseFloat((e.target as HTMLInputElement).value);
+
+    el("ctrl-rate-label").textContent = `${rate}×`;
+    _tw?.setRate(rate);
+  });
+
+  // ── Custom editor ──────────────────────────────────────────────────────
+  el("btn-run").addEventListener("click", runCustomEditor);
+  el("btn-clear").addEventListener("click", () => {
+    stopCurrent();
+    (el<HTMLTextAreaElement>("editor")).value = "";
+    syncPlaybackUI();
+  });
+
+  el<HTMLTextAreaElement>("editor").addEventListener("keydown", (e: KeyboardEvent) => {
+    if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+      e.preventDefault();
+      runCustomEditor();
     }
   });
+
+  // ── Initial render ─────────────────────────────────────────────────────
+  applyDefaults(RECIPES[0]!.variants[0]!);
+  renderRecipeList(null, "");
+  renderVariantChips();
+  updateSourcePanel();
+  loadAndPlay();
 }
