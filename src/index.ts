@@ -9,6 +9,7 @@ import { TimelineBuilder } from "./core/timeline/index";
 
 export { ECommandKind } from "./core/commands/index";
 export type { TBaseCommand } from "./core/commands/index";
+export { normalizeCursors } from "./core/commands/index";
 export type { TAdvanceMode, TAdvanceModeInput, TAdvanceUnit, TCommandKind, TCursorSelector, TDeleteCommand, TMoveCursorCommand, TSelectCommand, TTypeCommand, TWaitCommand } from "./core/commands/index";
 
 export { EEventKind } from "./core/events/index";
@@ -18,6 +19,7 @@ export type { IRenderer } from "./core/renderer/index";
 export type { TCursorState } from "./core/state/index";
 export type { TRichTextDocument, TStyleObject, TStyleRef, TTextMark } from "./core/state/index";
 export type { TSelectionState, TTypewriterState } from "./core/state/index";
+export { getSelection, withCursor, withSelection, withSelectionCleared } from "./core/state/index";
 export { TimelineBuilder } from "./core/timeline/index";
 export type { TDeleteOptions, TMoveCursorOptions, TSelectOptions, TTypeOptions } from "./core/timeline/index";
 

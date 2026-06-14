@@ -1,6 +1,7 @@
 import type { TAdvanceMode, TAdvanceModeInput, TTypeCommand } from "../commands/type-command.type";
 import type { TInsertEvent } from "../events/insert-event.type";
 
+import { normalizeCursors } from "../commands/normalize-cursors.helper";
 import { EEventKind } from "../events/event-kind.enum";
 import { chunkSteps } from "../stepping/chunk-steps.helper";
 import { segmentText } from "../stepping/segment-text.helper";
@@ -33,7 +34,9 @@ function resolveAdvanceMode(input: TAdvanceModeInput | undefined): TAdvanceMode 
 /**
  * @description
  * Compile a single TTypeCommand into a sequence of TInsertEvents with
- * absolute timestamps relative to the provided start time
+ * absolute timestamps relative to the provided start time.
+ * When the command targets multiple cursors, one set of events is produced per cursor
+ * at the same timestamps — the clock advances only once.
  *
  * @param command - The type command to compile
  * @param startTime - The absolute time offset at which this command begins
@@ -47,18 +50,25 @@ export function compileType(
   const interval = command.interval ?? DEFAULT_INTERVAL;
   const steps = segmentText(command.text, mode.unit);
   const chunks = chunkSteps(steps, mode.amount);
+  const cursorIds = normalizeCursors(command.cursor);
 
-  const events: TInsertEvent[] = chunks.map((chunk, index) => ({
-    id: `event_${++eventCounter}`,
-    kind: EEventKind.INSERT,
-    time: startTime + index * interval,
-    cursorId: command.cursor,
-    text: chunk,
-    ...(command.style !== undefined ? { style: command.style } : {}),
-    sourceCommandId: command.id,
-  }));
+  const events: TInsertEvent[] = [];
 
-  const endTime = events.length > 0 ? (events[events.length - 1]?.time ?? startTime) + interval : startTime;
+  for (const cursorId of cursorIds) {
+    for (const [index, chunk] of chunks.entries()) {
+      events.push({
+        id: `event_${++eventCounter}`,
+        kind: EEventKind.INSERT,
+        time: startTime + index * interval,
+        cursorId,
+        text: chunk,
+        ...(command.style !== undefined ? { style: command.style } : {}),
+        sourceCommandId: command.id,
+      });
+    }
+  }
+
+  const endTime = chunks.length > 0 ? startTime + (chunks.length - 1) * interval + interval : startTime;
 
   return { events, endTime };
 }

@@ -3,6 +3,8 @@ import type { TInsertEvent } from "../core/events/insert-event.type";
 import { describe, expect, it } from "vitest";
 import { compile } from "../core/compiler/compile.helper";
 
+import { reduce } from "../core/reducer/reduce.helper";
+import { createInitialState } from "../core/state/index";
 import { chunkSteps } from "../core/stepping/chunk-steps.helper";
 import { segmentText } from "../core/stepping/segment-text.helper";
 import { createTypewriter, stringRenderer } from "../index";
@@ -459,6 +461,94 @@ describe("compile (select)", () => {
 });
 
 // ---------------------------------------------------------------------------
+// Compiler — multi-cursor fan-out
+// ---------------------------------------------------------------------------
+
+describe("compile (multi-cursor)", () => {
+  it("fans out type events for each cursor at the same timestamps", () => {
+    const events = compile([
+      {
+        id: "cmd_mc_a",
+        kind: "type",
+        cursor: ["a", "b"],
+        text: "Hi",
+        by: "char",
+        interval: 100,
+      },
+    ]);
+
+    const aEvents = events.filter(e => e.cursorId === "a");
+    const bEvents = events.filter(e => e.cursorId === "b");
+
+    expect(aEvents).toHaveLength(2);
+    expect(bEvents).toHaveLength(2);
+
+    // Both cursors share the same timestamps
+    expect(aEvents[0]?.time).toBe(0);
+    expect(bEvents[0]?.time).toBe(0);
+    expect(aEvents[1]?.time).toBe(100);
+    expect(bEvents[1]?.time).toBe(100);
+  });
+
+  it("clock advances only once for a multi-cursor type command", () => {
+    const events = compile([
+      {
+        id: "cmd_mc_b1",
+        kind: "type",
+        cursor: ["a", "b"],
+        text: "AB",
+        by: "char",
+        interval: 100,
+      },
+      {
+        id: "cmd_mc_b2",
+        kind: "type",
+        cursor: "main",
+        text: "X",
+        by: "char",
+        interval: 50,
+      },
+    ]);
+
+    const mainEvents = events.filter(e => e.cursorId === "main");
+
+    expect(mainEvents).toHaveLength(1);
+    expect(mainEvents[0]?.time).toBe(200); // after the 2-char multi-cursor command
+  });
+
+  it("fans out moveCursor events for each cursor", () => {
+    const events = compile([
+      {
+        id: "cmd_mc_c",
+        kind: "moveCursor",
+        cursor: ["x", "y"],
+        index: 5,
+      },
+    ]);
+
+    expect(events).toHaveLength(2);
+    expect(events.every(e => e.kind === "moveCursor")).toBe(true);
+    expect(events.map(e => e.cursorId).sort()).toEqual(["x", "y"]);
+  });
+
+  it("fans out select events for each cursor", () => {
+    const events = compile([
+      {
+        id: "cmd_mc_d",
+        kind: "select",
+        cursor: ["p", "q"],
+        count: 3,
+        by: "char",
+      },
+    ]);
+
+    expect(events).toHaveLength(2);
+    expect(events.every(e => e.kind === "select")).toBe(true);
+    expect(events.map(e => e.cursorId).sort()).toEqual(["p", "q"]);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Integration — createTypewriter + stringRenderer
 // ---------------------------------------------------------------------------
 
@@ -609,11 +699,7 @@ describe("createTypewriter", () => {
     expect(renderer.toString()).toBe("Hi!");
   });
 
-  it("select forward sets selection from/to on state", async () => {
-    const { createInitialState } = await import("../core/state/index");
-    const { compile } = await import("../core/compiler/compile.helper");
-    const { reduce } = await import("../core/reducer/reduce.helper");
-
+  it("select forward sets selection from/to on state", () => {
     const commands = [
       { id: "c1", kind: "type" as const, cursor: "main", text: "Hello world", by: "char" as const, interval: 1 },
       { id: "c2", kind: "moveCursor" as const, cursor: "main", index: 6 },
@@ -627,16 +713,12 @@ describe("createTypewriter", () => {
       state = reduce(state, event);
     }
 
-    expect(state.selection).not.toBeNull();
-    expect(state.selection?.from).toBe(6);
-    expect(state.selection?.to).toBe(11);
+    expect(state.selections.main).toBeDefined();
+    expect(state.selections.main?.from).toBe(6);
+    expect(state.selections.main?.to).toBe(11);
   });
 
-  it("select backward sets selection from/to on state", async () => {
-    const { createInitialState } = await import("../core/state/index");
-    const { compile } = await import("../core/compiler/compile.helper");
-    const { reduce } = await import("../core/reducer/reduce.helper");
-
+  it("select backward sets selection from/to on state", () => {
     const commands = [
       { id: "c1", kind: "type" as const, cursor: "main", text: "Hello world", by: "char" as const, interval: 1 },
       { id: "c2", kind: "select" as const, cursor: "main", count: -5, by: "char" as const },
@@ -649,16 +731,12 @@ describe("createTypewriter", () => {
       state = reduce(state, event);
     }
 
-    expect(state.selection).not.toBeNull();
-    expect(state.selection?.from).toBe(6);
-    expect(state.selection?.to).toBe(11);
+    expect(state.selections.main).toBeDefined();
+    expect(state.selections.main?.from).toBe(6);
+    expect(state.selections.main?.to).toBe(11);
   });
 
-  it("selection is cleared after a type command", async () => {
-    const { createInitialState } = await import("../core/state/index");
-    const { compile } = await import("../core/compiler/compile.helper");
-    const { reduce } = await import("../core/reducer/reduce.helper");
-
+  it("selection is cleared after a type command", () => {
     const commands = [
       { id: "c1", kind: "type" as const, cursor: "main", text: "Hello", by: "char" as const, interval: 1 },
       { id: "c2", kind: "select" as const, cursor: "main", count: 3, by: "char" as const },
@@ -672,14 +750,10 @@ describe("createTypewriter", () => {
       state = reduce(state, event);
     }
 
-    expect(state.selection).toBeNull();
+    expect(state.selections.main).toBeUndefined();
   });
 
-  it("selection is cleared after a moveCursor command", async () => {
-    const { createInitialState } = await import("../core/state/index");
-    const { compile } = await import("../core/compiler/compile.helper");
-    const { reduce } = await import("../core/reducer/reduce.helper");
-
+  it("selection is cleared after a moveCursor command", () => {
     const commands = [
       { id: "c1", kind: "type" as const, cursor: "main", text: "Hello", by: "char" as const, interval: 1 },
       { id: "c2", kind: "select" as const, cursor: "main", count: 3, by: "char" as const },
@@ -693,7 +767,62 @@ describe("createTypewriter", () => {
       state = reduce(state, event);
     }
 
-    expect(state.selection).toBeNull();
+    expect(state.selections.main).toBeUndefined();
+  });
+
+  it("multi-cursor type inserts same text at both cursor positions", async () => {
+    const renderer = stringRenderer();
+    const tw = createTypewriter({ renderer });
+
+    // cursor "a" starts at 0, cursor "b" also starts at 0 (auto-created)
+    // both type "X" — first "a" inserts "X" → doc="X", cursor a=1
+    // then "b" inserts "X" at b's original pos=0 → doc="XX", cursor b=1
+    tw.timeline.type("X", { cursor: ["a", "b"], by: "char", interval: 1 });
+    await tw.play();
+
+    expect(renderer.toString()).toBe("XX");
+  });
+
+  it("auto-creates missing cursor when first referenced", () => {
+    const commands = [
+      { id: "c1", kind: "type" as const, cursor: "newcursor", text: "Z", by: "char" as const, interval: 1 },
+    ];
+
+    const events = compile(commands);
+    let state = createInitialState();
+
+    for (const event of events) {
+      state = reduce(state, event);
+    }
+
+    expect(state.cursors.newcursor).toBeDefined();
+    expect(state.document.text).toBe("Z");
+  });
+
+  it("per-cursor selections are independent", () => {
+    const commands = [
+      // type "Hello" with "main" → main cursor ends at index 5
+      { id: "c1", kind: "type" as const, cursor: "main", text: "Hello", by: "char" as const, interval: 1 },
+      // select -3 on "main" → selects backward [2,5] (main)
+      // select  3 on "other" (auto-created at 0) → selects forward [0,3] (other)
+      { id: "c2", kind: "select" as const, cursor: "main", count: -3, by: "char" as const },
+      { id: "c3", kind: "select" as const, cursor: "other", count: 3, by: "char" as const },
+    ];
+
+    const events = compile(commands);
+    let state = createInitialState();
+
+    for (const event of events) {
+      state = reduce(state, event);
+    }
+
+    expect(state.selections.main).toBeDefined();
+    expect(state.selections.main?.from).toBe(2);
+    expect(state.selections.main?.to).toBe(5);
+
+    expect(state.selections.other).toBeDefined();
+    expect(state.selections.other?.from).toBe(0);
+    expect(state.selections.other?.to).toBe(3);
   });
 
   it("starts with an empty string before play", () => {

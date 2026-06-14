@@ -2,8 +2,9 @@ import type { TNullable } from "@eoussama/core";
 import type { TAdvanceModeInput } from "../commands/type-command.type";
 import type { TSelectEvent } from "../events/select-event.type";
 import type { TCursorState } from "../state/cursor-state.type";
-import type { TSelectionState, TTypewriterState } from "../state/typewriter-state.type";
+import type { TTypewriterState } from "../state/typewriter-state.type";
 
+import { withCursor, withSelection } from "../state/typewriter-state.type";
 import { segmentText } from "../stepping/segment-text.helper";
 
 
@@ -73,35 +74,28 @@ function resolveEndIndex(text: string, startIndex: number, count: number, by: TA
  * @description
  * Apply a select event to the typewriter state.
  * Computes a concrete `{from, to}` selection range from the event's `count` and `by`
- * fields relative to the cursor's current index.
+ * fields relative to the cursor's current index, and stores it in the per-cursor
+ * selections map.
  * A positive `count` selects forward; a negative `count` selects backward.
+ * If the cursor does not exist it is created at index 0 before selecting.
  *
  * @param state - The current typewriter state
  * @param event - The select event to apply
- * @returns A new TTypewriterState with the selection field updated
+ * @returns A new TTypewriterState with the cursor's selection updated
  */
 export function selectText(state: TTypewriterState, event: TSelectEvent): TTypewriterState {
-  const cursor: TNullable<TCursorState> = state.cursors[event.cursorId] ?? null;
+  const ensured = withCursor(state, event.cursorId);
+  const cursor: TNullable<TCursorState> = ensured.cursors[event.cursorId] ?? null;
 
   if (cursor === null) {
     return state;
   }
 
   const cursorIndex = cursor.index;
-  const endIndex = resolveEndIndex(state.document.text, cursorIndex, event.count, event.by);
+  const endIndex = resolveEndIndex(ensured.document.text, cursorIndex, event.count, event.by);
 
   const from = Math.min(cursorIndex, endIndex);
   const to = Math.max(cursorIndex, endIndex);
 
-  if (from === to) {
-    return { ...state, selection: null };
-  }
-
-  const selection: TSelectionState = {
-    cursorId: event.cursorId,
-    from,
-    to,
-  };
-
-  return { ...state, selection };
+  return withSelection(ensured, event.cursorId, from, to);
 }

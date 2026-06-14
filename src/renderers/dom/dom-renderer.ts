@@ -1,15 +1,25 @@
 import type { TNullable } from "@eoussama/core";
 import type { IRenderer } from "../../core/renderer/renderer.interface";
 
-import type { TTypewriterState } from "../../core/state/typewriter-state.type";
+import type { TSelectionState, TTypewriterState } from "../../core/state/typewriter-state.type";
 
 
 
 /**
  * @description
+ * A boundary point used to segment the document text for multi-cursor/multi-selection rendering
+ */
+type TBoundary = {
+  readonly index: number;
+  readonly kind: "cursor" | "selStart" | "selEnd";
+  readonly cursorId: string;
+};
+
+/**
+ * @description
  * A DOM renderer that writes the current typewriter state into a target HTML element.
- * The cursor is rendered as an inline element at the correct document index position,
- * so it visually appears where the cursor actually is rather than always at the end.
+ * All active cursors are rendered as inline elements at their correct document positions.
+ * All active per-cursor selections are rendered as highlighted spans.
  *
  * The target may be specified as a CSS selector string or a direct element reference.
  */
@@ -46,7 +56,7 @@ export class DomRenderer implements IRenderer {
 
   /**
    * @description
-   * Update the target element with the latest document text and inline cursor
+   * Update the target element with the latest document text, all cursors, and all selections
    *
    * @param state - The current typewriter state
    */
@@ -64,8 +74,9 @@ export class DomRenderer implements IRenderer {
 
   /**
    * @description
-   * Paint the document text into the target element with the cursor rendered
-   * inline at the current cursor index position.
+   * Paint the document text into the target element.
+   * Segments the text at every cursor position and selection boundary,
+   * rendering cursor markers and selection highlights at their correct positions.
    *
    * @param state - The typewriter state to render
    */
@@ -75,50 +86,82 @@ export class DomRenderer implements IRenderer {
     }
 
     const text = state.document.text;
-    const cursorIndex = state.cursors.main?.index ?? text.length;
-    const sel = state.selection;
+
+    // Collect all boundaries (cursor positions + selection start/end)
+    const boundaries: TBoundary[] = [];
+
+    for (const cursor of Object.values(state.cursors)) {
+      boundaries.push({ index: cursor.index, kind: "cursor", cursorId: cursor.id });
+    }
+
+    for (const [cursorId, sel] of Object.entries(state.selections) as [string, TSelectionState][]) {
+      boundaries.push({ index: sel.from, kind: "selStart", cursorId });
+      boundaries.push({ index: sel.to, kind: "selEnd", cursorId });
+    }
+
+    // Sort boundaries by index; within same index: selStart < cursor < selEnd
+    const kindOrder: Record<TBoundary["kind"], number> = { selStart: 0, cursor: 1, selEnd: 2 };
+
+    boundaries.sort((a, b) => a.index - b.index || kindOrder[a.kind] - kindOrder[b.kind]);
+
+    // Build fragment
+    const fragment = document.createDocumentFragment();
+    let pos = 0;
+    const openSelections = new Set<string>();
+
+    for (const boundary of boundaries) {
+      // Flush text from pos to boundary.index
+      const segment = text.slice(pos, boundary.index);
+
+      if (segment.length > 0) {
+        if (openSelections.size > 0) {
+          const selEl = document.createElement("span");
+
+          selEl.className = "typewriter-selection";
+          selEl.textContent = segment;
+          fragment.appendChild(selEl);
+        }
+        else {
+          fragment.appendChild(document.createTextNode(segment));
+        }
+      }
+
+      pos = boundary.index;
+
+      if (boundary.kind === "selStart") {
+        openSelections.add(boundary.cursorId);
+      }
+      else if (boundary.kind === "selEnd") {
+        openSelections.delete(boundary.cursorId);
+      }
+      else if (boundary.kind === "cursor") {
+        const cursorEl = document.createElement("span");
+
+        cursorEl.className = "typewriter-cursor";
+        cursorEl.setAttribute("aria-hidden", "true");
+        cursorEl.dataset.cursorId = boundary.cursorId;
+        fragment.appendChild(cursorEl);
+      }
+    }
+
+    // Flush remaining text
+    const tail = text.slice(pos);
+
+    if (tail.length > 0) {
+      if (openSelections.size > 0) {
+        const selEl = document.createElement("span");
+
+        selEl.className = "typewriter-selection";
+        selEl.textContent = tail;
+        fragment.appendChild(selEl);
+      }
+      else {
+        fragment.appendChild(document.createTextNode(tail));
+      }
+    }
 
     this._target.innerHTML = "";
-
-    if (sel !== null && sel.from < sel.to) {
-      // Render: [pre-selection][selection][post-selection], with cursor inline
-      const preSelText = text.slice(0, sel.from);
-      const selText = text.slice(sel.from, sel.to);
-      const postSelText = text.slice(sel.to);
-
-      if (preSelText.length > 0) {
-        this._target.appendChild(document.createTextNode(preSelText));
-      }
-
-      const selEl = document.createElement("span");
-
-      selEl.className = "typewriter-selection";
-      selEl.textContent = selText;
-      this._target.appendChild(selEl);
-
-      if (postSelText.length > 0) {
-        this._target.appendChild(document.createTextNode(postSelText));
-      }
-    }
-    else {
-      // No selection — render text split at cursor
-      const before = text.slice(0, cursorIndex);
-      const after = text.slice(cursorIndex);
-
-      if (before.length > 0) {
-        this._target.appendChild(document.createTextNode(before));
-      }
-
-      const cursorEl = document.createElement("span");
-
-      cursorEl.className = "typewriter-cursor";
-      cursorEl.setAttribute("aria-hidden", "true");
-      this._target.appendChild(cursorEl);
-
-      if (after.length > 0) {
-        this._target.appendChild(document.createTextNode(after));
-      }
-    }
+    this._target.appendChild(fragment);
   }
 }
 

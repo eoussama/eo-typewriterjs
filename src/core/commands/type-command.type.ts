@@ -28,10 +28,12 @@ export type TAdvanceModeInput = TAdvanceUnit | TAdvanceMode;
 
 /**
  * @description
- * Selects which cursor the command targets.
- * For phase one only a single "main" cursor is supported.
+ * Selects which cursor or cursors the command targets.
+ * Pass a single string id or an array of ids to target multiple cursors simultaneously.
+ * When an array is given the command is applied to each cursor in parallel —
+ * the timeline clock advances only once.
  */
-export type TCursorSelector = string;
+export type TCursorSelector = string | readonly string[];
 
 /**
  * @description

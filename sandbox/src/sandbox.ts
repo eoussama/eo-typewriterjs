@@ -233,6 +233,14 @@ export async function runSegmentsAnimation(segments: readonly TSnippetSegment[])
         case "select":
           tw.timeline.select(segment.count);
           break;
+
+        case "multiType":
+          tw.timeline.type(segment.text, {
+            cursor: segment.cursors,
+            by: readAdvanceMode(),
+            interval: readInterval(),
+          });
+          break;
       }
     }
   });

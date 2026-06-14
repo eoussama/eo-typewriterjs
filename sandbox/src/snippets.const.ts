@@ -7,7 +7,8 @@ export type TSnippetSegment
     | { readonly kind: "wait"; readonly duration: number }
     | { readonly kind: "delete"; readonly count: number }
     | { readonly kind: "moveCursor"; readonly index: number }
-    | { readonly kind: "select"; readonly count: number };
+    | { readonly kind: "select"; readonly count: number }
+    | { readonly kind: "multiType"; readonly text: string; readonly cursors: readonly string[] };
 
 /**
  * @description
@@ -82,6 +83,13 @@ export const SNIPPETS: readonly TSnippet[] = [
       { kind: "wait", duration: 600 },
       { kind: "moveCursor", index: 6 },
       { kind: "select", count: 5 },
+    ],
+  },
+  {
+    label: "Multi-cursor",
+    text: "Same text, two cursors",
+    segments: [
+      { kind: "multiType", text: "Hello!", cursors: ["a", "b"] },
     ],
   },
 ] as const;

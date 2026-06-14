@@ -2,6 +2,7 @@ import type { TDeleteCommand } from "../commands/delete-command.type";
 import type { TAdvanceMode, TAdvanceModeInput } from "../commands/type-command.type";
 import type { TDeleteEvent } from "../events/delete-event.type";
 
+import { normalizeCursors } from "../commands/normalize-cursors.helper";
 import { EEventKind } from "../events/event-kind.enum";
 
 
@@ -32,7 +33,8 @@ function resolveAdvanceMode(input: TAdvanceModeInput | undefined): TAdvanceMode 
  * @description
  * Compile a single TDeleteCommand into a sequence of TDeleteEvents with
  * absolute timestamps relative to the provided start time.
- * Each event removes one advance-unit chunk backward from the cursor.
+ * When the command targets multiple cursors, one set of events is produced per cursor
+ * at the same timestamps — the clock advances only once.
  *
  * @param command - The delete command to compile
  * @param startTime - The absolute time offset at which this command begins
@@ -47,26 +49,27 @@ export function compileDelete(
   const amount = Math.max(1, mode.amount);
   const totalUnits = Math.max(0, command.count);
   const steps = Math.ceil(totalUnits / amount);
+  const cursorIds = normalizeCursors(command.cursor);
 
   const events: TDeleteEvent[] = [];
 
-  for (let i = 0; i < steps; i++) {
-    const remaining = totalUnits - i * amount;
-    const stepCount = Math.min(amount, remaining);
+  for (const cursorId of cursorIds) {
+    for (let i = 0; i < steps; i++) {
+      const remaining = totalUnits - i * amount;
+      const stepCount = Math.min(amount, remaining);
 
-    events.push({
-      id: `del_event_${++deleteEventCounter}`,
-      kind: EEventKind.DELETE,
-      time: startTime + i * interval,
-      cursorId: command.cursor,
-      count: stepCount,
-      sourceCommandId: command.id,
-    });
+      events.push({
+        id: `del_event_${++deleteEventCounter}`,
+        kind: EEventKind.DELETE,
+        time: startTime + i * interval,
+        cursorId,
+        count: stepCount,
+        sourceCommandId: command.id,
+      });
+    }
   }
 
-  const endTime = events.length > 0
-    ? (events[events.length - 1]?.time ?? startTime) + interval
-    : startTime;
+  const endTime = steps > 0 ? startTime + (steps - 1) * interval + interval : startTime;
 
   return { events, endTime };
 }
