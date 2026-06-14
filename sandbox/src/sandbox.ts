@@ -55,6 +55,20 @@ let activeTw: TTypewriter | null = null;
 let activeCategory: TSandboxCategory = "all";
 let rafId: number | null = null;
 
+/**
+ * Monotonically incrementing token used to discard results from stale runCode calls.
+ * Whenever a new run starts, this counter is bumped; the async completion checks that
+ * the token still matches before applying the result.
+ */
+let runToken = 0;
+
+/**
+ * The TTypewriter instance created inside the currently in-flight runUserCode call.
+ * Set via the onCreated callback the instant createTypewriter() is called — before any
+ * play() resolves — so that a subsequent recipe click can stop it immediately.
+ */
+let pendingTw: TTypewriter | null = null;
+
 // ---------------------------------------------------------------------------
 // Sandbox globals for autocomplete
 // ---------------------------------------------------------------------------
@@ -290,17 +304,33 @@ function getEditorCode(): string {
 
 /**
  * @description
- * Execute the code in the editor using the active renderer
+ * Execute the code in the editor using the active renderer.
+ *
+ * Uses a monotonic token to discard results from stale runs superseded by a
+ * newer recipe selection. Also passes an onCreated callback to runUserCode so
+ * that the TTypewriter is bound to activeTw the instant createTypewriter() is
+ * called — before any await tw.play() — making transport buttons responsive
+ * immediately and allowing a subsequent recipe click to cancel any ongoing
+ * animation without waiting for play() to resolve.
  *
  * @returns A promise that resolves when execution is complete, with the result or an error.
  */
 async function runCode(): Promise<void> {
+  // Increment token — any in-flight run with an older token will be ignored
+  const token = ++runToken;
+
   hideError();
   stopTick();
 
-  // Stop any prior animation
+  // Stop any in-flight animation immediately (pendingTw is set the moment
+  // createTypewriter() is called, which is before play() starts)
+  pendingTw?.stop();
+  pendingTw = null;
+
+  // Also stop any previously completed/active animation
   activeTw?.stop();
   activeTw = null;
+  syncTransportState();
 
   // Clear preview panels
   elPreviewDom.innerHTML = "";
@@ -316,11 +346,36 @@ async function runCode(): Promise<void> {
   );
 
   const code = getEditorCode();
-  const result = await runUserCode(code, renderer);
+
+  const result = await runUserCode(code, renderer, (tw) => {
+    // Called synchronously the moment createTypewriter() runs inside user code,
+    // before any await tw.play() — so we can immediately wire up transport.
+    if (token !== runToken) {
+      // A newer run already started — stop this tw right away
+      tw.stop();
+
+      return;
+    }
+
+    pendingTw = tw;
+    activeTw = tw;
+    elRunBtn.removeAttribute("disabled");
+    syncTransportState();
+    startTick();
+  });
+
+  // Discard if a newer run has already started
+  if (token !== runToken) {
+    return;
+  }
 
   elRunBtn.removeAttribute("disabled");
 
   if (!result.ok) {
+    // runUserCode can fail if no createTypewriter() was called; in that case
+    // activeTw is already null, so just show the error.
+    activeTw = null;
+    pendingTw = null;
     showError(result.error);
     setStatus("error");
     syncTransportState();
@@ -328,8 +383,11 @@ async function runCode(): Promise<void> {
     return;
   }
 
+  // Play has finished (or was stopped) — clean up pendingTw reference and
+  // do a final sync so the transport buttons show the correct end state.
+  pendingTw = null;
   activeTw = result.tw;
-  startTick();
+  syncTransportState();
 }
 
 // ---------------------------------------------------------------------------
@@ -374,7 +432,6 @@ function renderRecipes(): void {
       <span class="recipe-item__top">
         <span class="recipe-item__title">${recipe.title}</span>
         <span class="recipe-item__cat recipe-item__cat--${recipe.category}">${recipe.category}</span>
-        <span class="recipe-item__diff recipe-item__diff--${recipe.difficulty}">${recipe.difficulty}</span>
       </span>
       <span class="recipe-item__desc">${recipe.description}</span>
     `;

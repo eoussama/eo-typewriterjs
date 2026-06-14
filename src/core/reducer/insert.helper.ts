@@ -12,6 +12,8 @@ import { withCursor, withSelectionCleared } from "../state/typewriter-state.type
  * Apply an insert event to the typewriter state.
  * The text is inserted at the cursor's current index, the cursor advances
  * forward by the length of the inserted text, and any style is recorded as a mark.
+ * All other cursors whose index is strictly after the insertion point are shifted
+ * forward by the inserted length so that their logical positions remain correct.
  * The cursor's active selection is cleared.
  * If the cursor does not exist it is created at index 0 before inserting.
  *
@@ -43,19 +45,43 @@ export function insertTextAtCursor(state: TTypewriterState, event: TInsertEvent)
     });
   }
 
+  // Shift all other cursors and selections that are positioned after the insertion point
+  const updatedCursors = Object.fromEntries(
+    Object.entries(ensured.cursors).map(([id, cur]) => {
+      if (id === event.cursorId) {
+        return [id, { ...cur, index: nextIndex }];
+      }
+
+      if (cur.index > insertIndex) {
+        return [id, { ...cur, index: cur.index + insertedLength }];
+      }
+
+      return [id, cur];
+    }),
+  ) as TTypewriterState["cursors"];
+
+  // Shift selections of other cursors that reference positions after the insertion point
+  const updatedSelections = Object.fromEntries(
+    Object.entries(ensured.selections).map(([id, sel]) => {
+      if (id === event.cursorId || sel === undefined) {
+        return [id, sel];
+      }
+
+      return [id, {
+        from: sel.from > insertIndex ? sel.from + insertedLength : sel.from,
+        to: sel.to > insertIndex ? sel.to + insertedLength : sel.to,
+      }];
+    }),
+  ) as TTypewriterState["selections"];
+
   const afterInsert: TTypewriterState = {
     ...ensured,
     document: {
       text: nextText,
       marks: nextMarks,
     },
-    cursors: {
-      ...ensured.cursors,
-      [event.cursorId]: {
-        ...cursor,
-        index: nextIndex,
-      },
-    },
+    cursors: updatedCursors,
+    selections: updatedSelections,
   };
 
   return withSelectionCleared(afterInsert, event.cursorId);

@@ -33,6 +33,8 @@ function resolveAdvanceMode(input: TAdvanceModeInput | undefined): TAdvanceMode 
  * @description
  * Compile a single TDeleteCommand into a sequence of TDeleteEvents with
  * absolute timestamps relative to the provided start time.
+ * Each event carries the logical unit and a per-step count in that unit;
+ * the reducer resolves the actual character span at apply time.
  * When the command targets multiple cursors, one set of events is produced per cursor
  * at the same timestamps — the clock advances only once.
  *
@@ -64,6 +66,7 @@ export function compileDelete(
         time: startTime + i * interval,
         cursorId,
         count: stepCount,
+        unit: mode.unit,
         sourceCommandId: command.id,
       });
     }

@@ -387,6 +387,50 @@ body {
   color: inherit;
 }
 
+.tw-accent {
+  color: var(--color-accent-hover);
+  font-weight: 700;
+  font-style: italic;
+}
+
+.tw-danger {
+  color: var(--color-danger);
+  text-decoration: line-through;
+  opacity: 0.8;
+}
+
+.tw-success {
+  color: var(--color-success);
+  font-weight: 600;
+}
+
+.tw-pill {
+  background: color-mix(in srgb, var(--color-accent) 20%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-accent) 40%, transparent);
+  border-radius: 999px;
+  padding: 0 0.4em;
+  color: var(--color-accent-hover);
+  font-weight: 600;
+}
+
+.tw-gradient {
+  background: linear-gradient(90deg, var(--color-accent), #b47cf8, #f6ad55);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  font-weight: 700;
+}
+
+.tw-code {
+  font-family: var(--font-mono);
+  background: color-mix(in srgb, var(--color-success) 12%, var(--color-surface-hi));
+  border: 1px solid color-mix(in srgb, var(--color-success) 25%, var(--color-border));
+  border-radius: 3px;
+  padding: 0 0.35em;
+  color: var(--color-success);
+  font-size: 0.9em;
+}
+
 @keyframes blink {
   0%, 100% { opacity: 1; }
   50% { opacity: 0; }
@@ -612,18 +656,6 @@ body {
 .recipe-item__cat--cursor   { color: var(--color-cat-cursor);   background: color-mix(in srgb, var(--color-cat-cursor)   12%, transparent); }
 .recipe-item__cat--styling  { color: var(--color-cat-styling);  background: color-mix(in srgb, var(--color-cat-styling)  12%, transparent); }
 .recipe-item__cat--advanced { color: var(--color-cat-advanced); background: color-mix(in srgb, var(--color-cat-advanced) 12%, transparent); }
-
-.recipe-item__diff {
-  font-size: 0.56rem;
-  font-weight: 600;
-  padding: 0.08em 0.38em;
-  border-radius: 999px;
-  border: 1px solid currentColor;
-}
-
-.recipe-item__diff--beginner     { color: var(--color-success); background: color-mix(in srgb, var(--color-success) 10%, transparent); }
-.recipe-item__diff--intermediate { color: var(--color-warning); background: color-mix(in srgb, var(--color-warning) 10%, transparent); }
-.recipe-item__diff--advanced     { color: var(--color-danger);  background: color-mix(in srgb, var(--color-danger)  10%, transparent); }
 
 /* ─── Editor panel ──────────────────────────────────────────────────────── */
 

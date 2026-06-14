@@ -89,19 +89,23 @@ export type TRunResult = {
  *
  * @param code - The user code string
  * @param renderer - The renderer to inject as `renderer`
+ * @param onCreated - Optional callback fired synchronously the moment createTypewriter() is called,
+ *   before any play() call. Allows the host to immediately bind the TTypewriter for transport control.
  * @returns A TRunResult with the TTypewriter instance or an error message
  */
 export async function runUserCode(
   code: string,
   renderer: IRenderer,
+  onCreated?: (tw: TTypewriter) => void,
 ): Promise<TRunResult> {
   let capturedTw: TTypewriter | null = null;
 
-  // Intercepted createTypewriter — captures the tw instance
+  // Intercepted createTypewriter — captures the tw instance and notifies the host immediately
   function sandboxCreateTypewriter(opts: { renderer: IRenderer }): TTypewriter {
     const tw = createTypewriter(opts);
 
     capturedTw = tw;
+    onCreated?.(tw);
 
     return tw;
   }
