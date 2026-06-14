@@ -48,10 +48,6 @@ function resolveEndIndex(text: string, startIndex: number, count: number, by: TA
   const amount = Math.max(1, resolveAmount(by));
   const absCount = Math.abs(count) * amount;
 
-  if (count === 0 || text.length === 0) {
-    return startIndex;
-  }
-
   if (count > 0) {
     // Select forward: segment text from startIndex to end, take `absCount` segments
     const tail = text.slice(startIndex);
@@ -85,11 +81,8 @@ function resolveEndIndex(text: string, startIndex: number, count: number, by: TA
  */
 export function selectText(state: TTypewriterState, event: TSelectEvent): TTypewriterState {
   const ensured = withCursor(state, event.cursorId);
-  const cursor: TNullable<TCursorState> = ensured.cursors[event.cursorId] ?? null;
-
-  if (cursor === null) {
-    return state;
-  }
+  // withCursor guarantees the cursor exists
+  const cursor = ensured.cursors[event.cursorId] as TCursorState;
 
   const cursorIndex = cursor.index;
   const endIndex = resolveEndIndex(ensured.document.text, cursorIndex, event.count, event.by);

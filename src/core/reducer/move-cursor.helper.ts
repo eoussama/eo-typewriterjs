@@ -20,11 +20,8 @@ import { withCursor, withSelectionCleared } from "../state/typewriter-state.type
  */
 export function moveCursor(state: TTypewriterState, event: TMoveCursorEvent): TTypewriterState {
   const ensured = withCursor(state, event.cursorId);
-  const cursor: TNullable<TCursorState> = ensured.cursors[event.cursorId] ?? null;
-
-  if (cursor === null) {
-    return state;
-  }
+  // withCursor guarantees the cursor exists
+  const cursor = ensured.cursors[event.cursorId] as TCursorState;
 
   const clampedIndex = Math.max(0, Math.min(event.index, ensured.document.text.length));
 

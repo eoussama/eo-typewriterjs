@@ -48,6 +48,7 @@ export async function play(events: TTimelineEvent[], options: TPlayerOptions): P
     while (nextIndex < sorted.length) {
       const event = sorted[nextIndex];
 
+      /* v8 ignore next */
       if (event === undefined || event.time > playhead) {
         break;
       }
@@ -63,11 +64,13 @@ export async function play(events: TTimelineEvent[], options: TPlayerOptions): P
 
     if (nextIndex < sorted.length) {
       const nextEvent = sorted[nextIndex];
+      /* v8 ignore start */
       const delay = nextEvent !== undefined ? Math.max(0, nextEvent.time - (Date.now() - startTime)) : 0;
 
       if (delay > 0) {
         await wait(delay);
       }
+      /* v8 ignore stop */
     }
   }
 

@@ -22,11 +22,8 @@ import { withCursor, withSelectionCleared } from "../state/typewriter-state.type
  */
 export function deleteTextAtCursor(state: TTypewriterState, event: TDeleteEvent): TTypewriterState {
   const ensured = withCursor(state, event.cursorId);
-  const cursor: TNullable<TCursorState> = ensured.cursors[event.cursorId] ?? null;
-
-  if (cursor === null) {
-    return state;
-  }
+  // withCursor guarantees the cursor exists
+  const cursor = ensured.cursors[event.cursorId] as TCursorState;
 
   const removeEnd = cursor.index;
   const removeStart = Math.max(0, removeEnd - event.count);

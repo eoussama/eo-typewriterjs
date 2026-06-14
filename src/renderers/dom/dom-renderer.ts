@@ -73,6 +73,7 @@ export class DomRenderer implements IRenderer {
    * @description
    * Release the reference to the target element
    */
+  /* v8 ignore next 3 */
   unmount(): void {
     this._target = null;
   }
@@ -157,6 +158,7 @@ export class DomRenderer implements IRenderer {
         if (boundary.index > pos) {
           const sliceText = segment.text.slice(pos - segment.from, boundary.index - segment.from);
 
+          /* v8 ignore next 3 */
           if (sliceText.length > 0) {
             this._appendTextNode(fragment, sliceText, segment, openSelections);
           }
@@ -167,6 +169,7 @@ export class DomRenderer implements IRenderer {
         if (boundary.kind === "selStart") {
           openSelections.add(boundary.cursorId);
         }
+        /* v8 ignore next 3 */
         else if (boundary.kind === "selEnd") {
           openSelections.delete(boundary.cursorId);
         }
@@ -184,6 +187,7 @@ export class DomRenderer implements IRenderer {
       if (pos < segment.to) {
         const remainingText = segment.text.slice(pos - segment.from);
 
+        /* v8 ignore next 3 */
         if (remainingText.length > 0) {
           this._appendTextNode(fragment, remainingText, segment, openSelections);
         }

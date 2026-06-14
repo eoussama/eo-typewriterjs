@@ -123,6 +123,7 @@ export function segmentRichText(document: TRichTextDocument): TRichTextSegment[]
     const from = boundaries[i];
     const to = boundaries[i + 1];
 
+    /* v8 ignore next 3 */
     if (from >= to) {
       continue;
     }

@@ -78,16 +78,15 @@ export class StringRenderer implements IRenderer {
       }
 
       const merged = mergeStyles(segment.styles);
+      const ansiCodes = merged.ansi !== undefined ? Object.values(merged.ansi) : [];
 
-      if (merged.ansi === undefined || Object.keys(merged.ansi).length === 0) {
+      if (ansiCodes.length === 0) {
         result += segment.text;
         continue;
       }
 
       anyAnsi = true;
-      const codes = Object.values(merged.ansi).join(";");
-
-      result += `\x1B[${codes}m${segment.text}\x1B[0m`;
+      result += `\x1B[${ansiCodes.join(";")}m${segment.text}\x1B[0m`;
     }
 
     return anyAnsi ? result : this._state.document.text;

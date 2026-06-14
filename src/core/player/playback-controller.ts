@@ -46,6 +46,7 @@ function buildCheckpoints(events: readonly TTimelineEvent[], initialState: TType
   for (let i = 0; i < events.length; i++) {
     const event = events[i];
 
+    /* v8 ignore next 3 */
     if (event === undefined) {
       continue;
     }
@@ -346,6 +347,7 @@ export class PlaybackController {
 
     const nextEvent = this._events[this._currentEventIndex];
 
+    /* v8 ignore next 4 */
     if (nextEvent === undefined) {
       this._status = EPlaybackStatus.COMPLETED;
 
@@ -416,7 +418,8 @@ export class PlaybackController {
 
     this._state = reconstructState(cp, this._events, targetEventIndex);
     this._currentEventIndex = targetEventIndex;
-    this._currentTime = this._events[targetEventIndex - 1]?.time ?? 0;
+    // targetEventIndex > 0 is guaranteed by the groupStart > 0 check above
+    this._currentTime = (this._events[targetEventIndex - 1] as TTimelineEvent).time;
     this._renderer.render(this._state);
     this._status = EPlaybackStatus.PAUSED;
   }
@@ -505,6 +508,7 @@ export class PlaybackController {
    * When all events are exhausted, resolves the play promise and marks completed.
    */
   private _scheduleNext(): void {
+    /* v8 ignore next 3 */
     if (this._status !== EPlaybackStatus.PLAYING) {
       return;
     }

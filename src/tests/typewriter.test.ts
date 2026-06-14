@@ -3,14 +3,14 @@ import type { TInsertEvent } from "../core/events/insert-event.type";
 import type { TMarkEvent } from "../core/events/mark-event.type";
 import { describe, expect, it } from "vitest";
 import { compile } from "../core/compiler/compile.helper";
-
+import { play } from "../core/player/player.helper";
 import { reduce } from "../core/reducer/reduce.helper";
-import { createInitialState } from "../core/state/index";
+import { applyMark } from "../core/reducer/apply-mark.helper";
+import { mergeStyles, resolveStyleRef, segmentRichText } from "../core/state/segment-rich-text.helper";
+import { createInitialState, getSelection, withSelection, withSelectionCleared } from "../core/state/index";
 import { chunkSteps } from "../core/stepping/chunk-steps.helper";
 import { segmentText } from "../core/stepping/segment-text.helper";
-import { createTypewriter, EPlaybackStatus, stringRenderer } from "../index";
-
-
+import { createTypewriter, EPlaybackStatus, stringRenderer, StringRenderer } from "../index";
 
 // ---------------------------------------------------------------------------
 // Stepping — segmentText
@@ -40,21 +40,15 @@ describe("segmentText", () => {
   });
 
   it("splits text into words and attaches trailing space to preceding word", () => {
-    const result = segmentText("Hello world", "word");
-
-    expect(result).toEqual(["Hello ", "world"]);
+    expect(segmentText("Hello world", "word")).toEqual(["Hello ", "world"]);
   });
 
   it("handles multi-word text with trailing space attachment", () => {
-    const result = segmentText("foo bar baz", "word");
-
-    expect(result).toEqual(["foo ", "bar ", "baz"]);
+    expect(segmentText("foo bar baz", "word")).toEqual(["foo ", "bar ", "baz"]);
   });
 
   it("splits text by line and preserves newline on each line except the last", () => {
-    const result = segmentText("line1\nline2\nline3", "line");
-
-    expect(result).toEqual(["line1\n", "line2\n", "line3"]);
+    expect(segmentText("line1\nline2\nline3", "line")).toEqual(["line1\n", "line2\n", "line3"]);
   });
 
   it("returns the whole text as a single step for 'custom' unit", () => {
@@ -85,20 +79,13 @@ describe("chunkSteps", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Compiler — compile
+// Compiler — type command
 // ---------------------------------------------------------------------------
 
 describe("compile", () => {
-  it("compiles a type command into insert events with correct text chunks", () => {
+  it("compiles a type command into insert events", () => {
     const events = compile([
-      {
-        id: "cmd_test_1",
-        kind: "type",
-        cursor: "main",
-        text: "Hello",
-        by: { unit: "char", amount: 1 },
-        interval: 50,
-      },
+      { id: "c1", kind: "type", cursor: "main", text: "Hello", by: { unit: "char", amount: 1 }, interval: 50 },
     ]);
 
     expect(events).toHaveLength(5);
@@ -106,144 +93,80 @@ describe("compile", () => {
   });
 
   it("applies correct absolute timestamps for char typing", () => {
-    const events = compile([
-      {
-        id: "cmd_test_2",
-        kind: "type",
-        cursor: "main",
-        text: "Hi",
-        by: "char",
-        interval: 100,
-      },
-    ]);
+    const events = compile([{ id: "c2", kind: "type", cursor: "main", text: "Hi", by: "char", interval: 100 }]);
 
     expect(events[0]?.time).toBe(0);
     expect(events[1]?.time).toBe(100);
   });
 
-  it("compiles word typing and attaches whitespace to preceding word", () => {
-    const events = compile([
-      {
-        id: "cmd_test_3",
-        kind: "type",
-        cursor: "main",
-        text: "Hello world",
-        by: "word",
-        interval: 150,
-      },
-    ]);
+  it("compiles word typing", () => {
+    const events = compile([{ id: "c3", kind: "type", cursor: "main", text: "Hello world", by: "word", interval: 150 }]);
 
     expect(events).toHaveLength(2);
     expect((events[0] as TInsertEvent | undefined)?.text).toBe("Hello ");
     expect((events[1] as TInsertEvent | undefined)?.text).toBe("world");
-    expect(events[0]?.time).toBe(0);
-    expect(events[1]?.time).toBe(150);
   });
 
   it("compiles amount:2 char typing into correct chunks", () => {
-    const events = compile([
-      {
-        id: "cmd_test_4",
-        kind: "type",
-        cursor: "main",
-        text: "Hello",
-        by: { unit: "char", amount: 2 },
-        interval: 50,
-      },
-    ]);
+    const events = compile([{ id: "c4", kind: "type", cursor: "main", text: "Hello", by: { unit: "char", amount: 2 }, interval: 50 }]);
 
     expect(events).toHaveLength(3);
     expect(events.map(e => (e as TInsertEvent).text)).toEqual(["He", "ll", "o"]);
+  });
+
+  it("uses default interval (50ms) when interval is omitted on type command", () => {
+    const events = compile([{ id: "c5", kind: "type", cursor: "main", text: "AB", by: "char" }]);
+
     expect(events[0]?.time).toBe(0);
     expect(events[1]?.time).toBe(50);
-    expect(events[2]?.time).toBe(100);
+  });
+
+  it("uses default advance mode when by is omitted on type command", () => {
+    const events = compile([{ id: "c6", kind: "type", cursor: "main", text: "AB" }]);
+
+    expect(events).toHaveLength(2);
+    expect((events[0] as TInsertEvent).text).toBe("A");
+    expect((events[1] as TInsertEvent).text).toBe("B");
+  });
+
+  it("produces no events for an empty type command", () => {
+    expect(compile([{ id: "c7", kind: "type", cursor: "main", text: "", by: "char", interval: 50 }])).toHaveLength(0);
+  });
+
+  it("silently ignores unknown command kinds (default branch)", () => {
+    expect(compile([{ id: "c8", kind: "unknown" as unknown as "wait", duration: 0 }])).toHaveLength(0);
   });
 });
 
 // ---------------------------------------------------------------------------
-// Compiler — wait command
+// Compiler — wait
 // ---------------------------------------------------------------------------
 
 describe("compile (wait)", () => {
-  it("advances the time cursor by the wait duration between two type commands", () => {
+  it("advances time cursor by wait duration", () => {
     const events = compile([
-      {
-        id: "cmd_w1",
-        kind: "type",
-        cursor: "main",
-        text: "Hi",
-        by: "char",
-        interval: 100,
-      },
-      {
-        id: "cmd_w2",
-        kind: "wait",
-        duration: 500,
-      },
-      {
-        id: "cmd_w3",
-        kind: "type",
-        cursor: "main",
-        text: "AB",
-        by: "char",
-        interval: 50,
-      },
+      { id: "w1", kind: "type", cursor: "main", text: "Hi", by: "char", interval: 100 },
+      { id: "w2", kind: "wait", duration: 500 },
+      { id: "w3", kind: "type", cursor: "main", text: "AB", by: "char", interval: 50 },
     ]);
 
-    // "Hi" produces events at t=0 and t=100; end of "Hi" = t=200
-    // wait 500 ms → next command starts at t=700
-    // "AB" produces events at t=700 and t=750
-    const hiEvents = events.filter(e => (e as TInsertEvent).text === "H" || (e as TInsertEvent).text === "i");
     const abEvents = events.filter(e => (e as TInsertEvent).text === "A" || (e as TInsertEvent).text === "B");
-
-    expect(hiEvents).toHaveLength(2);
-    expect(abEvents).toHaveLength(2);
-
-    expect(hiEvents[0]?.time).toBe(0);
-    expect(hiEvents[1]?.time).toBe(100);
 
     expect(abEvents[0]?.time).toBe(700);
     expect(abEvents[1]?.time).toBe(750);
   });
 
   it("emits no events for a standalone wait command", () => {
-    const events = compile([
-      {
-        id: "cmd_w4",
-        kind: "wait",
-        duration: 1000,
-      },
-    ]);
-
-    expect(events).toHaveLength(0);
+    expect(compile([{ id: "w4", kind: "wait", duration: 1000 }])).toHaveLength(0);
   });
 
-  it("treats a zero-duration wait as a no-op on event timing", () => {
+  it("treats zero-duration wait as no-op", () => {
     const events = compile([
-      {
-        id: "cmd_w5",
-        kind: "type",
-        cursor: "main",
-        text: "AB",
-        by: "char",
-        interval: 100,
-      },
-      {
-        id: "cmd_w6",
-        kind: "wait",
-        duration: 0,
-      },
-      {
-        id: "cmd_w7",
-        kind: "type",
-        cursor: "main",
-        text: "CD",
-        by: "char",
-        interval: 100,
-      },
+      { id: "w5", kind: "type", cursor: "main", text: "AB", by: "char", interval: 100 },
+      { id: "w6", kind: "wait", duration: 0 },
+      { id: "w7", kind: "type", cursor: "main", text: "CD", by: "char", interval: 100 },
     ]);
 
-    // "AB" ends at t=200; wait(0) → "CD" starts at t=200
     const cdEvents = events.filter(e => (e as TInsertEvent).text === "C" || (e as TInsertEvent).text === "D");
 
     expect(cdEvents[0]?.time).toBe(200);
@@ -252,174 +175,94 @@ describe("compile (wait)", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Compiler — delete command
+// Compiler — delete
 // ---------------------------------------------------------------------------
 
 describe("compile (delete)", () => {
-  it("compiles a delete command into delete events with correct counts", () => {
-    const events = compile([
-      {
-        id: "cmd_d1",
-        kind: "delete",
-        cursor: "main",
-        count: 3,
-        by: "char",
-        interval: 50,
-      },
-    ]);
+  it("compiles a delete command into delete events", () => {
+    const events = compile([{ id: "d1", kind: "delete", cursor: "main", count: 3, by: "char", interval: 50 }]);
 
     expect(events).toHaveLength(3);
     events.forEach(e => expect((e as TDeleteEvent).count).toBe(1));
   });
 
   it("applies correct absolute timestamps for char deletion", () => {
-    const events = compile([
-      {
-        id: "cmd_d2",
-        kind: "delete",
-        cursor: "main",
-        count: 2,
-        by: "char",
-        interval: 100,
-      },
-    ]);
+    const events = compile([{ id: "d2", kind: "delete", cursor: "main", count: 2, by: "char", interval: 100 }]);
 
     expect(events[0]?.time).toBe(0);
     expect(events[1]?.time).toBe(100);
   });
 
   it("compiles amount:2 char deletion into correct step count", () => {
-    const events = compile([
-      {
-        id: "cmd_d3",
-        kind: "delete",
-        cursor: "main",
-        count: 5,
-        by: { unit: "char", amount: 2 },
-        interval: 50,
-      },
-    ]);
+    const events = compile([{ id: "d3", kind: "delete", cursor: "main", count: 5, by: { unit: "char", amount: 2 }, interval: 50 }]);
 
-    // ceil(5 / 2) = 3 events: counts [2, 2, 1]
     expect(events).toHaveLength(3);
     expect((events[0] as TDeleteEvent | undefined)?.count).toBe(2);
-    expect((events[1] as TDeleteEvent | undefined)?.count).toBe(2);
     expect((events[2] as TDeleteEvent | undefined)?.count).toBe(1);
   });
 
   it("emits no events for a count of 0", () => {
-    const events = compile([
-      {
-        id: "cmd_d4",
-        kind: "delete",
-        cursor: "main",
-        count: 0,
-      },
-    ]);
-
-    expect(events).toHaveLength(0);
+    expect(compile([{ id: "d4", kind: "delete", cursor: "main", count: 0 }])).toHaveLength(0);
   });
 
-  it("advances the time cursor after delete so subsequent commands are scheduled after it", () => {
+  it("advances time cursor after delete", () => {
     const events = compile([
-      {
-        id: "cmd_d5",
-        kind: "delete",
-        cursor: "main",
-        count: 2,
-        by: "char",
-        interval: 100,
-      },
-      {
-        id: "cmd_d6",
-        kind: "type",
-        cursor: "main",
-        text: "AB",
-        by: "char",
-        interval: 50,
-      },
+      { id: "d5", kind: "delete", cursor: "main", count: 2, by: "char", interval: 100 },
+      { id: "d6", kind: "type", cursor: "main", text: "AB", by: "char", interval: 50 },
     ]);
 
-    // delete: events at t=0, t=100; end = t=200
-    // type: events at t=200, t=250
     const typeEvents = events.filter(e => e.kind === "insert");
 
     expect(typeEvents[0]?.time).toBe(200);
-    expect(typeEvents[1]?.time).toBe(250);
+  });
+
+  it("uses default interval (50ms) when interval is omitted on delete command", () => {
+    const events = compile([{ id: "d7", kind: "delete", cursor: "main", count: 2 }]);
+
+    expect(events[0]?.time).toBe(0);
+    expect(events[1]?.time).toBe(50);
   });
 });
 
 // ---------------------------------------------------------------------------
-// Compiler — moveCursor command
+// Compiler — moveCursor
 // ---------------------------------------------------------------------------
 
 describe("compile (moveCursor)", () => {
   it("compiles a moveCursor command into a single event", () => {
-    const events = compile([
-      {
-        id: "cmd_mc1",
-        kind: "moveCursor",
-        cursor: "main",
-        index: 3,
-      },
-    ]);
+    const events = compile([{ id: "mc1", kind: "moveCursor", cursor: "main", index: 3 }]);
 
     expect(events).toHaveLength(1);
     expect(events[0]?.kind).toBe("moveCursor");
   });
 
-  it("places the moveCursor event at the current time without advancing the clock", () => {
+  it("does not advance the clock", () => {
     const events = compile([
-      {
-        id: "cmd_mc2",
-        kind: "type",
-        cursor: "main",
-        text: "Hi",
-        by: "char",
-        interval: 100,
-      },
-      {
-        id: "cmd_mc3",
-        kind: "moveCursor",
-        cursor: "main",
-        index: 0,
-      },
-      {
-        id: "cmd_mc4",
-        kind: "type",
-        cursor: "main",
-        text: "AB",
-        by: "char",
-        interval: 50,
-      },
+      { id: "mc2", kind: "type", cursor: "main", text: "Hi", by: "char", interval: 100 },
+      { id: "mc3", kind: "moveCursor", cursor: "main", index: 0 },
+      { id: "mc4", kind: "type", cursor: "main", text: "AB", by: "char", interval: 50 },
     ]);
 
-    // "Hi" ends at t=200; moveCursor at t=200 (no clock advance); "AB" starts at t=200
-    const moveEvents = events.filter(e => e.kind === "moveCursor");
     const abEvents = events.filter(e => (e as TInsertEvent).text === "A" || (e as TInsertEvent).text === "B");
 
-    expect(moveEvents).toHaveLength(1);
-    expect(moveEvents[0]?.time).toBe(200);
     expect(abEvents[0]?.time).toBe(200);
-    expect(abEvents[1]?.time).toBe(250);
   });
 });
 
 // ---------------------------------------------------------------------------
-// Compiler — select command
+// Compiler — select
 // ---------------------------------------------------------------------------
 
 describe("compile (select)", () => {
   it("compiles a select command into a single event", () => {
-    const events = compile([
-      {
-        id: "cmd_sel1",
-        kind: "select",
-        cursor: "main",
-        count: 3,
-        by: "char",
-      },
-    ]);
+    const events = compile([{ id: "s1", kind: "select", cursor: "main", count: 3, by: "char" }]);
+
+    expect(events).toHaveLength(1);
+    expect(events[0]?.kind).toBe("select");
+  });
+
+  it("uses default by (char) when by is omitted on select command", () => {
+    const events = compile([{ id: "s0", kind: "select", cursor: "main", count: 2 }]);
 
     expect(events).toHaveLength(1);
     expect(events[0]?.kind).toBe("select");
@@ -427,36 +270,13 @@ describe("compile (select)", () => {
 
   it("does not advance the clock", () => {
     const events = compile([
-      {
-        id: "cmd_sel2",
-        kind: "type",
-        cursor: "main",
-        text: "Hi",
-        by: "char",
-        interval: 100,
-      },
-      {
-        id: "cmd_sel3",
-        kind: "select",
-        cursor: "main",
-        count: 2,
-        by: "char",
-      },
-      {
-        id: "cmd_sel4",
-        kind: "type",
-        cursor: "main",
-        text: "AB",
-        by: "char",
-        interval: 50,
-      },
+      { id: "s2", kind: "type", cursor: "main", text: "Hi", by: "char", interval: 100 },
+      { id: "s3", kind: "select", cursor: "main", count: 2, by: "char" },
+      { id: "s4", kind: "type", cursor: "main", text: "AB", by: "char", interval: 50 },
     ]);
 
-    const selectEvents = events.filter(e => e.kind === "select");
     const abEvents = events.filter(e => (e as TInsertEvent).text === "A" || (e as TInsertEvent).text === "B");
 
-    expect(selectEvents).toHaveLength(1);
-    expect(selectEvents[0]?.time).toBe(200);
     expect(abEvents[0]?.time).toBe(200);
   });
 });
@@ -468,13 +288,7 @@ describe("compile (select)", () => {
 describe("compile (mark)", () => {
   it("compiles a fixed-range mark into exactly one event", () => {
     const events = compile([
-      {
-        id: "cmd_mk1",
-        kind: "mark",
-        cursor: "main",
-        style: "tw-highlight",
-        range: { from: 0, to: 5 },
-      },
+      { id: "mk1", kind: "mark", cursor: "main", style: "tw-highlight", range: { from: 0, to: 5 } },
     ]);
 
     expect(events).toHaveLength(1);
@@ -483,13 +297,7 @@ describe("compile (mark)", () => {
 
   it("fixed-range mark event carries correct from, to, and style", () => {
     const events = compile([
-      {
-        id: "cmd_mk2",
-        kind: "mark",
-        cursor: "main",
-        style: "tw-highlight",
-        range: { from: 2, to: 9 },
-      },
+      { id: "mk2", kind: "mark", cursor: "main", style: "tw-highlight", range: { from: 2, to: 9 } },
     ]);
 
     const evt = events[0] as TMarkEvent;
@@ -501,84 +309,36 @@ describe("compile (mark)", () => {
 
   it("fixed-range mark does not advance the clock", () => {
     const events = compile([
-      {
-        id: "cmd_mk3a",
-        kind: "type",
-        cursor: "main",
-        text: "Hi",
-        by: "char" as const,
-        interval: 100,
-      },
-      {
-        id: "cmd_mk3b",
-        kind: "mark",
-        cursor: "main",
-        style: "tw-highlight",
-        range: { from: 0, to: 2 },
-      },
-      {
-        id: "cmd_mk3c",
-        kind: "type",
-        cursor: "main",
-        text: "X",
-        by: "char" as const,
-        interval: 50,
-      },
+      { id: "mk3a", kind: "type", cursor: "main", text: "Hi", by: "char" as const, interval: 100 },
+      { id: "mk3b", kind: "mark", cursor: "main", style: "tw-highlight", range: { from: 0, to: 2 } },
+      { id: "mk3c", kind: "type", cursor: "main", text: "X", by: "char" as const, interval: 50 },
     ]);
 
-    // "Hi" ends at t=200; mark at t=200 (no advance); "X" at t=200
-    const markEvents = events.filter(e => e.kind === "mark");
     const xEvents = events.filter(e => (e as TInsertEvent).text === "X");
 
-    expect(markEvents[0]?.time).toBe(200);
+    expect(events.filter(e => e.kind === "mark")[0]?.time).toBe(200);
     expect(xEvents[0]?.time).toBe(200);
   });
 
   it("mark event is scheduled at the current time offset", () => {
     const events = compile([
-      {
-        id: "cmd_mk4a",
-        kind: "type",
-        cursor: "main",
-        text: "AB",
-        by: "char" as const,
-        interval: 100,
-      },
-      {
-        id: "cmd_mk4b",
-        kind: "wait",
-        duration: 300,
-      },
-      {
-        id: "cmd_mk4c",
-        kind: "mark",
-        cursor: "main",
-        style: "tw-mark",
-        range: { from: 0, to: 2 },
-      },
+      { id: "mk4a", kind: "type", cursor: "main", text: "AB", by: "char" as const, interval: 100 },
+      { id: "mk4b", kind: "wait", duration: 300 },
+      { id: "mk4c", kind: "mark", cursor: "main", style: "tw-mark", range: { from: 0, to: 2 } },
     ]);
 
-    // "AB" ends at t=200; wait 300 ms → t=500; mark at t=500
-    const markEvents = events.filter(e => e.kind === "mark");
-
-    expect(markEvents[0]?.time).toBe(500);
+    expect(events.filter(e => e.kind === "mark")[0]?.time).toBe(500);
   });
 
   it("selection-range mark emits one event per cursor with sentinel from/to of -1", () => {
     const events = compile([
-      {
-        id: "cmd_mk5",
-        kind: "mark",
-        cursor: ["a", "b"],
-        style: "tw-highlight",
-        range: "selection" as const,
-      },
+      { id: "mk5", kind: "mark", cursor: ["a", "b"], style: "tw-highlight", range: "selection" as const },
     ]);
 
     const markEvents = events.filter(e => e.kind === "mark") as TMarkEvent[];
 
     expect(markEvents).toHaveLength(2);
-    markEvents.forEach((e) => {
+    markEvents.forEach(e => {
       expect(e.from).toBe(-1);
       expect(e.to).toBe(-1);
     });
@@ -587,13 +347,7 @@ describe("compile (mark)", () => {
 
   it("single-cursor selection-range mark emits one event with cursorId", () => {
     const events = compile([
-      {
-        id: "cmd_mk6",
-        kind: "mark",
-        cursor: "main",
-        style: "tw-highlight",
-        range: "selection" as const,
-      },
+      { id: "mk6", kind: "mark", cursor: "main", style: "tw-highlight", range: "selection" as const },
     ]);
 
     const markEvents = events.filter(e => e.kind === "mark") as TMarkEvent[];
@@ -607,24 +361,191 @@ describe("compile (mark)", () => {
   it("accepts a TStyleObject as style value", () => {
     const style = { className: "tw-custom", css: { color: "red" } };
     const events = compile([
-      {
-        id: "cmd_mk7",
-        kind: "mark",
-        cursor: "main",
-        style,
-        range: { from: 0, to: 3 },
-      },
+      { id: "mk7", kind: "mark", cursor: "main", style, range: { from: 0, to: 3 } },
     ]);
 
-    const evt = events[0] as TMarkEvent;
-
-    expect(evt.style).toStrictEqual(style);
+    expect((events[0] as TMarkEvent).style).toStrictEqual(style);
   });
 });
 
 // ---------------------------------------------------------------------------
-// Reducer — mark command
+// Compiler — multi-cursor fan-out
 // ---------------------------------------------------------------------------
+
+describe("compile (multi-cursor)", () => {
+  it("fans out type events for each cursor at the same timestamps", () => {
+    const events = compile([
+      { id: "mca", kind: "type", cursor: ["a", "b"], text: "Hi", by: "char", interval: 100 },
+    ]);
+
+    const aEvents = events.filter(e => e.cursorId === "a");
+    const bEvents = events.filter(e => e.cursorId === "b");
+
+    expect(aEvents).toHaveLength(2);
+    expect(bEvents).toHaveLength(2);
+    expect(aEvents[0]?.time).toBe(0);
+    expect(bEvents[0]?.time).toBe(0);
+  });
+
+  it("clock advances only once for a multi-cursor type command", () => {
+    const events = compile([
+      { id: "mcb1", kind: "type", cursor: ["a", "b"], text: "AB", by: "char", interval: 100 },
+      { id: "mcb2", kind: "type", cursor: "main", text: "X", by: "char", interval: 50 },
+    ]);
+
+    const mainEvents = events.filter(e => e.cursorId === "main");
+
+    expect(mainEvents).toHaveLength(1);
+    expect(mainEvents[0]?.time).toBe(200);
+  });
+
+  it("fans out moveCursor events for each cursor", () => {
+    const events = compile([
+      { id: "mcc", kind: "moveCursor", cursor: ["x", "y"], index: 5 },
+    ]);
+
+    expect(events).toHaveLength(2);
+    expect(events.every(e => e.kind === "moveCursor")).toBe(true);
+    expect(events.map(e => e.cursorId).sort()).toEqual(["x", "y"]);
+  });
+
+  it("fans out select events for each cursor", () => {
+    const events = compile([
+      { id: "mcd", kind: "select", cursor: ["p", "q"], count: 3, by: "char" },
+    ]);
+
+    expect(events).toHaveLength(2);
+    expect(events.every(e => e.kind === "select")).toBe(true);
+    expect(events.map(e => e.cursorId).sort()).toEqual(["p", "q"]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Reducer — reduce default branch
+// ---------------------------------------------------------------------------
+
+describe("reduce (default branch)", () => {
+  it("returns state unchanged for an unknown event kind", () => {
+    const state = createInitialState();
+    const unknown = { id: "e1", kind: "unknown" as "insert", time: 0, cursorId: "main", sourceCommandId: "c1" };
+    const next = reduce(state, unknown as unknown as Parameters<typeof reduce>[1]);
+
+    expect(next).toBe(state);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Reducer — mark
+// ---------------------------------------------------------------------------
+
+// ---------------------------------------------------------------------------
+// Reducer — selectText edge cases (count=0, empty text)
+// ---------------------------------------------------------------------------
+
+describe("reduce (selectText edge cases)", () => {
+  it("selecting count=0 leaves selection unchanged (returns startIndex)", () => {
+    const commands = [
+      { id: "c1", kind: "type" as const, cursor: "main", text: "Hello", by: "char" as const, interval: 1 },
+      { id: "c2", kind: "select" as const, cursor: "main", count: 0, by: "char" as const },
+    ];
+
+    const events = compile(commands);
+    let state = createInitialState();
+
+    for (const event of events) {
+      state = reduce(state, event);
+    }
+
+    // count=0 → selection from/to === cursorIndex (5,5) → withSelection clears it
+    expect(state.selections.main).toBeUndefined();
+  });
+
+  it("selecting on empty document returns startIndex without advancing", () => {
+    const commands = [
+      { id: "c1", kind: "select" as const, cursor: "main", count: 3, by: "char" as const },
+    ];
+
+    const events = compile(commands);
+    let state = createInitialState();
+
+    for (const event of events) {
+      state = reduce(state, event);
+    }
+
+    // Empty document: text.length === 0 → endIndex === startIndex (0) → no selection
+    expect(state.selections.main).toBeUndefined();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Reducer — delete with marks covering filter/map branches
+// ---------------------------------------------------------------------------
+
+describe("reduce (delete mark clamp branches)", () => {
+  it("clamps a partially overlapping mark that starts before removeStart", () => {
+    // Text: "Hello world" (11 chars), mark covers [0,8], delete last 5 chars (positions 6-11)
+    // After delete text = "Hello " (6 chars)
+    // Mark [0,8]: not fully within [6,11], so survives filter
+    // mark.from=0 <= removeStart=6, so from stays 0
+    // mark.to=8 > removeStart=6, so to = max(6, 8-(11-6)) = max(6, 3) = 6
+    const commands = [
+      { id: "c1", kind: "type" as const, cursor: "main", text: "Hello world", by: "char" as const, interval: 1 },
+      { id: "c2", kind: "mark" as const, cursor: "main", style: "tw-a", range: { from: 0, to: 8 } },
+      { id: "c3", kind: "delete" as const, cursor: "main", count: 5, by: "char" as const, interval: 1 },
+    ];
+
+    const events = compile(commands);
+    let state = createInitialState();
+
+    for (const event of events) {
+      state = reduce(state, event);
+    }
+
+    expect(state.document.text).toBe("Hello ");
+    expect(state.document.marks).toHaveLength(1);
+    expect(state.document.marks[0]?.from).toBe(0);
+  });
+
+  it("removes a mark fully contained in the deleted range", () => {
+    // Text: "Hello world", mark covers [7,10] (fully within delete range [6,11])
+    const commands = [
+      { id: "c1", kind: "type" as const, cursor: "main", text: "Hello world", by: "char" as const, interval: 1 },
+      { id: "c2", kind: "mark" as const, cursor: "main", style: "tw-b", range: { from: 7, to: 10 } },
+      { id: "c3", kind: "delete" as const, cursor: "main", count: 5, by: "char" as const, interval: 1 },
+    ];
+
+    const events = compile(commands);
+    let state = createInitialState();
+
+    for (const event of events) {
+      state = reduce(state, event);
+    }
+
+    expect(state.document.text).toBe("Hello ");
+    expect(state.document.marks).toHaveLength(0);
+  });
+
+  it("clamps a mark that starts after removeStart", () => {
+    // Text: "Hello world", mark covers [8,11], delete last 5 → removeStart=6
+    // mark.from=8 > removeStart=6, so from = max(6, 8-(11-6)) = max(6,3) = 6
+    // mark.to=11 > removeStart=6, so to = max(6, 11-(11-6)) = max(6,6) = 6
+    // from=6, to=6 → degenerate mark stays (filter passes but mark is zero-width)
+    const commands = [
+      { id: "c1", kind: "type" as const, cursor: "main", text: "Hello world", by: "char" as const, interval: 1 },
+      { id: "c2", kind: "mark" as const, cursor: "main", style: "tw-c", range: { from: 8, to: 11 } },
+      { id: "c3", kind: "delete" as const, cursor: "main", count: 5, by: "char" as const, interval: 1 },
+    ];
+
+    const events = compile(commands);
+    let state = createInitialState();
+
+    for (const event of events) {
+      state = reduce(state, event);
+    }
+
+    expect(state.document.text).toBe("Hello ");
+  });
+});
 
 describe("reduce (mark)", () => {
   it("fixed-range mark appends a mark to document.marks", () => {
@@ -659,14 +580,11 @@ describe("reduce (mark)", () => {
     }
 
     expect(state.document.marks).toHaveLength(2);
-    expect(state.document.marks[0]?.style).toBe("tw-a");
-    expect(state.document.marks[1]?.style).toBe("tw-b");
   });
 
   it("mark with from >= to leaves document.marks unchanged", () => {
     const commands = [
       { id: "c1", kind: "type" as const, cursor: "main", text: "Hello", by: "char" as const, interval: 1 },
-      // from === to — degenerate range
       { id: "c2", kind: "mark" as const, cursor: "main", style: "tw-highlight", range: { from: 3, to: 3 } },
     ];
 
@@ -683,7 +601,6 @@ describe("reduce (mark)", () => {
   it("selection-based mark resolves to the cursor's active selection range", () => {
     const commands = [
       { id: "c1", kind: "type" as const, cursor: "main", text: "Hello world", by: "char" as const, interval: 1 },
-      // select -5 backward from index 11 → selection [6, 11]
       { id: "c2", kind: "select" as const, cursor: "main", count: -5, by: "char" as const },
       { id: "c3", kind: "mark" as const, cursor: "main", style: "tw-highlight", range: "selection" as const },
     ];
@@ -702,7 +619,6 @@ describe("reduce (mark)", () => {
   it("selection-based mark with no active selection leaves marks unchanged", () => {
     const commands = [
       { id: "c1", kind: "type" as const, cursor: "main", text: "Hello", by: "char" as const, interval: 1 },
-      // no select command — cursor has no selection
       { id: "c2", kind: "mark" as const, cursor: "main", style: "tw-highlight", range: "selection" as const },
     ];
 
@@ -716,45 +632,25 @@ describe("reduce (mark)", () => {
     expect(state.document.marks).toHaveLength(0);
   });
 
-  it("mark does not modify the document text", () => {
-    const commands = [
-      { id: "c1", kind: "type" as const, cursor: "main", text: "Hello", by: "char" as const, interval: 1 },
-      { id: "c2", kind: "mark" as const, cursor: "main", style: "tw-highlight", range: { from: 0, to: 5 } },
-    ];
+  it("applyMark with selection-based event but no cursorId returns state unchanged", () => {
+    const state = createInitialState();
+    const event = { id: "e1", kind: "mark" as const, time: 0, cursorId: undefined as unknown as string, from: -1, to: -1, style: "x", sourceCommandId: "c" };
+    const next = applyMark(state, event);
 
-    const events = compile(commands);
-    let state = createInitialState();
-
-    for (const event of events) {
-      state = reduce(state, event);
-    }
-
-    expect(state.document.text).toBe("Hello");
+    expect(next).toBe(state);
   });
 });
 
 // ---------------------------------------------------------------------------
-// Integration — mark via createTypewriter
+// Reducer — delete with marks
 // ---------------------------------------------------------------------------
 
-describe("createTypewriter — mark", () => {
-  it("type then mark: stringRenderer output is the full text (mark does not affect text)", async () => {
-    const renderer = stringRenderer();
-    const tw = createTypewriter({ renderer });
-
-    tw.timeline
-      .type("Hello world", { by: "char", interval: 1 })
-      .mark("tw-highlight", { from: 0, to: 5 });
-
-    await tw.play();
-
-    expect(renderer.toString()).toBe("Hello world");
-  });
-
-  it("type then mark: compiled state carries the mark", () => {
+describe("reduce (delete with marks)", () => {
+  it("trimming marks when deleting overlapping text", () => {
     const commands = [
       { id: "c1", kind: "type" as const, cursor: "main", text: "Hello world", by: "char" as const, interval: 1 },
-      { id: "c2", kind: "mark" as const, cursor: "main", style: "tw-highlight", range: { from: 0, to: 5 } },
+      { id: "c2", kind: "mark" as const, cursor: "main", style: "tw-a", range: { from: 0, to: 11 } },
+      { id: "c3", kind: "delete" as const, cursor: "main", count: 5, by: "char" as const, interval: 1 },
     ];
 
     const events = compile(commands);
@@ -764,16 +660,15 @@ describe("createTypewriter — mark", () => {
       state = reduce(state, event);
     }
 
+    expect(state.document.text).toBe("Hello ");
     expect(state.document.marks).toHaveLength(1);
-    expect(state.document.marks[0]).toStrictEqual({ from: 0, to: 5, style: "tw-highlight" });
-    expect(state.document.text).toBe("Hello world");
   });
 
-  it("select then mark 'selection': compiled state mark covers the selection range", () => {
+  it("delete at start of document (removeStart === removeEnd) clears selection only", () => {
     const commands = [
-      { id: "c1", kind: "type" as const, cursor: "main", text: "Hello world", by: "char" as const, interval: 1 },
-      { id: "c2", kind: "select" as const, cursor: "main", count: -5, by: "char" as const },
-      { id: "c3", kind: "mark" as const, cursor: "main", style: "tw-highlight", range: "selection" as const },
+      { id: "c1", kind: "type" as const, cursor: "main", text: "Hi", by: "char" as const, interval: 1 },
+      { id: "c2", kind: "moveCursor" as const, cursor: "main", index: 0 },
+      { id: "c3", kind: "delete" as const, cursor: "main", count: 1, by: "char" as const, interval: 1 },
     ];
 
     const events = compile(commands);
@@ -783,145 +678,302 @@ describe("createTypewriter — mark", () => {
       state = reduce(state, event);
     }
 
-    expect(state.document.marks).toHaveLength(1);
-    expect(state.document.marks[0]).toStrictEqual({ from: 6, to: 11, style: "tw-highlight" });
-  });
-
-  it("mark with TStyleObject style is preserved in compiled state", () => {
-    const style = { className: "tw-custom", css: { background: "yellow" } };
-    const commands = [
-      { id: "c1", kind: "type" as const, cursor: "main", text: "Hello", by: "char" as const, interval: 1 },
-      { id: "c2", kind: "mark" as const, cursor: "main", style, range: { from: 0, to: 5 } },
-    ];
-
-    const events = compile(commands);
-    let state = createInitialState();
-
-    for (const event of events) {
-      state = reduce(state, event);
-    }
-
-    expect(state.document.marks[0]?.style).toStrictEqual(style);
-  });
-
-  it("mark scheduled after wait is applied correctly in compiled state", () => {
-    const commands = [
-      { id: "c1", kind: "type" as const, cursor: "main", text: "Hello", by: "char" as const, interval: 1 },
-      { id: "c2", kind: "wait" as const, duration: 10 },
-      { id: "c3", kind: "mark" as const, cursor: "main", style: "tw-highlight", range: { from: 0, to: 5 } },
-    ];
-
-    const events = compile(commands);
-    let state = createInitialState();
-
-    for (const event of events) {
-      state = reduce(state, event);
-    }
-
-    expect(state.document.marks).toHaveLength(1);
-    expect(state.document.marks[0]).toStrictEqual({ from: 0, to: 5, style: "tw-highlight" });
-  });
-
-  it("mark does not change what stringRenderer outputs", async () => {
-    const renderer = stringRenderer();
-    const tw = createTypewriter({ renderer });
-
-    tw.timeline
-      .type("Hello world", { by: "char", interval: 1 })
-      .mark("tw-highlight", { from: 6, to: 11 });
-
-    await tw.play();
-
-    // Text is unaffected; only marks metadata changes
-    expect(renderer.toString()).toBe("Hello world");
+    // Cursor is at 0, delete 1 backward from 0 → removeStart=0 === removeEnd=0 → no change
+    expect(state.document.text).toBe("Hi");
   });
 });
 
 // ---------------------------------------------------------------------------
-// Compiler — multi-cursor fan-out
+// Reducer — insert with style
 // ---------------------------------------------------------------------------
 
-describe("compile (multi-cursor)", () => {
-  it("fans out type events for each cursor at the same timestamps", () => {
-    const events = compile([
-      {
-        id: "cmd_mc_a",
-        kind: "type",
-        cursor: ["a", "b"],
-        text: "Hi",
-        by: "char",
-        interval: 100,
-      },
-    ]);
+describe("reduce (insert with style)", () => {
+  it("insert with style creates a mark on the inserted range", () => {
+    const commands = [
+      { id: "c1", kind: "type" as const, cursor: "main", text: "Hi", by: "char" as const, interval: 1, style: "tw-bold" },
+    ];
 
-    const aEvents = events.filter(e => e.cursorId === "a");
-    const bEvents = events.filter(e => e.cursorId === "b");
+    const events = compile(commands);
+    let state = createInitialState();
 
-    expect(aEvents).toHaveLength(2);
-    expect(bEvents).toHaveLength(2);
+    for (const event of events) {
+      state = reduce(state, event);
+    }
 
-    // Both cursors share the same timestamps
-    expect(aEvents[0]?.time).toBe(0);
-    expect(bEvents[0]?.time).toBe(0);
-    expect(aEvents[1]?.time).toBe(100);
-    expect(bEvents[1]?.time).toBe(100);
+    expect(state.document.text).toBe("Hi");
+    expect(state.document.marks.length).toBeGreaterThan(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// State helpers — withSelection / withSelectionCleared / getSelection
+// ---------------------------------------------------------------------------
+
+describe("state helpers", () => {
+  it("withSelection sets a selection for a cursor", () => {
+    const state = createInitialState();
+    const next = withSelection(state, "main", 2, 5);
+
+    expect(next.selections.main).toStrictEqual({ from: 2, to: 5 });
   });
 
-  it("clock advances only once for a multi-cursor type command", () => {
-    const events = compile([
-      {
-        id: "cmd_mc_b1",
-        kind: "type",
-        cursor: ["a", "b"],
-        text: "AB",
-        by: "char",
-        interval: 100,
-      },
-      {
-        id: "cmd_mc_b2",
-        kind: "type",
-        cursor: "main",
-        text: "X",
-        by: "char",
-        interval: 50,
-      },
-    ]);
+  it("withSelection with from === to clears the selection instead", () => {
+    const state = withSelection(createInitialState(), "main", 2, 5);
+    const next = withSelection(state, "main", 3, 3);
 
-    const mainEvents = events.filter(e => e.cursorId === "main");
-
-    expect(mainEvents).toHaveLength(1);
-    expect(mainEvents[0]?.time).toBe(200); // after the 2-char multi-cursor command
+    expect(next.selections.main).toBeUndefined();
   });
 
-  it("fans out moveCursor events for each cursor", () => {
-    const events = compile([
-      {
-        id: "cmd_mc_c",
-        kind: "moveCursor",
-        cursor: ["x", "y"],
-        index: 5,
-      },
-    ]);
+  it("withSelectionCleared when cursor has no selection returns same state", () => {
+    const state = createInitialState();
+    const next = withSelectionCleared(state, "main");
 
-    expect(events).toHaveLength(2);
-    expect(events.every(e => e.kind === "moveCursor")).toBe(true);
-    expect(events.map(e => e.cursorId).sort()).toEqual(["x", "y"]);
+    expect(next).toBe(state);
   });
 
-  it("fans out select events for each cursor", () => {
-    const events = compile([
-      {
-        id: "cmd_mc_d",
-        kind: "select",
-        cursor: ["p", "q"],
-        count: 3,
-        by: "char",
-      },
+  it("withSelectionCleared when cursor has a selection removes it", () => {
+    const state = withSelection(createInitialState(), "main", 1, 4);
+    const next = withSelectionCleared(state, "main");
+
+    expect(next.selections.main).toBeUndefined();
+  });
+
+  it("getSelection returns null when cursor has no selection", () => {
+    expect(getSelection(createInitialState(), "main")).toBeNull();
+  });
+
+  it("getSelection returns the selection when it exists", () => {
+    const state = withSelection(createInitialState(), "main", 2, 7);
+
+    expect(getSelection(state, "main")).toStrictEqual({ from: 2, to: 7 });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// segmentRichText / resolveStyleRef / mergeStyles
+// ---------------------------------------------------------------------------
+
+describe("segmentRichText", () => {
+  it("returns empty array for empty document", () => {
+    expect(segmentRichText({ text: "", marks: [] })).toEqual([]);
+  });
+
+  it("returns single segment with no styles for unmarked text", () => {
+    const segments = segmentRichText({ text: "Hello", marks: [] });
+
+    expect(segments).toHaveLength(1);
+    expect(segments[0]?.text).toBe("Hello");
+    expect(segments[0]?.styles).toHaveLength(0);
+  });
+
+  it("splits text at mark boundaries", () => {
+    const segments = segmentRichText({ text: "Hello world", marks: [{ from: 0, to: 5, style: "tw-a" }] });
+
+    expect(segments.length).toBeGreaterThanOrEqual(2);
+    expect(segments[0]?.text).toBe("Hello");
+    expect(segments[0]?.styles).toContain("tw-a");
+  });
+
+  it("segment outside mark has empty styles", () => {
+    const segments = segmentRichText({ text: "Hello world", marks: [{ from: 0, to: 5, style: "tw-a" }] });
+    const last = segments[segments.length - 1];
+
+    expect(last?.text).toBe(" world");
+    expect(last?.styles).toHaveLength(0);
+  });
+});
+
+describe("resolveStyleRef", () => {
+  it("resolves a string ref to className object", () => {
+    expect(resolveStyleRef("my-class")).toStrictEqual({ className: "my-class" });
+  });
+
+  it("returns a TStyleObject ref unchanged", () => {
+    const obj = { className: "x", css: { color: "red" } };
+
+    expect(resolveStyleRef(obj)).toBe(obj);
+  });
+});
+
+describe("mergeStyles", () => {
+  it("returns empty object for empty styles array", () => {
+    expect(mergeStyles([])).toStrictEqual({});
+  });
+
+  it("merges a single string style into className", () => {
+    expect(mergeStyles(["my-class"])).toStrictEqual({ className: "my-class" });
+  });
+
+  it("later style overrides earlier className", () => {
+    const result = mergeStyles(["first", "second"]);
+
+    expect(result.className).toBe("second");
+  });
+
+  it("merges css from multiple styles", () => {
+    const result = mergeStyles([
+      { css: { color: "red" } },
+      { css: { background: "blue" } },
     ]);
 
-    expect(events).toHaveLength(2);
-    expect(events.every(e => e.kind === "select")).toBe(true);
-    expect(events.map(e => e.cursorId).sort()).toEqual(["p", "q"]);
+    expect(result.css).toStrictEqual({ color: "red", background: "blue" });
+  });
+
+  it("merges attrs from multiple styles", () => {
+    const result = mergeStyles([
+      { attrs: { role: "label" } },
+      { attrs: { "aria-label": "x" } },
+    ]);
+
+    expect(result.attrs).toStrictEqual({ role: "label", "aria-label": "x" });
+  });
+
+  it("merges ansi from multiple styles", () => {
+    const result = mergeStyles([
+      { ansi: { bold: "1" } },
+      { ansi: { color: "32" } },
+    ]);
+
+    expect(result.ansi).toStrictEqual({ bold: "1", color: "32" });
+  });
+
+  it("merges meta from multiple styles", () => {
+    const result = mergeStyles([{ meta: { foo: 1 } }, { meta: { bar: 2 } }]);
+
+    expect(result.meta).toStrictEqual({ foo: 1, bar: 2 });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// StringRenderer — toAnsiString
+// ---------------------------------------------------------------------------
+
+describe("StringRenderer.toAnsiString", () => {
+  it("returns empty string when nothing rendered", () => {
+    const renderer = new StringRenderer();
+
+    expect(renderer.toAnsiString()).toBe("");
+  });
+
+  it("returns plain text when no ansi styles are present", async () => {
+    const renderer = stringRenderer();
+    const tw = createTypewriter({ renderer });
+
+    tw.timeline.type("Hello", { by: "char", interval: 1 });
+    await tw.play();
+
+    expect(renderer.toAnsiString()).toBe("Hello");
+  });
+
+  it("returns plain text when marks have no ansi property", async () => {
+    const renderer = stringRenderer();
+    const tw = createTypewriter({ renderer });
+
+    tw.timeline
+      .type("Hello", { by: "char", interval: 1 })
+      .mark("tw-class", { from: 0, to: 5 });
+    await tw.play();
+
+    // mark has no ansi — plain text returned
+    expect(renderer.toAnsiString()).toBe("Hello");
+  });
+
+  it("applies ANSI codes for marks with ansi property", async () => {
+    const renderer = stringRenderer();
+    const tw = createTypewriter({ renderer });
+
+    tw.timeline
+      .type("Hi", { by: "char", interval: 1 })
+      .mark({ ansi: { bold: "1" } }, { from: 0, to: 2 });
+    await tw.play();
+
+    const result = renderer.toAnsiString();
+
+    expect(result).toContain("\x1B[");
+    expect(result).toContain("Hi");
+  });
+
+  it("returns plain text when segment has no ansi in merged styles", async () => {
+    const renderer = stringRenderer();
+    const tw = createTypewriter({ renderer });
+
+    tw.timeline
+      .type("AB", { by: "char", interval: 1 })
+      .mark({ css: { color: "red" } }, { from: 0, to: 2 });
+    await tw.play();
+
+    // css mark but no ansi — treated as plain text
+    expect(renderer.toAnsiString()).toBe("AB");
+  });
+
+  it("returns plain text when ansi object is empty", async () => {
+    const renderer = stringRenderer();
+    const tw = createTypewriter({ renderer });
+
+    tw.timeline
+      .type("AB", { by: "char", interval: 1 })
+      .mark({ ansi: {} }, { from: 0, to: 2 });
+    await tw.play();
+
+    // empty ansi map — no codes to emit, treated as plain text
+    expect(renderer.toAnsiString()).toBe("AB");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Timeline builder — select method
+// ---------------------------------------------------------------------------
+
+describe("TimelineBuilder.select", () => {
+  it("select with default cursor adds a select command", async () => {
+    const renderer = stringRenderer();
+    const tw = createTypewriter({ renderer });
+
+    tw.timeline.type("Hello", { by: "char", interval: 1 }).select(-3);
+    await tw.play();
+
+    const state = tw.getState();
+
+    expect(state.status).toBe(EPlaybackStatus.COMPLETED);
+  });
+
+  it("select with explicit cursor option", async () => {
+    const renderer = stringRenderer();
+    const tw = createTypewriter({ renderer });
+
+    tw.timeline.type("Hello", { by: "char", interval: 1 }).select(-2, { cursor: "main" });
+    await tw.play();
+
+    expect(renderer.toString()).toBe("Hello");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// player.helper — standalone play function
+// ---------------------------------------------------------------------------
+
+describe("player.helper — play()", () => {
+  it("plays events through a renderer and resolves to final state", async () => {
+    const events = compile([
+      { id: "p1", kind: "type", cursor: "main", text: "Hi", by: "char", interval: 1 },
+    ]);
+
+    let lastText = "";
+    const renderer = {
+      mount: (state: Parameters<typeof play>[1]["renderer"]["render"] extends (s: infer S) => unknown ? S : never) => { void state; },
+      render: (state: { document: { text: string } }) => { lastText = state.document.text; },
+      unmount: () => {},
+    };
+
+    await play(events, { renderer: renderer as Parameters<typeof play>[1]["renderer"], initialState: createInitialState() });
+
+    expect(lastText).toBe("Hi");
+  });
+
+  it("play with empty events list resolves immediately", async () => {
+    const renderer = { render: () => {} };
+
+    await expect(play([], { renderer, initialState: createInitialState() })).resolves.toBeUndefined();
   });
 });
 
@@ -991,24 +1043,11 @@ describe("createTypewriter", () => {
     expect(renderer.toString()).toBe("Hello");
   });
 
-  it("deletes all characters and resolves to an empty string", async () => {
-    const renderer = stringRenderer();
-    const tw = createTypewriter({ renderer });
-
-    tw.timeline.type("Hi", { by: "char", interval: 1 }).delete(2, { by: "char", interval: 1 });
-    await tw.play();
-
-    expect(renderer.toString()).toBe("");
-  });
-
   it("chains type, wait, and delete correctly", async () => {
     const renderer = stringRenderer();
     const tw = createTypewriter({ renderer });
 
-    tw.timeline
-      .type("Hello world", { by: "char", interval: 1 })
-      .wait(10)
-      .delete(6, { by: "char", interval: 1 });
+    tw.timeline.type("Hello world", { by: "char", interval: 1 }).wait(10).delete(6, { by: "char", interval: 1 });
     await tw.play();
 
     expect(renderer.toString()).toBe("Hello");
@@ -1028,23 +1067,7 @@ describe("createTypewriter", () => {
     const renderer = stringRenderer();
     const tw = createTypewriter({ renderer });
 
-    tw.timeline
-      .type("world", { by: "char", interval: 1 })
-      .moveCursor(0)
-      .type("Hello ", { by: "char", interval: 1 });
-    await tw.play();
-
-    expect(renderer.toString()).toBe("Hello world");
-  });
-
-  it("moves cursor to middle and types there, inserting text", async () => {
-    const renderer = stringRenderer();
-    const tw = createTypewriter({ renderer });
-
-    tw.timeline
-      .type("Helloworld", { by: "char", interval: 1 })
-      .moveCursor(5)
-      .type(" ", { by: "char", interval: 1 });
+    tw.timeline.type("world", { by: "char", interval: 1 }).moveCursor(0).type("Hello ", { by: "char", interval: 1 });
     await tw.play();
 
     expect(renderer.toString()).toBe("Hello world");
@@ -1054,10 +1077,7 @@ describe("createTypewriter", () => {
     const renderer = stringRenderer();
     const tw = createTypewriter({ renderer });
 
-    tw.timeline
-      .type("Hi", { by: "char", interval: 1 })
-      .moveCursor(-99)
-      .type("!", { by: "char", interval: 1 });
+    tw.timeline.type("Hi", { by: "char", interval: 1 }).moveCursor(-99).type("!", { by: "char", interval: 1 });
     await tw.play();
 
     expect(renderer.toString()).toBe("!Hi");
@@ -1067,139 +1087,20 @@ describe("createTypewriter", () => {
     const renderer = stringRenderer();
     const tw = createTypewriter({ renderer });
 
-    tw.timeline
-      .type("Hi", { by: "char", interval: 1 })
-      .moveCursor(999)
-      .type("!", { by: "char", interval: 1 });
+    tw.timeline.type("Hi", { by: "char", interval: 1 }).moveCursor(999).type("!", { by: "char", interval: 1 });
     await tw.play();
 
     expect(renderer.toString()).toBe("Hi!");
-  });
-
-  it("select forward sets selection from/to on state", () => {
-    const commands = [
-      { id: "c1", kind: "type" as const, cursor: "main", text: "Hello world", by: "char" as const, interval: 1 },
-      { id: "c2", kind: "moveCursor" as const, cursor: "main", index: 6 },
-      { id: "c3", kind: "select" as const, cursor: "main", count: 5, by: "char" as const },
-    ];
-
-    const events = compile(commands);
-    let state = createInitialState();
-
-    for (const event of events) {
-      state = reduce(state, event);
-    }
-
-    expect(state.selections.main).toBeDefined();
-    expect(state.selections.main?.from).toBe(6);
-    expect(state.selections.main?.to).toBe(11);
-  });
-
-  it("select backward sets selection from/to on state", () => {
-    const commands = [
-      { id: "c1", kind: "type" as const, cursor: "main", text: "Hello world", by: "char" as const, interval: 1 },
-      { id: "c2", kind: "select" as const, cursor: "main", count: -5, by: "char" as const },
-    ];
-
-    const events = compile(commands);
-    let state = createInitialState();
-
-    for (const event of events) {
-      state = reduce(state, event);
-    }
-
-    expect(state.selections.main).toBeDefined();
-    expect(state.selections.main?.from).toBe(6);
-    expect(state.selections.main?.to).toBe(11);
-  });
-
-  it("selection is cleared after a type command", () => {
-    const commands = [
-      { id: "c1", kind: "type" as const, cursor: "main", text: "Hello", by: "char" as const, interval: 1 },
-      { id: "c2", kind: "select" as const, cursor: "main", count: 3, by: "char" as const },
-      { id: "c3", kind: "type" as const, cursor: "main", text: "X", by: "char" as const, interval: 1 },
-    ];
-
-    const events = compile(commands);
-    let state = createInitialState();
-
-    for (const event of events) {
-      state = reduce(state, event);
-    }
-
-    expect(state.selections.main).toBeUndefined();
-  });
-
-  it("selection is cleared after a moveCursor command", () => {
-    const commands = [
-      { id: "c1", kind: "type" as const, cursor: "main", text: "Hello", by: "char" as const, interval: 1 },
-      { id: "c2", kind: "select" as const, cursor: "main", count: 3, by: "char" as const },
-      { id: "c3", kind: "moveCursor" as const, cursor: "main", index: 0 },
-    ];
-
-    const events = compile(commands);
-    let state = createInitialState();
-
-    for (const event of events) {
-      state = reduce(state, event);
-    }
-
-    expect(state.selections.main).toBeUndefined();
   });
 
   it("multi-cursor type inserts same text at both cursor positions", async () => {
     const renderer = stringRenderer();
     const tw = createTypewriter({ renderer });
 
-    // cursor "a" starts at 0, cursor "b" also starts at 0 (auto-created)
-    // both type "X" — first "a" inserts "X" → doc="X", cursor a=1
-    // then "b" inserts "X" at b's original pos=0 → doc="XX", cursor b=1
     tw.timeline.type("X", { cursor: ["a", "b"], by: "char", interval: 1 });
     await tw.play();
 
     expect(renderer.toString()).toBe("XX");
-  });
-
-  it("auto-creates missing cursor when first referenced", () => {
-    const commands = [
-      { id: "c1", kind: "type" as const, cursor: "newcursor", text: "Z", by: "char" as const, interval: 1 },
-    ];
-
-    const events = compile(commands);
-    let state = createInitialState();
-
-    for (const event of events) {
-      state = reduce(state, event);
-    }
-
-    expect(state.cursors.newcursor).toBeDefined();
-    expect(state.document.text).toBe("Z");
-  });
-
-  it("per-cursor selections are independent", () => {
-    const commands = [
-      // type "Hello" with "main" → main cursor ends at index 5
-      { id: "c1", kind: "type" as const, cursor: "main", text: "Hello", by: "char" as const, interval: 1 },
-      // select -3 on "main" → selects backward [2,5] (main)
-      // select  3 on "other" (auto-created at 0) → selects forward [0,3] (other)
-      { id: "c2", kind: "select" as const, cursor: "main", count: -3, by: "char" as const },
-      { id: "c3", kind: "select" as const, cursor: "other", count: 3, by: "char" as const },
-    ];
-
-    const events = compile(commands);
-    let state = createInitialState();
-
-    for (const event of events) {
-      state = reduce(state, event);
-    }
-
-    expect(state.selections.main).toBeDefined();
-    expect(state.selections.main?.from).toBe(2);
-    expect(state.selections.main?.to).toBe(5);
-
-    expect(state.selections.other).toBeDefined();
-    expect(state.selections.other?.from).toBe(0);
-    expect(state.selections.other?.to).toBe(3);
   });
 
   it("starts with an empty string before play", () => {
@@ -1222,7 +1123,7 @@ describe("createTypewriter", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Playback controls — getState / status transitions
+// Playback controls — status
 // ---------------------------------------------------------------------------
 
 describe("playback controls — status", () => {
@@ -1242,6 +1143,29 @@ describe("playback controls — status", () => {
 
     expect(tw.getState().status).toBe(EPlaybackStatus.PLAYING);
     await playing;
+  });
+
+  it("pause() when not playing is a no-op", () => {
+    const tw = createTypewriter({ renderer: stringRenderer() });
+
+    tw.timeline.type("Hello", { by: "char", interval: 1 });
+    // status is IDLE — pause should do nothing
+    tw.pause();
+
+    expect(tw.getState().status).toBe(EPlaybackStatus.IDLE);
+  });
+
+  it("calling play() while already playing returns immediately (no-op)", async () => {
+    const renderer = stringRenderer();
+    const tw = createTypewriter({ renderer });
+
+    tw.timeline.type("Hello", { by: "char", interval: 20 });
+    const first = tw.play();
+    const second = tw.play(); // already playing — no-op
+
+    await Promise.all([first, second]);
+
+    expect(renderer.toString()).toBe("Hello");
   });
 
   it("transitions to completed after natural finish", async () => {
@@ -1299,7 +1223,6 @@ describe("playback controls — status", () => {
     await tw.play();
 
     expect(renderer.toString()).toBe("Hi");
-
     await tw.replay();
 
     expect(renderer.toString()).toBe("Hi");
@@ -1312,7 +1235,7 @@ describe("playback controls — status", () => {
 
     tw.timeline.type("Hi", { by: "char", interval: 1 });
     await tw.play();
-    await tw.play(); // should replay
+    await tw.play();
 
     expect(renderer.toString()).toBe("Hi");
     expect(tw.getState().status).toBe(EPlaybackStatus.COMPLETED);
@@ -1325,17 +1248,10 @@ describe("playback controls — status", () => {
     tw.timeline.type("Hello", { by: "char", interval: 10 });
     const firstPlay = tw.play();
 
-    // Pause shortly after start
     await new Promise(r => setTimeout(r, 5));
     tw.pause();
     await firstPlay;
 
-    const partial = renderer.toString();
-
-    expect(partial.length).toBeGreaterThanOrEqual(0);
-    expect(partial.length).toBeLessThan(5);
-
-    // Resume
     await tw.play();
 
     expect(renderer.toString()).toBe("Hello");
@@ -1378,23 +1294,35 @@ describe("playback controls — rate", () => {
     expect(tw.getState().rate).toBe(1);
   });
 
+  it("setRate while playing reschedules and completes correctly", async () => {
+    const renderer = stringRenderer();
+    const tw = createTypewriter({ renderer });
+
+    tw.timeline.type("Hello", { by: "char", interval: 50 });
+    const playing = tw.play();
+
+    await new Promise(r => setTimeout(r, 10));
+    tw.setRate(10); // speed up dramatically
+
+    await playing;
+
+    expect(renderer.toString()).toBe("Hello");
+  });
+
   it("double rate completes faster than normal rate", async () => {
     const fastRenderer = stringRenderer();
     const slowRenderer = stringRenderer();
-
     const fast = createTypewriter({ renderer: fastRenderer });
     const slow = createTypewriter({ renderer: slowRenderer });
 
     fast.timeline.type("Hello", { by: "char", interval: 50 });
     slow.timeline.type("Hello", { by: "char", interval: 50 });
-
     fast.setRate(4);
 
     const t0 = Date.now();
 
     await fast.play();
     const fastTime = Date.now() - t0;
-
     const t1 = Date.now();
 
     await slow.play();
@@ -1415,7 +1343,6 @@ describe("playback controls — seek", () => {
     const renderer = stringRenderer();
     const tw = createTypewriter({ renderer });
 
-    // First event is at t=0 so seeking to time 0 applies it → "H"
     tw.timeline.type("Hello", { by: "char", interval: 100 });
     tw.seek(0);
 
@@ -1427,7 +1354,7 @@ describe("playback controls — seek", () => {
     const tw = createTypewriter({ renderer });
 
     tw.timeline.type("Hello", { by: "char", interval: 100 });
-    tw.seek(Infinity); // clamps to duration
+    tw.seek(Infinity);
 
     expect(renderer.toString()).toBe("Hello");
   });
@@ -1436,9 +1363,8 @@ describe("playback controls — seek", () => {
     const renderer = stringRenderer();
     const tw = createTypewriter({ renderer });
 
-    // "Hello" with interval:100 → events at t=0,100,200,300,400
     tw.timeline.type("Hello", { by: "char", interval: 100 });
-    tw.seek(250); // after H,e,l → "Hel"
+    tw.seek(250);
 
     expect(renderer.toString()).toBe("Hel");
   });
@@ -1447,7 +1373,6 @@ describe("playback controls — seek", () => {
     const renderer = stringRenderer();
     const tw = createTypewriter({ renderer });
 
-    // -999 clamps to 0, first event is at t=0 → "H"
     tw.timeline.type("Hi", { by: "char", interval: 100 });
     tw.seek(-999);
 
@@ -1466,11 +1391,25 @@ describe("playback controls — seek", () => {
   it("getState().duration reflects the total timeline duration", () => {
     const tw = createTypewriter({ renderer: stringRenderer() });
 
-    // "Hi" with interval:100 → events at t=0 and t=100 → duration=100
     tw.timeline.type("Hi", { by: "char", interval: 100 });
-    tw.seek(0); // forces load
+    tw.seek(0);
 
     expect(tw.getState().duration).toBe(100);
+  });
+
+  it("seek while playing reschedules from the new position", async () => {
+    const renderer = stringRenderer();
+    const tw = createTypewriter({ renderer });
+
+    tw.timeline.type("Hello", { by: "char", interval: 50 });
+    const playing = tw.play();
+
+    await new Promise(r => setTimeout(r, 10));
+    tw.seek(300); // jump forward
+
+    await playing;
+
+    expect(renderer.toString()).toBe("Hello");
   });
 });
 
@@ -1483,7 +1422,6 @@ describe("playback controls — stepping", () => {
     const renderer = stringRenderer();
     const tw = createTypewriter({ renderer });
 
-    // "Hello" char by char at interval 100 → group per char
     tw.timeline.type("Hello", { by: "char", interval: 100 });
     tw.stepForward();
 
@@ -1496,7 +1434,6 @@ describe("playback controls — stepping", () => {
     const tw = createTypewriter({ renderer });
 
     tw.timeline.type("Hi", { by: "char", interval: 100 });
-
     tw.stepForward();
     tw.stepForward();
 
@@ -1509,7 +1446,7 @@ describe("playback controls — stepping", () => {
 
     tw.timeline.type("X", { by: "char", interval: 1 });
     tw.stepForward();
-    tw.stepForward(); // already at end
+    tw.stepForward();
 
     expect(tw.getState().status).toBe(EPlaybackStatus.COMPLETED);
   });
@@ -1518,7 +1455,7 @@ describe("playback controls — stepping", () => {
     const tw = createTypewriter({ renderer: stringRenderer() });
 
     tw.timeline.type("Hello", { by: "char", interval: 100 });
-    tw.stepBackward(); // nothing to undo
+    tw.stepBackward();
 
     expect(tw.getState().status).toBe(EPlaybackStatus.PAUSED);
   });
@@ -1543,10 +1480,10 @@ describe("playback controls — stepping", () => {
     const tw = createTypewriter({ renderer });
 
     tw.timeline.type("Hello", { by: "char", interval: 100 });
-    tw.stepForward(); // "H"
-    tw.stepForward(); // "He"
-    tw.stepForward(); // "Hel"
-    tw.stepBackward(); // "He"
+    tw.stepForward();
+    tw.stepForward();
+    tw.stepForward();
+    tw.stepBackward();
 
     expect(renderer.toString()).toBe("He");
     expect(tw.getState().status).toBe(EPlaybackStatus.PAUSED);

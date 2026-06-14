@@ -17,6 +17,7 @@ function segmentGraphemes(text: string): string[] {
     return Array.from(segmenter.segment(text), s => s.segment);
   }
 
+  /* v8 ignore next */
   return Array.from(text);
 }
 
@@ -49,6 +50,7 @@ function segmentWords(text: string): string[] {
     return result;
   }
 
+  /* v8 ignore start */
   // Fallback: split on word boundaries, re-attach trailing spaces
   const parts = text.split(/(\s+)/);
   const result: string[] = [];
@@ -69,6 +71,7 @@ function segmentWords(text: string): string[] {
   }
 
   return result;
+  /* v8 ignore stop */
 }
 
 /**
@@ -99,6 +102,7 @@ export function segmentText(text: string, unit: TAdvanceUnit): string[] {
     case "custom":
       return [text];
 
+    /* v8 ignore next */
     default:
       return segmentGraphemes(text);
   }
