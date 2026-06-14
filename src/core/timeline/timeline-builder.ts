@@ -1,6 +1,6 @@
+import type { TCommand } from "../commands";
 import type { TMarkRange } from "../commands/mark-command.type";
 import type { TAdvanceModeInput, TCursorSelector } from "../commands/type-command.type";
-import type { TCommand } from "../compiler/compile.helper";
 import type { TStyleRef } from "../state/rich-text-document.type";
 
 import { ECommandKind } from "../commands/command-kind.enum";

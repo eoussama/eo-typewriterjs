@@ -1,3 +1,4 @@
+export type { TCommand } from "../compiler/compile.helper";
 export type { TBaseCommand } from "./base-command.type";
 export { ECommandKind } from "./command-kind.enum";
 

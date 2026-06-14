@@ -39,8 +39,20 @@ export default defineConfig({
           text: "Usage",
           items: [
             { text: "Renderers", link: "/guide/renderers" },
-            { text: "Timeline & Commands", link: "/guide/timeline" },
+            { text: "Timeline", link: "/guide/timeline" },
             { text: "Recipes", link: "/guide/recipes" },
+          ],
+        },
+        {
+          text: "Commands",
+          items: [
+            { text: "Overview", link: "/guide/commands/" },
+            { text: "type", link: "/guide/commands/type" },
+            { text: "wait", link: "/guide/commands/wait" },
+            { text: "delete", link: "/guide/commands/delete" },
+            { text: "moveCursor", link: "/guide/commands/move-cursor" },
+            { text: "select", link: "/guide/commands/select" },
+            { text: "mark", link: "/guide/commands/mark" },
           ],
         },
       ],
