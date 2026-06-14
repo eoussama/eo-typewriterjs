@@ -1,5 +1,6 @@
 import type { TDeleteEvent } from "../core/events/delete-event.type";
 import type { TInsertEvent } from "../core/events/insert-event.type";
+import type { TMarkEvent } from "../core/events/mark-event.type";
 import { describe, expect, it } from "vitest";
 import { compile } from "../core/compiler/compile.helper";
 
@@ -457,6 +458,382 @@ describe("compile (select)", () => {
     expect(selectEvents).toHaveLength(1);
     expect(selectEvents[0]?.time).toBe(200);
     expect(abEvents[0]?.time).toBe(200);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Compiler — mark command
+// ---------------------------------------------------------------------------
+
+describe("compile (mark)", () => {
+  it("compiles a fixed-range mark into exactly one event", () => {
+    const events = compile([
+      {
+        id: "cmd_mk1",
+        kind: "mark",
+        cursor: "main",
+        style: "tw-highlight",
+        range: { from: 0, to: 5 },
+      },
+    ]);
+
+    expect(events).toHaveLength(1);
+    expect(events[0]?.kind).toBe("mark");
+  });
+
+  it("fixed-range mark event carries correct from, to, and style", () => {
+    const events = compile([
+      {
+        id: "cmd_mk2",
+        kind: "mark",
+        cursor: "main",
+        style: "tw-highlight",
+        range: { from: 2, to: 9 },
+      },
+    ]);
+
+    const evt = events[0] as TMarkEvent;
+
+    expect(evt.from).toBe(2);
+    expect(evt.to).toBe(9);
+    expect(evt.style).toBe("tw-highlight");
+  });
+
+  it("fixed-range mark does not advance the clock", () => {
+    const events = compile([
+      {
+        id: "cmd_mk3a",
+        kind: "type",
+        cursor: "main",
+        text: "Hi",
+        by: "char" as const,
+        interval: 100,
+      },
+      {
+        id: "cmd_mk3b",
+        kind: "mark",
+        cursor: "main",
+        style: "tw-highlight",
+        range: { from: 0, to: 2 },
+      },
+      {
+        id: "cmd_mk3c",
+        kind: "type",
+        cursor: "main",
+        text: "X",
+        by: "char" as const,
+        interval: 50,
+      },
+    ]);
+
+    // "Hi" ends at t=200; mark at t=200 (no advance); "X" at t=200
+    const markEvents = events.filter(e => e.kind === "mark");
+    const xEvents = events.filter(e => (e as TInsertEvent).text === "X");
+
+    expect(markEvents[0]?.time).toBe(200);
+    expect(xEvents[0]?.time).toBe(200);
+  });
+
+  it("mark event is scheduled at the current time offset", () => {
+    const events = compile([
+      {
+        id: "cmd_mk4a",
+        kind: "type",
+        cursor: "main",
+        text: "AB",
+        by: "char" as const,
+        interval: 100,
+      },
+      {
+        id: "cmd_mk4b",
+        kind: "wait",
+        duration: 300,
+      },
+      {
+        id: "cmd_mk4c",
+        kind: "mark",
+        cursor: "main",
+        style: "tw-mark",
+        range: { from: 0, to: 2 },
+      },
+    ]);
+
+    // "AB" ends at t=200; wait 300 ms → t=500; mark at t=500
+    const markEvents = events.filter(e => e.kind === "mark");
+
+    expect(markEvents[0]?.time).toBe(500);
+  });
+
+  it("selection-range mark emits one event per cursor with sentinel from/to of -1", () => {
+    const events = compile([
+      {
+        id: "cmd_mk5",
+        kind: "mark",
+        cursor: ["a", "b"],
+        style: "tw-highlight",
+        range: "selection" as const,
+      },
+    ]);
+
+    const markEvents = events.filter(e => e.kind === "mark") as TMarkEvent[];
+
+    expect(markEvents).toHaveLength(2);
+    markEvents.forEach((e) => {
+      expect(e.from).toBe(-1);
+      expect(e.to).toBe(-1);
+    });
+    expect(markEvents.map(e => e.cursorId).sort()).toEqual(["a", "b"]);
+  });
+
+  it("single-cursor selection-range mark emits one event with cursorId", () => {
+    const events = compile([
+      {
+        id: "cmd_mk6",
+        kind: "mark",
+        cursor: "main",
+        style: "tw-highlight",
+        range: "selection" as const,
+      },
+    ]);
+
+    const markEvents = events.filter(e => e.kind === "mark") as TMarkEvent[];
+
+    expect(markEvents).toHaveLength(1);
+    expect(markEvents[0]?.cursorId).toBe("main");
+    expect(markEvents[0]?.from).toBe(-1);
+    expect(markEvents[0]?.to).toBe(-1);
+  });
+
+  it("accepts a TStyleObject as style value", () => {
+    const style = { className: "tw-custom", css: { color: "red" } };
+    const events = compile([
+      {
+        id: "cmd_mk7",
+        kind: "mark",
+        cursor: "main",
+        style,
+        range: { from: 0, to: 3 },
+      },
+    ]);
+
+    const evt = events[0] as TMarkEvent;
+
+    expect(evt.style).toStrictEqual(style);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Reducer — mark command
+// ---------------------------------------------------------------------------
+
+describe("reduce (mark)", () => {
+  it("fixed-range mark appends a mark to document.marks", () => {
+    const commands = [
+      { id: "c1", kind: "type" as const, cursor: "main", text: "Hello", by: "char" as const, interval: 1 },
+      { id: "c2", kind: "mark" as const, cursor: "main", style: "tw-highlight", range: { from: 0, to: 5 } },
+    ];
+
+    const events = compile(commands);
+    let state = createInitialState();
+
+    for (const event of events) {
+      state = reduce(state, event);
+    }
+
+    expect(state.document.marks).toHaveLength(1);
+    expect(state.document.marks[0]).toStrictEqual({ from: 0, to: 5, style: "tw-highlight" });
+  });
+
+  it("multiple marks are accumulated on document.marks", () => {
+    const commands = [
+      { id: "c1", kind: "type" as const, cursor: "main", text: "Hello world", by: "char" as const, interval: 1 },
+      { id: "c2", kind: "mark" as const, cursor: "main", style: "tw-a", range: { from: 0, to: 5 } },
+      { id: "c3", kind: "mark" as const, cursor: "main", style: "tw-b", range: { from: 6, to: 11 } },
+    ];
+
+    const events = compile(commands);
+    let state = createInitialState();
+
+    for (const event of events) {
+      state = reduce(state, event);
+    }
+
+    expect(state.document.marks).toHaveLength(2);
+    expect(state.document.marks[0]?.style).toBe("tw-a");
+    expect(state.document.marks[1]?.style).toBe("tw-b");
+  });
+
+  it("mark with from >= to leaves document.marks unchanged", () => {
+    const commands = [
+      { id: "c1", kind: "type" as const, cursor: "main", text: "Hello", by: "char" as const, interval: 1 },
+      // from === to — degenerate range
+      { id: "c2", kind: "mark" as const, cursor: "main", style: "tw-highlight", range: { from: 3, to: 3 } },
+    ];
+
+    const events = compile(commands);
+    let state = createInitialState();
+
+    for (const event of events) {
+      state = reduce(state, event);
+    }
+
+    expect(state.document.marks).toHaveLength(0);
+  });
+
+  it("selection-based mark resolves to the cursor's active selection range", () => {
+    const commands = [
+      { id: "c1", kind: "type" as const, cursor: "main", text: "Hello world", by: "char" as const, interval: 1 },
+      // select -5 backward from index 11 → selection [6, 11]
+      { id: "c2", kind: "select" as const, cursor: "main", count: -5, by: "char" as const },
+      { id: "c3", kind: "mark" as const, cursor: "main", style: "tw-highlight", range: "selection" as const },
+    ];
+
+    const events = compile(commands);
+    let state = createInitialState();
+
+    for (const event of events) {
+      state = reduce(state, event);
+    }
+
+    expect(state.document.marks).toHaveLength(1);
+    expect(state.document.marks[0]).toStrictEqual({ from: 6, to: 11, style: "tw-highlight" });
+  });
+
+  it("selection-based mark with no active selection leaves marks unchanged", () => {
+    const commands = [
+      { id: "c1", kind: "type" as const, cursor: "main", text: "Hello", by: "char" as const, interval: 1 },
+      // no select command — cursor has no selection
+      { id: "c2", kind: "mark" as const, cursor: "main", style: "tw-highlight", range: "selection" as const },
+    ];
+
+    const events = compile(commands);
+    let state = createInitialState();
+
+    for (const event of events) {
+      state = reduce(state, event);
+    }
+
+    expect(state.document.marks).toHaveLength(0);
+  });
+
+  it("mark does not modify the document text", () => {
+    const commands = [
+      { id: "c1", kind: "type" as const, cursor: "main", text: "Hello", by: "char" as const, interval: 1 },
+      { id: "c2", kind: "mark" as const, cursor: "main", style: "tw-highlight", range: { from: 0, to: 5 } },
+    ];
+
+    const events = compile(commands);
+    let state = createInitialState();
+
+    for (const event of events) {
+      state = reduce(state, event);
+    }
+
+    expect(state.document.text).toBe("Hello");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Integration — mark via createTypewriter
+// ---------------------------------------------------------------------------
+
+describe("createTypewriter — mark", () => {
+  it("type then mark: stringRenderer output is the full text (mark does not affect text)", async () => {
+    const renderer = stringRenderer();
+    const tw = createTypewriter({ renderer });
+
+    tw.timeline
+      .type("Hello world", { by: "char", interval: 1 })
+      .mark("tw-highlight", { from: 0, to: 5 });
+
+    await tw.play();
+
+    expect(renderer.toString()).toBe("Hello world");
+  });
+
+  it("type then mark: compiled state carries the mark", () => {
+    const commands = [
+      { id: "c1", kind: "type" as const, cursor: "main", text: "Hello world", by: "char" as const, interval: 1 },
+      { id: "c2", kind: "mark" as const, cursor: "main", style: "tw-highlight", range: { from: 0, to: 5 } },
+    ];
+
+    const events = compile(commands);
+    let state = createInitialState();
+
+    for (const event of events) {
+      state = reduce(state, event);
+    }
+
+    expect(state.document.marks).toHaveLength(1);
+    expect(state.document.marks[0]).toStrictEqual({ from: 0, to: 5, style: "tw-highlight" });
+    expect(state.document.text).toBe("Hello world");
+  });
+
+  it("select then mark 'selection': compiled state mark covers the selection range", () => {
+    const commands = [
+      { id: "c1", kind: "type" as const, cursor: "main", text: "Hello world", by: "char" as const, interval: 1 },
+      { id: "c2", kind: "select" as const, cursor: "main", count: -5, by: "char" as const },
+      { id: "c3", kind: "mark" as const, cursor: "main", style: "tw-highlight", range: "selection" as const },
+    ];
+
+    const events = compile(commands);
+    let state = createInitialState();
+
+    for (const event of events) {
+      state = reduce(state, event);
+    }
+
+    expect(state.document.marks).toHaveLength(1);
+    expect(state.document.marks[0]).toStrictEqual({ from: 6, to: 11, style: "tw-highlight" });
+  });
+
+  it("mark with TStyleObject style is preserved in compiled state", () => {
+    const style = { className: "tw-custom", css: { background: "yellow" } };
+    const commands = [
+      { id: "c1", kind: "type" as const, cursor: "main", text: "Hello", by: "char" as const, interval: 1 },
+      { id: "c2", kind: "mark" as const, cursor: "main", style, range: { from: 0, to: 5 } },
+    ];
+
+    const events = compile(commands);
+    let state = createInitialState();
+
+    for (const event of events) {
+      state = reduce(state, event);
+    }
+
+    expect(state.document.marks[0]?.style).toStrictEqual(style);
+  });
+
+  it("mark scheduled after wait is applied correctly in compiled state", () => {
+    const commands = [
+      { id: "c1", kind: "type" as const, cursor: "main", text: "Hello", by: "char" as const, interval: 1 },
+      { id: "c2", kind: "wait" as const, duration: 10 },
+      { id: "c3", kind: "mark" as const, cursor: "main", style: "tw-highlight", range: { from: 0, to: 5 } },
+    ];
+
+    const events = compile(commands);
+    let state = createInitialState();
+
+    for (const event of events) {
+      state = reduce(state, event);
+    }
+
+    expect(state.document.marks).toHaveLength(1);
+    expect(state.document.marks[0]).toStrictEqual({ from: 0, to: 5, style: "tw-highlight" });
+  });
+
+  it("mark does not change what stringRenderer outputs", async () => {
+    const renderer = stringRenderer();
+    const tw = createTypewriter({ renderer });
+
+    tw.timeline
+      .type("Hello world", { by: "char", interval: 1 })
+      .mark("tw-highlight", { from: 6, to: 11 });
+
+    await tw.play();
+
+    // Text is unaffected; only marks metadata changes
+    expect(renderer.toString()).toBe("Hello world");
   });
 });
 

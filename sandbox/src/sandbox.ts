@@ -1,523 +1,562 @@
+import type { Completion, CompletionContext } from "@codemirror/autocomplete";
 import type { TTypewriter } from "@eo-typewriterjs";
-import type { TRecipe, TRecipeVariant } from "./recipes.const";
+import type { TSandboxCategory } from "./sandbox-recipes.const";
+import type { TRendererKind } from "./sandbox-runner.helper";
 
-import { createTypewriter, domRenderer, EPlaybackStatus } from "@eo-typewriterjs";
-import { RECIPES } from "./recipes.const";
+import { autocompletion, completeFromList } from "@codemirror/autocomplete";
+import { javascript } from "@codemirror/lang-javascript";
+import { EditorState } from "@codemirror/state";
+import { oneDark } from "@codemirror/theme-one-dark";
+import { EPlaybackStatus } from "@eo-typewriterjs";
+import { basicSetup, EditorView } from "codemirror";
+
+import { SANDBOX_RECIPES } from "./sandbox-recipes.const";
+
+import { createSandboxRenderer, ERendererKind, runUserCode } from "./sandbox-runner.helper";
 
 
+
+// ---------------------------------------------------------------------------
+// DOM refs
+// ---------------------------------------------------------------------------
+
+function $<T extends HTMLElement = HTMLElement>(sel: string): T {
+  return document.querySelector<T>(sel)!;
+}
+
+const elRendererSelect = $<HTMLSelectElement>("#renderer-select");
+const elPreviewDom = $("#preview-dom");
+const elPreviewString = $("#preview-string");
+const elStatusBadge = $("#status-badge");
+const elRunBtn = $("#run-btn");
+const elPlayBtn = $("#play-btn");
+const elPauseBtn = $("#pause-btn");
+const elStopBtn = $("#stop-btn");
+const elReplayBtn = $("#replay-btn");
+const elStepFwdBtn = $("#step-fwd-btn");
+const elStepBwdBtn = $("#step-bwd-btn");
+const elRateSlider = $<HTMLInputElement>("#rate-slider");
+const elRateValue = $("#rate-value");
+const elErrorPanel = $("#error-panel");
+const elErrorMsg = $("#error-msg");
+const elCopyBtn = $("#copy-btn");
+const elSearchInput = $<HTMLInputElement>("#recipe-search");
+const elRecipeList = $("#recipe-list");
+const elEditorContainer = $("#editor-container");
+const elPkgVersion = $("#pkg-version");
+const elRepoLink = $<HTMLAnchorElement>("#repo-link");
 
 // ---------------------------------------------------------------------------
 // State
 // ---------------------------------------------------------------------------
 
-let _tw: TTypewriter | null = null;
-let _rafId: number | null = null;
-let _isScrubbing = false;
+let activeRendererKind: TRendererKind = ERendererKind.DOM;
+let activeTw: TTypewriter | null = null;
+let activeCategory: TSandboxCategory = "all";
+let rafId: number | null = null;
+
+// ---------------------------------------------------------------------------
+// Sandbox globals for autocomplete
+// ---------------------------------------------------------------------------
+
+const SANDBOX_GLOBALS: Completion[] = [
+  {
+    label: "createTypewriter",
+    type: "function",
+    detail: "(opts: { renderer }) => TTypewriter",
+    info: "Create a typewriter instance with the given renderer.",
+  },
+  {
+    label: "renderer",
+    type: "variable",
+    detail: "IRenderer",
+    info: "The currently selected sandbox renderer (DOM or String).",
+  },
+  {
+    label: "domRenderer",
+    type: "function",
+    detail: "(target: HTMLElement) => IRenderer",
+    info: "Create a DOM renderer targeting an HTML element.",
+  },
+  {
+    label: "StringRenderer",
+    type: "class",
+    detail: "class StringRenderer",
+    info: "Headless renderer that outputs a plain-text string.",
+  },
+  {
+    label: "TimelineBuilder",
+    type: "class",
+    detail: "class TimelineBuilder",
+    info: "Fluent builder for constructing command timelines.",
+  },
+  {
+    label: "ECommandKind",
+    type: "constant",
+    detail: "enum-like object",
+    info: "Enum-like object containing all command kind values.",
+  },
+  {
+    label: "EPlaybackStatus",
+    type: "constant",
+    detail: "enum-like object",
+    info: "Enum-like object containing all playback status values.",
+  },
+];
 
 /**
  * @description
- * The currently selected recipe and variant indices
+ * CodeMirror completion source for sandbox-injected globals
+ *
+ * @param context - The completion context
+ * @returns A CompletionResult matching the sandbox globals, or null
  */
-let _recipeIndex = 0;
-let _variantIndex = 0;
-
-// ---------------------------------------------------------------------------
-// DOM helpers
-// ---------------------------------------------------------------------------
-
-function el<T extends HTMLElement>(id: string): T {
-  return document.getElementById(id) as T;
-}
-
-function outputEl(): HTMLElement {
-  return el("typewriter-output");
+function sandboxCompletionSource(context: CompletionContext) {
+  return completeFromList(SANDBOX_GLOBALS)(context);
 }
 
 // ---------------------------------------------------------------------------
-// Control readback
+// CodeMirror editor setup
 // ---------------------------------------------------------------------------
 
-function readDefaults() {
-  const unit = (el<HTMLSelectElement>("ctrl-unit").value || "char") as "char" | "grapheme" | "word" | "line";
-  const amount = Math.max(1, Number.parseInt(el<HTMLInputElement>("ctrl-amount").value, 10) || 1);
-  const interval = Math.max(0, Number.parseInt(el<HTMLInputElement>("ctrl-interval").value, 10) || 80);
-  const rate = Math.max(0.1, Number.parseFloat(el<HTMLInputElement>("ctrl-rate").value) || 1);
+const initialRecipe = SANDBOX_RECIPES[0];
 
-  return { unit, amount, interval, rate };
-}
-
-// ---------------------------------------------------------------------------
-// Apply variant defaults to the control panel
-// ---------------------------------------------------------------------------
-
-function applyDefaults(variant: TRecipeVariant): void {
-  const d = variant.defaults ?? {};
-
-  if (d.unit !== undefined) {
-    el<HTMLSelectElement>("ctrl-unit").value = d.unit;
-  }
-
-  if (d.amount !== undefined) {
-    el<HTMLInputElement>("ctrl-amount").value = String(d.amount);
-  }
-
-  if (d.interval !== undefined) {
-    el<HTMLInputElement>("ctrl-interval").value = String(d.interval);
-  }
-
-  if (d.rate !== undefined) {
-    el<HTMLInputElement>("ctrl-rate").value = String(d.rate);
-    el("ctrl-rate-label").textContent = `${d.rate}×`;
-  }
-}
+const editorView = new EditorView({
+  state: EditorState.create({
+    doc: initialRecipe.code,
+    extensions: [
+      basicSetup,
+      javascript(),
+      oneDark,
+      autocompletion({ override: [sandboxCompletionSource] }),
+      EditorView.theme({
+        "&": {
+          height: "100%",
+          fontSize: "13px",
+          fontFamily: "\"Noto Sans Mono\", \"JetBrains Mono\", \"Fira Code\", monospace",
+        },
+        ".cm-scroller": { overflow: "auto" },
+        ".cm-content": { padding: "12px 0" },
+        ".cm-focused": { outline: "none" },
+      }),
+      EditorView.lineWrapping,
+    ],
+  }),
+  parent: elEditorContainer,
+});
 
 // ---------------------------------------------------------------------------
-// Playback UI sync
+// Renderer panel visibility
 // ---------------------------------------------------------------------------
 
 /**
  * @description
- * Update every piece of playback UI from the current tw state (called in rAF loop)
+ * Show the correct preview panel for the active renderer kind
+ *
+ * @param kind - The renderer kind to show
  */
-function syncPlaybackUI(): void {
-  if (_tw === null) {
+function showRendererPanel(kind: TRendererKind): void {
+  elPreviewDom.style.display = kind === ERendererKind.DOM ? "" : "none";
+  elPreviewString.style.display = kind === ERendererKind.STRING ? "" : "none";
+}
+
+// ---------------------------------------------------------------------------
+// Status badge
+// ---------------------------------------------------------------------------
+
+/**
+ * @description
+ * Update the status badge text and data-status attribute
+ *
+ * @param status - The playback status string
+ */
+function setStatus(status: string): void {
+  elStatusBadge.textContent = status.toUpperCase();
+  elStatusBadge.dataset.status = status;
+}
+
+// ---------------------------------------------------------------------------
+// Transport button states
+// ---------------------------------------------------------------------------
+
+/**
+ * @description
+ * Sync transport button disabled states with current playback status
+ */
+function syncTransportState(): void {
+  if (activeTw === null) {
+    elPlayBtn.setAttribute("disabled", "");
+    elPauseBtn.setAttribute("disabled", "");
+    elStopBtn.setAttribute("disabled", "");
+    elReplayBtn.setAttribute("disabled", "");
+    elStepFwdBtn.setAttribute("disabled", "");
+    elStepBwdBtn.setAttribute("disabled", "");
+
     return;
   }
 
-  const state = _tw.getState();
-  const { status, currentTime, duration, rate } = state;
+  const state = activeTw.getState();
+  const isPlaying = state.status === EPlaybackStatus.PLAYING;
+  const isStopped = state.status === EPlaybackStatus.STOPPED;
+  const isCompleted = state.status === EPlaybackStatus.COMPLETED;
+  const isIdle = state.status === EPlaybackStatus.IDLE;
 
-  // Status badge
-  const badge = el("status-badge");
+  setStatus(state.status);
 
-  badge.textContent = status;
-  badge.dataset.status = status;
+  elPlayBtn.toggleAttribute("disabled", isPlaying);
+  elPauseBtn.toggleAttribute("disabled", !isPlaying);
+  elStopBtn.toggleAttribute("disabled", isIdle || isStopped);
+  elReplayBtn.toggleAttribute("disabled", isIdle);
+  elStepFwdBtn.toggleAttribute("disabled", isPlaying || isCompleted);
+  elStepBwdBtn.toggleAttribute("disabled", isPlaying || isIdle);
+}
 
-  // Time / duration
-  el("time-current").textContent = formatMs(currentTime);
-  el("time-duration").textContent = formatMs(duration);
+// ---------------------------------------------------------------------------
+// RAF tick for live UI updates during playback
+// ---------------------------------------------------------------------------
 
-  // Seek slider — only update when user is not scrubbing
-  if (!_isScrubbing) {
-    const slider = el<HTMLInputElement>("seek-slider");
+/**
+ * @description
+ * Start the animation-frame tick loop
+ */
+function startTick(): void {
+  stopTick();
+  rafId = requestAnimationFrame(tick);
+}
 
-    slider.max = String(Math.max(1, duration));
-    slider.value = String(currentTime);
+/**
+ * @description
+ * Cancel the animation-frame tick loop
+ */
+function stopTick(): void {
+  if (rafId !== null) {
+    cancelAnimationFrame(rafId);
+    rafId = null;
   }
+}
 
-  // Rate label
-  el("ctrl-rate-label").textContent = `${rate}×`;
+/**
+ * @description
+ * Single tick — syncs transport state and loops while playing
+ */
+function tick(): void {
+  syncTransportState();
 
-  // Button states
-  const playing = status === EPlaybackStatus.PLAYING;
-  const paused = status === EPlaybackStatus.PAUSED;
-  const idle = status === EPlaybackStatus.IDLE;
-  const stopped = status === EPlaybackStatus.STOPPED;
-  const completed = status === EPlaybackStatus.COMPLETED;
-
-  el<HTMLButtonElement>("btn-play").disabled = playing;
-  el<HTMLButtonElement>("btn-pause").disabled = !playing;
-  el<HTMLButtonElement>("btn-stop").disabled = idle || stopped;
-  el<HTMLButtonElement>("btn-replay").disabled = idle;
-  el<HTMLButtonElement>("btn-step-back").disabled = playing || (idle && !paused && !completed);
-  el<HTMLButtonElement>("btn-step-fwd").disabled = playing || completed;
-
-  // Continue rAF while playing
-  if (playing) {
-    _rafId = requestAnimationFrame(syncPlaybackUI);
+  if (activeTw?.getState().status === EPlaybackStatus.PLAYING) {
+    rafId = requestAnimationFrame(tick);
   }
   else {
-    _rafId = null;
+    rafId = null;
+    syncTransportState();
   }
-}
-
-function startRaf(): void {
-  if (_rafId !== null) {
-    cancelAnimationFrame(_rafId);
-  }
-
-  _rafId = requestAnimationFrame(syncPlaybackUI);
-}
-
-function formatMs(ms: number): string {
-  if (ms < 1000) {
-    return `${Math.round(ms)}ms`;
-  }
-
-  return `${(ms / 1000).toFixed(1)}s`;
 }
 
 // ---------------------------------------------------------------------------
-// Build the typewriter for the active recipe+variant
-// ---------------------------------------------------------------------------
-
-function buildTypewriter(): TTypewriter {
-  const recipe = RECIPES[_recipeIndex];
-  const variant = recipe?.variants[_variantIndex];
-
-  const tw = createTypewriter({ renderer: domRenderer(outputEl()) });
-
-  if (recipe !== undefined && variant !== undefined) {
-    const defaults = {
-      unit: readDefaults().unit,
-      amount: readDefaults().amount,
-      interval: readDefaults().interval,
-      rate: readDefaults().rate,
-    };
-
-    tw.setRate(defaults.rate);
-    variant.build(tw, defaults);
-  }
-
-  return tw;
-}
-
-// ---------------------------------------------------------------------------
-// Playback controls
+// Error panel
 // ---------------------------------------------------------------------------
 
 /**
  * @description
- * Create a fresh typewriter from the active recipe+variant and play it.
- * Stops any currently playing instance first.
- */
-function loadAndPlay(): void {
-  stopCurrent();
-  _tw = buildTypewriter();
-  startRaf();
-  void _tw.play().then(() => syncPlaybackUI());
-}
-
-function stopCurrent(): void {
-  if (_tw !== null) {
-    _tw.stop();
-    _tw = null;
-  }
-
-  if (_rafId !== null) {
-    cancelAnimationFrame(_rafId);
-    _rafId = null;
-  }
-}
-
-function ensureTw(): TTypewriter {
-  if (_tw === null) {
-    _tw = buildTypewriter();
-  }
-
-  return _tw;
-}
-
-// ---------------------------------------------------------------------------
-// Source panel
-// ---------------------------------------------------------------------------
-
-function updateSourcePanel(): void {
-  const recipe = RECIPES[_recipeIndex];
-  const variant = recipe?.variants[_variantIndex];
-
-  el("source-code").textContent = variant?.source ?? "";
-}
-
-// ---------------------------------------------------------------------------
-// Recipe list rendering
-// ---------------------------------------------------------------------------
-
-const CATEGORY_ORDER: TRecipe["category"][] = ["basics", "timing", "editing", "cursor", "styling", "advanced"];
-const CATEGORY_LABELS: Record<TRecipe["category"], string> = {
-  basics: "Basics",
-  timing: "Timing",
-  editing: "Editing",
-  cursor: "Cursor",
-  styling: "Styling",
-  advanced: "Advanced",
-};
-
-/**
- * @description
- * Render the recipe list, optionally filtered by category and search term
+ * Show the error panel with a message
  *
- * @param filterCategory - Active category filter or null for all
- * @param search - Search query string (lowercased)
+ * @param msg - The error message to display
  */
-function renderRecipeList(filterCategory: TRecipe["category"] | null, search: string): void {
-  const list = el("recipe-list");
+function showError(msg: string): void {
+  elErrorMsg.textContent = msg;
+  elErrorPanel.style.display = "";
+}
 
-  list.innerHTML = "";
+/**
+ * @description
+ * Hide the error panel
+ */
+function hideError(): void {
+  elErrorPanel.style.display = "none";
+}
 
-  const filtered = RECIPES.filter((r, i) => {
-    const matchCat = filterCategory === null || r.category === filterCategory;
-    const matchSearch = search === "" || r.title.toLowerCase().includes(search) || r.description.toLowerCase().includes(search);
+// ---------------------------------------------------------------------------
+// Run user code
+// ---------------------------------------------------------------------------
 
-    return matchCat && matchSearch ? (i >= 0) : false;
+/**
+ * @description
+ * Get the current code from the editor
+ *
+ * @returns The raw string content of the editor document
+ */
+function getEditorCode(): string {
+  return editorView.state.doc.toString();
+}
+
+/**
+ * @description
+ * Execute the code in the editor using the active renderer
+ *
+ * @returns A promise that resolves when execution is complete, with the result or an error.
+ */
+async function runCode(): Promise<void> {
+  hideError();
+  stopTick();
+
+  // Stop any prior animation
+  activeTw?.stop();
+  activeTw = null;
+
+  // Clear preview panels
+  elPreviewDom.innerHTML = "";
+  elPreviewString.textContent = "";
+
+  setStatus("running");
+  elRunBtn.setAttribute("disabled", "");
+
+  const renderer = createSandboxRenderer(
+    activeRendererKind,
+    elPreviewDom,
+    elPreviewString,
+  );
+
+  const code = getEditorCode();
+  const result = await runUserCode(code, renderer);
+
+  elRunBtn.removeAttribute("disabled");
+
+  if (!result.ok) {
+    showError(result.error);
+    setStatus("error");
+    syncTransportState();
+
+    return;
+  }
+
+  activeTw = result.tw;
+  startTick();
+}
+
+// ---------------------------------------------------------------------------
+// Recipe picker
+// ---------------------------------------------------------------------------
+
+/**
+ * @description
+ * Render the recipe list filtered by search + category
+ */
+function renderRecipes(): void {
+  const query = elSearchInput.value.trim().toLowerCase();
+
+  const filtered = SANDBOX_RECIPES.filter((r) => {
+    const matchCat = activeCategory === "all" || r.category === activeCategory;
+    const matchSearch = query === ""
+      || r.title.toLowerCase().includes(query)
+      || r.description.toLowerCase().includes(query);
+
+    return matchCat && matchSearch;
   });
+
+  elRecipeList.innerHTML = "";
 
   if (filtered.length === 0) {
     const empty = document.createElement("p");
 
     empty.className = "recipe-empty";
     empty.textContent = "No recipes match your search.";
-    list.appendChild(empty);
+    elRecipeList.appendChild(empty);
 
     return;
   }
 
   for (const recipe of filtered) {
-    const realIndex = RECIPES.indexOf(recipe);
     const item = document.createElement("button");
 
     item.className = "recipe-item";
     item.dataset.id = recipe.id;
 
-    if (realIndex === _recipeIndex) {
-      item.classList.add("recipe-item--active");
-    }
-
-    const title = document.createElement("span");
-
-    title.className = "recipe-item__title";
-    title.textContent = recipe.title;
-
-    const desc = document.createElement("span");
-
-    desc.className = "recipe-item__desc";
-    desc.textContent = recipe.description;
-
-    const catBadge = document.createElement("span");
-
-    catBadge.className = `recipe-item__cat recipe-item__cat--${recipe.category}`;
-    catBadge.textContent = CATEGORY_LABELS[recipe.category];
-
-    item.appendChild(title);
-    item.appendChild(catBadge);
-    item.appendChild(desc);
+    item.innerHTML = `
+      <span class="recipe-item__top">
+        <span class="recipe-item__title">${recipe.title}</span>
+        <span class="recipe-item__cat recipe-item__cat--${recipe.category}">${recipe.category}</span>
+        <span class="recipe-item__diff recipe-item__diff--${recipe.difficulty}">${recipe.difficulty}</span>
+      </span>
+      <span class="recipe-item__desc">${recipe.description}</span>
+    `;
 
     item.addEventListener("click", () => {
-      _recipeIndex = realIndex;
-      _variantIndex = 0;
-      applyDefaults(RECIPES[_recipeIndex]!.variants[0]!);
-      renderRecipeList(filterCategory, search);
-      renderVariantChips();
-      updateSourcePanel();
-      loadAndPlay();
+      void loadRecipe(recipe.id);
     });
 
-    list.appendChild(item);
+    elRecipeList.appendChild(item);
   }
 }
 
 /**
  * @description
- * Render the variant chip strip for the active recipe
+ * Load a recipe by ID into the editor and auto-run it
+ *
+ * @param id - The recipe ID to load
+ * @returns A promise that resolves when the recipe has been loaded and run
  */
-function renderVariantChips(): void {
-  const strip = el("variant-chips");
-
-  strip.innerHTML = "";
-
-  const recipe = RECIPES[_recipeIndex];
+async function loadRecipe(id: string): Promise<void> {
+  const recipe = SANDBOX_RECIPES.find(r => r.id === id);
 
   if (recipe === undefined) {
     return;
   }
 
-  recipe.variants.forEach((variant, i) => {
-    const chip = document.createElement("button");
+  // Update editor content
+  editorView.dispatch({
+    changes: {
+      from: 0,
+      to: editorView.state.doc.length,
+      insert: recipe.code,
+    },
+  });
 
-    chip.className = "variant-chip";
-    chip.textContent = variant.label;
+  // Mark as active
+  document.querySelectorAll(".recipe-item").forEach((el) => {
+    el.classList.toggle("recipe-item--active", (el as HTMLElement).dataset.id === id);
+  });
 
-    if (i === _variantIndex) {
-      chip.classList.add("variant-chip--active");
-    }
+  // Auto-run
+  await runCode();
+}
 
+// ---------------------------------------------------------------------------
+// Category chips
+// ---------------------------------------------------------------------------
+
+/**
+ * @description
+ * Wire up category filter chip click events
+ */
+function initCategoryChips(): void {
+  document.querySelectorAll<HTMLButtonElement>(".cat-chip").forEach((chip) => {
     chip.addEventListener("click", () => {
-      _variantIndex = i;
-      applyDefaults(variant);
-      renderVariantChips();
-      updateSourcePanel();
-      loadAndPlay();
-    });
+      activeCategory = (chip.dataset.cat as TSandboxCategory) ?? "all";
 
-    strip.appendChild(chip);
+      document.querySelectorAll(".cat-chip").forEach(c =>
+        c.classList.toggle("cat-chip--active", c === chip),
+      );
+
+      renderRecipes();
+    });
   });
 }
 
 // ---------------------------------------------------------------------------
-// Custom editor
+// Event wiring
 // ---------------------------------------------------------------------------
 
-function runCustomEditor(): void {
-  const text = el<HTMLTextAreaElement>("editor").value.trim();
+/**
+ * @description
+ * Wire all sandbox UI events
+ */
+function init(): void {
+  // Inject version + repo link from build-time defines
+  elPkgVersion.textContent = `v${__PKG_VERSION__}`;
 
-  if (text === "") {
-    return;
-  }
+  const repoUrl = __PKG_REPO__
+    .replace(/^git\+/, "")
+    .replace(/\.git$/, "");
 
-  stopCurrent();
-  _recipeIndex = -1;
+  elRepoLink.href = repoUrl;
 
-  const tw = createTypewriter({ renderer: domRenderer(outputEl()) });
-  const defaults = readDefaults();
+  // Initial renderer panel
+  showRendererPanel(activeRendererKind);
+  setStatus("idle");
+  syncTransportState();
 
-  tw.setRate(defaults.rate);
-  tw.timeline.type(text, {
-    by: defaults.amount === 1 ? defaults.unit : { unit: defaults.unit, amount: defaults.amount },
-    interval: defaults.interval,
+  // Renderer selector
+  elRendererSelect.addEventListener("change", () => {
+    activeRendererKind = elRendererSelect.value as TRendererKind;
+    showRendererPanel(activeRendererKind);
   });
 
-  _tw = tw;
-  startRaf();
-  void tw.play().then(() => syncPlaybackUI());
+  // Run button
+  elRunBtn.addEventListener("click", () => {
+    void runCode();
+  });
+
+  // Keyboard shortcut: Ctrl+Enter / Cmd+Enter to run
+  document.addEventListener("keydown", (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+      e.preventDefault();
+      void runCode();
+    }
+  });
+
+  // Transport
+  elPlayBtn.addEventListener("click", () => {
+    if (activeTw === null) {
+      return;
+    }
+
+    startTick();
+    activeTw.play().catch(() => null).finally(() => syncTransportState());
+  });
+
+  elPauseBtn.addEventListener("click", () => {
+    activeTw?.pause();
+    stopTick();
+    syncTransportState();
+  });
+
+  elStopBtn.addEventListener("click", () => {
+    activeTw?.stop();
+    stopTick();
+    syncTransportState();
+  });
+
+  elReplayBtn.addEventListener("click", () => {
+    if (activeTw === null) {
+      return;
+    }
+
+    startTick();
+    activeTw.replay().catch(() => null).finally(() => syncTransportState());
+  });
+
+  elStepFwdBtn.addEventListener("click", () => {
+    activeTw?.stepForward();
+    syncTransportState();
+  });
+
+  elStepBwdBtn.addEventListener("click", () => {
+    activeTw?.stepBackward();
+    syncTransportState();
+  });
+
+  // Rate slider
+  elRateSlider.addEventListener("input", () => {
+    const rate = Number(elRateSlider.value);
+
+    elRateValue.textContent = `${rate}×`;
+    activeTw?.setRate(rate);
+  });
+
+  // Copy button
+  elCopyBtn.addEventListener("click", () => {
+    void navigator.clipboard.writeText(getEditorCode()).then(() => {
+      const orig = elCopyBtn.textContent;
+
+      elCopyBtn.textContent = "Copied!";
+      setTimeout(() => {
+        elCopyBtn.textContent = orig;
+      }, 1500);
+    });
+  });
+
+  // Recipe search
+  elSearchInput.addEventListener("input", () => renderRecipes());
+
+  // Category chips
+  initCategoryChips();
+
+  // Initial recipe list + auto-run first recipe
+  renderRecipes();
+  void loadRecipe(initialRecipe.id);
 }
 
 // ---------------------------------------------------------------------------
 // Boot
 // ---------------------------------------------------------------------------
 
-/**
- * @description
- * Bootstrap the sandbox — wire up all UI elements and start the first recipe
- */
-export function boot(): void {
-  let activeCategory: TRecipe["category"] | null = null;
-  let searchQuery = "";
-
-  // ── Category filter chips ──────────────────────────────────────────────
-  const filterBar = el("category-filter");
-
-  const allChip = document.createElement("button");
-
-  allChip.className = "cat-chip cat-chip--active";
-  allChip.textContent = "All";
-  allChip.addEventListener("click", () => {
-    activeCategory = null;
-    filterBar.querySelectorAll(".cat-chip").forEach(c => c.classList.remove("cat-chip--active"));
-    allChip.classList.add("cat-chip--active");
-    renderRecipeList(activeCategory, searchQuery);
-  });
-  filterBar.appendChild(allChip);
-
-  for (const cat of CATEGORY_ORDER) {
-    const chip = document.createElement("button");
-
-    chip.className = "cat-chip";
-    chip.textContent = CATEGORY_LABELS[cat];
-    chip.addEventListener("click", () => {
-      activeCategory = cat;
-      filterBar.querySelectorAll(".cat-chip").forEach(c => c.classList.remove("cat-chip--active"));
-      chip.classList.add("cat-chip--active");
-      renderRecipeList(activeCategory, searchQuery);
-    });
-    filterBar.appendChild(chip);
-  }
-
-  // ── Search ─────────────────────────────────────────────────────────────
-  el<HTMLInputElement>("recipe-search").addEventListener("input", (e) => {
-    searchQuery = (e.target as HTMLInputElement).value.toLowerCase();
-    renderRecipeList(activeCategory, searchQuery);
-  });
-
-  // ── Playback buttons ───────────────────────────────────────────────────
-  el("btn-play").addEventListener("click", () => {
-    const tw = ensureTw();
-
-    _tw = tw;
-    startRaf();
-    void tw.play().then(() => syncPlaybackUI());
-  });
-
-  el("btn-pause").addEventListener("click", () => {
-    _tw?.pause();
-    syncPlaybackUI();
-  });
-
-  el("btn-stop").addEventListener("click", () => {
-    stopCurrent();
-    _tw = buildTypewriter();
-    syncPlaybackUI();
-  });
-
-  el("btn-replay").addEventListener("click", () => {
-    const tw = ensureTw();
-
-    _tw = tw;
-    startRaf();
-    void tw.replay().then(() => syncPlaybackUI());
-  });
-
-  el("btn-step-back").addEventListener("click", () => {
-    const tw = ensureTw();
-
-    _tw = tw;
-    tw.stepBackward();
-    syncPlaybackUI();
-  });
-
-  el("btn-step-fwd").addEventListener("click", () => {
-    const tw = ensureTw();
-
-    _tw = tw;
-    tw.stepForward();
-    syncPlaybackUI();
-  });
-
-  // ── Seek slider ────────────────────────────────────────────────────────
-  const seekSlider = el<HTMLInputElement>("seek-slider");
-
-  seekSlider.addEventListener("mousedown", () => {
-    _isScrubbing = true;
-  });
-
-  seekSlider.addEventListener("touchstart", () => {
-    _isScrubbing = true;
-  });
-
-  seekSlider.addEventListener("input", () => {
-    const tw = ensureTw();
-
-    _tw = tw;
-    tw.seek(Number(seekSlider.value));
-    el("time-current").textContent = formatMs(Number(seekSlider.value));
-  });
-
-  seekSlider.addEventListener("mouseup", () => {
-    _isScrubbing = false;
-    syncPlaybackUI();
-  });
-
-  seekSlider.addEventListener("touchend", () => {
-    _isScrubbing = false;
-    syncPlaybackUI();
-  });
-
-  // ── Rate slider ────────────────────────────────────────────────────────
-  el<HTMLInputElement>("ctrl-rate").addEventListener("input", (e) => {
-    const rate = Number.parseFloat((e.target as HTMLInputElement).value);
-
-    el("ctrl-rate-label").textContent = `${rate}×`;
-    _tw?.setRate(rate);
-  });
-
-  // ── Custom editor ──────────────────────────────────────────────────────
-  el("btn-run").addEventListener("click", runCustomEditor);
-  el("btn-clear").addEventListener("click", () => {
-    stopCurrent();
-    (el<HTMLTextAreaElement>("editor")).value = "";
-    syncPlaybackUI();
-  });
-
-  el<HTMLTextAreaElement>("editor").addEventListener("keydown", (e: KeyboardEvent) => {
-    if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
-      e.preventDefault();
-      runCustomEditor();
-    }
-  });
-
-  // ── Initial render ─────────────────────────────────────────────────────
-  applyDefaults(RECIPES[0]!.variants[0]!);
-  renderRecipeList(null, "");
-  renderVariantChips();
-  updateSourcePanel();
-  loadAndPlay();
-}
+document.addEventListener("DOMContentLoaded", init);

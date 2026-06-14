@@ -4,181 +4,135 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>EO TypewriterJS — Sandbox</title>
-    <link rel="stylesheet" href="/src/styles.css" />
+    <link rel="icon" href="/logo.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;500;600;700&family=Noto+Sans+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="./src/styles.css" />
   </head>
   <body>
     <div id="app">
-      <!-- ── Header ─────────────────────────────────────────────────── -->
-      <header class="header">
-        <div class="header__brand">
-          <h1 class="header__title">EO TypewriterJS</h1>
-          <span class="header__badge">Sandbox</span>
-        </div>
-        <p class="header__sub">Interactive recipe playground with full playback controls</p>
-      </header>
+      <div class="shell">
 
-      <!-- ── Main grid ──────────────────────────────────────────────── -->
-      <main class="main">
+        <!-- ── Header ───────────────────────────────────────────────── -->
+        <header class="header">
+          <div class="header__brand">
+            <img class="header__logo" src="/logo.svg" width="26" height="26" alt="EO TypewriterJS logo" />
+            <span class="header__title">eo-typewriterjs</span>
+            <span id="pkg-version" class="header__version"></span>
+            <span class="header__badge">Sandbox</span>
+          </div>
+          <div class="header__meta">
+            <span id="status-badge" class="status-badge" data-status="idle">IDLE</span>
+            <a id="repo-link" class="repo-link" href="#" target="_blank" rel="noopener noreferrer" title="View on GitHub">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/>
+              </svg>
+              GitHub
+            </a>
+          </div>
+        </header>
 
-        <!-- ══ Left column ══════════════════════════════════════════ -->
-        <div class="col col--left">
+        <!-- ── Preview panel ─────────────────────────────────────────── -->
+        <section class="preview-section">
+          <div class="preview-section__toolbar">
+            <span class="toolbar-label">Renderer</span>
+            <select id="renderer-select" class="renderer-select">
+              <option value="dom">DOM</option>
+              <option value="string">String</option>
+            </select>
 
-          <!-- Preview -->
-          <section class="card preview-card">
-            <header class="card__header">
-              <h2 class="card__title">Preview</h2>
-              <span id="status-badge" class="status-badge" data-status="idle">idle</span>
-            </header>
-            <div class="preview">
-              <div id="typewriter-output" class="preview__output"></div>
-            </div>
-          </section>
-
-          <!-- Playback controls -->
-          <section class="card playback-card">
-            <header class="card__header">
-              <h2 class="card__title">Playback</h2>
-              <span class="time-display">
-                <span id="time-current">0ms</span>
-                <span class="time-sep">/</span>
-                <span id="time-duration">0ms</span>
-              </span>
-            </header>
-
-            <!-- Seek slider -->
-            <div class="seek-row">
-              <input
-                id="seek-slider"
-                type="range"
-                class="seek-slider"
-                min="0"
-                max="1000"
-                value="0"
-                step="1"
-              />
-            </div>
-
-            <!-- Transport buttons -->
             <div class="transport">
-              <button id="btn-step-back" class="transport-btn" title="Step backward" disabled>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><polygon points="19 20 9 12 19 4 19 20"/><line x1="5" y1="4" x2="5" y2="20"/></svg>
+              <button id="step-bwd-btn" class="transport-btn" title="Step backward" disabled>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="19 20 9 12 19 4 19 20"/><line x1="5" y1="19" x2="5" y2="5"/></svg>
               </button>
-              <button id="btn-stop" class="transport-btn" title="Stop" disabled>
-                <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><rect x="4" y="4" width="16" height="16" rx="2"/></svg>
+              <button id="stop-btn" class="transport-btn" title="Stop" disabled>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="4" width="16" height="16" rx="2"/></svg>
               </button>
-              <button id="btn-pause" class="transport-btn" title="Pause" disabled>
-                <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>
+              <button id="pause-btn" class="transport-btn" title="Pause" disabled>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>
               </button>
-              <button id="btn-play" class="transport-btn transport-btn--primary" title="Play">
-                <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+              <button id="play-btn" class="transport-btn transport-btn--primary" title="Play" disabled>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
               </button>
-              <button id="btn-replay" class="transport-btn" title="Replay" disabled>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4.72"/></svg>
+              <button id="replay-btn" class="transport-btn" title="Replay" disabled>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.78"/></svg>
               </button>
-              <button id="btn-step-fwd" class="transport-btn" title="Step forward">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><polygon points="5 4 15 12 5 20 5 4"/><line x1="19" y1="4" x2="19" y2="20"/></svg>
+              <button id="step-fwd-btn" class="transport-btn" title="Step forward" disabled>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 4 15 12 5 20 5 4"/><line x1="19" y1="5" x2="19" y2="19"/></svg>
               </button>
             </div>
-          </section>
 
-          <!-- Controls -->
-          <section class="card controls-card">
-            <h2 class="card__title">Controls</h2>
-            <div class="controls-grid">
-              <label class="field">
-                <span class="field__label">Unit</span>
-                <select id="ctrl-unit" class="field__input">
-                  <option value="char">char</option>
-                  <option value="grapheme">grapheme</option>
-                  <option value="word">word</option>
-                  <option value="line">line</option>
-                </select>
-              </label>
-
-              <label class="field">
-                <span class="field__label">Amount</span>
-                <input id="ctrl-amount" type="number" min="1" max="20" value="1" class="field__input" />
-              </label>
-
-              <label class="field">
-                <span class="field__label">Interval (ms)</span>
-                <input id="ctrl-interval" type="number" min="0" max="2000" value="80" class="field__input" />
-              </label>
-
-              <label class="field">
-                <span class="field__label">Rate <span id="ctrl-rate-label" class="field__badge">1×</span></span>
-                <input id="ctrl-rate" type="range" min="0.1" max="8" step="0.1" value="1" class="field__input field__input--range" />
-              </label>
+            <div class="rate-row">
+              <span class="rate-label">Rate</span>
+              <input id="rate-slider" class="rate-slider" type="range" min="0.25" max="4" step="0.25" value="1" />
+              <span id="rate-value" class="rate-value">1×</span>
             </div>
-          </section>
+          </div>
 
-          <!-- Custom editor -->
-          <section class="card editor-card">
-            <h2 class="card__title">Custom text</h2>
-            <textarea
-              id="editor"
-              class="editor__textarea"
-              spellcheck="false"
-              placeholder="Type or paste text… (Ctrl+Enter to run)"
-            ></textarea>
-            <div class="editor-actions">
-              <button id="btn-run" class="btn btn--primary">▶ Run</button>
-              <button id="btn-clear" class="btn btn--ghost">✕ Clear</button>
-            </div>
-          </section>
-        </div>
+          <div class="preview-output">
+            <div id="preview-dom" class="preview-pane preview-pane--dom"></div>
+            <div id="preview-string" class="preview-pane preview-pane--string" style="display:none"></div>
+          </div>
 
-        <!-- ══ Right column ══════════════════════════════════════════ -->
-        <div class="col col--right">
+          <!-- Error panel -->
+          <div id="error-panel" class="error-panel" style="display:none">
+            <svg class="error-panel__icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            <span id="error-msg" class="error-panel__msg"></span>
+          </div>
+        </section>
+
+        <!-- ── Bottom row ────────────────────────────────────────────── -->
+        <div class="bottom-row">
 
           <!-- Recipe picker -->
-          <section class="card recipes-card">
-            <header class="card__header">
-              <h2 class="card__title">Recipes</h2>
-            </header>
-
-            <!-- Search -->
-            <div class="search-row">
-              <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-              <input id="recipe-search" type="search" class="search-input" placeholder="Search recipes…" />
+          <aside class="recipes-panel">
+            <div class="panel-header">
+              <span class="panel-title">Recipes</span>
             </div>
 
-            <!-- Category chips -->
-            <div id="category-filter" class="cat-filter"></div>
+            <div class="search-row">
+              <svg class="search-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <input id="recipe-search" class="search-input" type="text" placeholder="Search recipes…" />
+            </div>
 
-            <!-- Recipe list -->
+            <div class="cat-filter">
+              <button class="cat-chip cat-chip--active" data-cat="all">All</button>
+              <button class="cat-chip" data-cat="basics">Basics</button>
+              <button class="cat-chip" data-cat="timing">Timing</button>
+              <button class="cat-chip" data-cat="editing">Editing</button>
+              <button class="cat-chip" data-cat="cursor">Cursor</button>
+              <button class="cat-chip" data-cat="styling">Styling</button>
+              <button class="cat-chip" data-cat="advanced">Advanced</button>
+            </div>
+
             <div id="recipe-list" class="recipe-list"></div>
+          </aside>
 
-            <!-- Variant chips -->
-            <div id="variant-chips" class="variant-chips"></div>
-          </section>
+          <!-- Code editor -->
+          <div class="editor-panel">
+            <div class="panel-header">
+              <span class="panel-title">Editor</span>
+              <span class="panel-hint">
+                <kbd>Ctrl</kbd><kbd>Enter</kbd> to run
+              </span>
+              <div class="editor-actions">
+                <button id="copy-btn" class="action-btn">Copy</button>
+                <button id="run-btn" class="action-btn action-btn--primary">▶ Run</button>
+              </div>
+            </div>
 
-          <!-- Source code -->
-          <section class="card source-card">
-            <header class="card__header">
-              <h2 class="card__title">Source</h2>
-              <button class="copy-btn" id="btn-copy" title="Copy source">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-                Copy
-              </button>
-            </header>
-            <pre class="source-pre"><code id="source-code" class="source-code"></code></pre>
-          </section>
+            <div id="editor-container" class="editor-container"></div>
+
+            <div class="editor-context-hint">
+              Globals: <code>createTypewriter</code>, <code>renderer</code>, <code>domRenderer</code>, <code>StringRenderer</code>, <code>TimelineBuilder</code>, <code>ECommandKind</code>, <code>EPlaybackStatus</code>
+            </div>
+          </div>
 
         </div>
-      </main>
+      </div>
     </div>
 
-    <script type="module" src="/src/main.ts"></script>
-    <script>
-      // Copy button
-      document.getElementById('btn-copy')?.addEventListener('click', function() {
-        const code = document.getElementById('source-code')?.textContent ?? '';
-        navigator.clipboard.writeText(code).then(() => {
-          this.textContent = '✓ Copied';
-          setTimeout(() => { this.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Copy'; }, 1500);
-        });
-      });
-    </script>
+    <script type="module" src="./src/sandbox.ts"></script>
   </body>
 </html>
