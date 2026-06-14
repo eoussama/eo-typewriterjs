@@ -27,7 +27,6 @@ function $<T extends HTMLElement = HTMLElement>(sel: string): T {
 const elRendererSelect = $<HTMLSelectElement>("#renderer-select");
 const elPreviewDom = $("#preview-dom");
 const elPreviewString = $("#preview-string");
-const elStatusBadge = $("#status-badge");
 const elRunBtn = $("#run-btn");
 const elPlayBtn = $("#play-btn");
 const elPauseBtn = $("#pause-btn");
@@ -43,6 +42,7 @@ const elCopyBtn = $("#copy-btn");
 const elSearchInput = $<HTMLInputElement>("#recipe-search");
 const elRecipeList = $("#recipe-list");
 const elEditorContainer = $("#editor-container");
+const elEditorShortcutHint = $("#editor-shortcut-hint");
 const elPkgVersion = $("#pkg-version");
 const elRepoLink = $<HTMLAnchorElement>("#repo-link");
 
@@ -175,29 +175,28 @@ function showRendererPanel(kind: TRendererKind): void {
 }
 
 // ---------------------------------------------------------------------------
-// Status badge
+// Transport button states
 // ---------------------------------------------------------------------------
 
 /**
  * @description
- * Update the status badge text and data-status attribute
- *
- * @param status - The playback status string
+ * Sync the rate slider and display label with the active typewriter rate.
+ * Resets to 1× when no typewriter is active.
  */
-function setStatus(status: string): void {
-  elStatusBadge.textContent = status.toUpperCase();
-  elStatusBadge.dataset.status = status;
-}
+function syncRateUI(): void {
+  const rate = activeTw?.getState().rate ?? 1;
 
-// ---------------------------------------------------------------------------
-// Transport button states
-// ---------------------------------------------------------------------------
+  elRateSlider.value = String(rate);
+  elRateValue.textContent = `${rate}×`;
+}
 
 /**
  * @description
  * Sync transport button disabled states with current playback status
  */
 function syncTransportState(): void {
+  syncRateUI();
+
   if (activeTw === null) {
     elPlayBtn.setAttribute("disabled", "");
     elPauseBtn.setAttribute("disabled", "");
@@ -214,8 +213,6 @@ function syncTransportState(): void {
   const isStopped = state.status === EPlaybackStatus.STOPPED;
   const isCompleted = state.status === EPlaybackStatus.COMPLETED;
   const isIdle = state.status === EPlaybackStatus.IDLE;
-
-  setStatus(state.status);
 
   elPlayBtn.toggleAttribute("disabled", isPlaying);
   elPauseBtn.toggleAttribute("disabled", !isPlaying);
@@ -336,7 +333,6 @@ async function runCode(): Promise<void> {
   elPreviewDom.innerHTML = "";
   elPreviewString.textContent = "";
 
-  setStatus("running");
   elRunBtn.setAttribute("disabled", "");
 
   const renderer = createSandboxRenderer(
@@ -377,7 +373,6 @@ async function runCode(): Promise<void> {
     activeTw = null;
     pendingTw = null;
     showError(result.error);
-    setStatus("error");
     syncTransportState();
 
     return;
@@ -518,7 +513,6 @@ function init(): void {
 
   // Initial renderer panel
   showRendererPanel(activeRendererKind);
-  setStatus("idle");
   syncTransportState();
 
   // Renderer selector
@@ -532,12 +526,34 @@ function init(): void {
     void runCode();
   });
 
-  // Keyboard shortcut: Ctrl+Enter / Cmd+Enter to run
+  // Keyboard shortcuts: Ctrl/Cmd+Enter or Ctrl/Cmd+S to run — only when editor has focus
   document.addEventListener("keydown", (e) => {
-    if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
-      e.preventDefault();
-      void runCode();
+    if (!(e.ctrlKey || e.metaKey)) {
+      return;
     }
+
+    const isEnter = e.key === "Enter";
+    const isSave = e.key === "s" || e.key === "S";
+
+    if (!isEnter && !isSave) {
+      return;
+    }
+
+    if (!editorView.hasFocus) {
+      return;
+    }
+
+    e.preventDefault();
+    void runCode();
+  });
+
+  // Show/hide shortcut hint based on editor focus
+  editorView.dom.addEventListener("focusin", () => {
+    elEditorShortcutHint.style.display = "";
+  });
+
+  editorView.dom.addEventListener("focusout", () => {
+    elEditorShortcutHint.style.display = "none";
   });
 
   // Transport

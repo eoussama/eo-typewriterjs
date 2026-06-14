@@ -170,27 +170,6 @@ body {
   border-color: var(--color-border-hi);
 }
 
-/* ─── Status badge ──────────────────────────────────────────────────────── */
-
-.status-badge {
-  font-size: 0.6rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  padding: 0.18em 0.6em;
-  border-radius: 999px;
-  border: 1px solid currentColor;
-  transition: color var(--transition);
-}
-
-.status-badge[data-status="idle"]      { color: var(--color-status-idle); }
-.status-badge[data-status="running"]   { color: var(--color-status-running); }
-.status-badge[data-status="playing"]   { color: var(--color-status-playing); }
-.status-badge[data-status="paused"]    { color: var(--color-status-paused); }
-.status-badge[data-status="stopped"]   { color: var(--color-status-stopped); }
-.status-badge[data-status="completed"] { color: var(--color-status-completed); }
-.status-badge[data-status="error"]     { color: var(--color-status-error); }
-
 /* ─── Preview section ───────────────────────────────────────────────────── */
 
 .preview-section {
@@ -740,15 +719,24 @@ kbd {
 }
 
 .editor-context-hint {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
   font-size: 0.65rem;
   color: var(--color-text-dim);
   padding: 0.35rem 0.75rem;
   border-top: 1px solid var(--color-border);
   background: var(--color-surface-alt);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.editor-context-hint > span:first-child {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  flex-shrink: 0;
+  min-width: 0;
 }
 
 .editor-context-hint code {
@@ -757,4 +745,13 @@ kbd {
   background: var(--color-accent-glow);
   border-radius: 3px;
   padding: 0 3px;
+}
+
+.editor-shortcut-hint {
+  display: flex;
+  align-items: center;
+  gap: 0.15rem;
+  flex-shrink: 0;
+  color: var(--color-text-dim);
+  font-size: 0.62rem;
 }
