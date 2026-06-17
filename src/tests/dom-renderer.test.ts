@@ -516,3 +516,136 @@ describe("domRenderer — runtime cursor mutations", () => {
     expect(el.querySelector(".typewriter-cursor")).not.toBeNull();
   });
 });
+
+// ---------------------------------------------------------------------------
+// DomRenderer — cursor animation
+// ---------------------------------------------------------------------------
+
+describe("domRenderer — cursor animation", () => {
+  it("default cursor has data-cursor-animation=blink and blink class", async () => {
+    const el = document.createElement("div");
+    const tw = createTypewriter({ renderer: new DomRenderer(el) });
+
+    tw.timeline.type("X", { by: "char", interval: 1 });
+    await tw.play();
+
+    const cursor = el.querySelector(".typewriter-cursor");
+
+    expect(cursor?.getAttribute("data-cursor-animation")).toBe("blink");
+    expect(cursor?.classList.contains("typewriter-cursor--blink")).toBe(true);
+  });
+
+  it("animation: 'blink' adds blink class and sets data-cursor-animation", async () => {
+    const el = document.createElement("div");
+    const tw = createTypewriter({ renderer: new DomRenderer(el), cursor: { animation: "blink" } });
+
+    tw.timeline.type("X", { by: "char", interval: 1 });
+    await tw.play();
+
+    const cursor = el.querySelector(".typewriter-cursor");
+
+    expect(cursor?.getAttribute("data-cursor-animation")).toBe("blink");
+    expect(cursor?.classList.contains("typewriter-cursor--blink")).toBe(true);
+  });
+
+  it("animation: 'none' sets inline animation:none and data-cursor-animation=none", async () => {
+    const el = document.createElement("div");
+    const tw = createTypewriter({ renderer: new DomRenderer(el), cursor: { animation: "none" } });
+
+    tw.timeline.type("X", { by: "char", interval: 1 });
+    await tw.play();
+
+    const cursor = el.querySelector<HTMLElement>(".typewriter-cursor");
+
+    expect(cursor?.getAttribute("data-cursor-animation")).toBe("none");
+    expect(cursor?.style.animation).toBe("none");
+    expect(cursor?.classList.contains("typewriter-cursor--blink")).toBe(false);
+  });
+
+  it("animation object sets data-cursor-animation=custom and inline animation-name", async () => {
+    const el = document.createElement("div");
+    const tw = createTypewriter({
+      renderer: new DomRenderer(el),
+      cursor: {
+        animation: {
+          name: "my-pulse",
+          duration: "800ms",
+          iterationCount: "infinite",
+        },
+      },
+    });
+
+    tw.timeline.type("X", { by: "char", interval: 1 });
+    await tw.play();
+
+    const cursor = el.querySelector<HTMLElement>(".typewriter-cursor");
+
+    expect(cursor?.getAttribute("data-cursor-animation")).toBe("custom");
+    expect(cursor?.style.animationName).toBe("my-pulse");
+    expect(cursor?.style.animationDuration).toBe("800ms");
+    expect(cursor?.style.animationIterationCount).toBe("infinite");
+    expect(cursor?.classList.contains("typewriter-cursor--blink")).toBe(false);
+  });
+
+  it("runtime setCursorOptions({ animation: 'none' }) disables blink immediately", async () => {
+    const el = document.createElement("div");
+    const renderer = new DomRenderer(el);
+    const tw = createTypewriter({ renderer });
+
+    tw.timeline.type("X", { by: "char", interval: 1 });
+    await tw.play();
+
+    // Initially blinking
+    expect(el.querySelector(".typewriter-cursor--blink")).not.toBeNull();
+
+    tw.setCursorOptions({ animation: "none" });
+
+    const cursor = el.querySelector<HTMLElement>(".typewriter-cursor");
+
+    expect(cursor?.getAttribute("data-cursor-animation")).toBe("none");
+    expect(cursor?.style.animation).toBe("none");
+    expect(cursor?.classList.contains("typewriter-cursor--blink")).toBe(false);
+  });
+
+  it("runtime setCursorOptions({ animation: 'blink' }) restores blink after none", async () => {
+    const el = document.createElement("div");
+    const renderer = new DomRenderer(el);
+    const tw = createTypewriter({ renderer, cursor: { animation: "none" } });
+
+    tw.timeline.type("X", { by: "char", interval: 1 });
+    await tw.play();
+
+    expect(el.querySelector(".typewriter-cursor--blink")).toBeNull();
+
+    tw.setCursorOptions({ animation: "blink" });
+
+    const cursor = el.querySelector(".typewriter-cursor");
+
+    expect(cursor?.getAttribute("data-cursor-animation")).toBe("blink");
+    expect(cursor?.classList.contains("typewriter-cursor--blink")).toBe(true);
+  });
+
+  it("runtime setCursorOptions with animation object applies custom animation", async () => {
+    const el = document.createElement("div");
+    const renderer = new DomRenderer(el);
+    const tw = createTypewriter({ renderer });
+
+    tw.timeline.type("X", { by: "char", interval: 1 });
+    await tw.play();
+
+    tw.setCursorOptions({
+      animation: {
+        name: "tw-fade",
+        duration: "600ms",
+        timingFunction: "ease-in-out",
+      },
+    });
+
+    const cursor = el.querySelector<HTMLElement>(".typewriter-cursor");
+
+    expect(cursor?.getAttribute("data-cursor-animation")).toBe("custom");
+    expect(cursor?.style.animationName).toBe("tw-fade");
+    expect(cursor?.style.animationDuration).toBe("600ms");
+    expect(cursor?.style.animationTimingFunction).toBe("ease-in-out");
+  });
+});

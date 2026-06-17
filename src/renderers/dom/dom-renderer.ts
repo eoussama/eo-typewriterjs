@@ -1,4 +1,5 @@
 import type { TNullable } from "@eoussama/core";
+import type { TCursorAnimation, TCursorAnimationOptions } from "../../core/cursor/cursor-render-options.type";
 import type { IRenderer } from "../../core/renderer/renderer.interface";
 import type { TRichTextSegment } from "../../core/state/segment-rich-text.helper";
 
@@ -7,6 +8,56 @@ import type { TSelectionState, TTypewriterState } from "../../core/state/typewri
 import { mergeStyles, segmentRichText } from "../../core/state/segment-rich-text.helper";
 
 
+
+// ---------------------------------------------------------------------------
+// Built-in blink stylesheet injection
+// ---------------------------------------------------------------------------
+
+/**
+ * @description
+ * CSS class applied to cursor elements when animation is "blink"
+ */
+const BLINK_CLASS = "typewriter-cursor--blink";
+
+/**
+ * @description
+ * id of the injected <style> element — ensures it is injected only once
+ */
+const BLINK_STYLE_ID = "typewriter-blink-style";
+
+/**
+ * @description
+ * Inject the built-in blink @keyframes stylesheet into the document <head> once.
+ * Subsequent calls are no-ops. Safe to call from every DomRenderer constructor.
+ */
+function ensureBlinkStylesheet(): void {
+  if (typeof document === "undefined") {
+    return;
+  }
+
+  if (document.getElementById(BLINK_STYLE_ID) !== null) {
+    return;
+  }
+
+  const style = document.createElement("style");
+
+  style.id = BLINK_STYLE_ID;
+  style.textContent = [
+    "@keyframes tw-cursor-blink {",
+    "  0%, 49.9% { opacity: 1; }",
+    "  50%, 100% { opacity: 0; }",
+    "}",
+    `.${BLINK_CLASS} {`,
+    "  animation: tw-cursor-blink 1s step-end infinite;",
+    "}",
+  ].join("\n");
+
+  document.head.appendChild(style);
+}
+
+// ---------------------------------------------------------------------------
+// Boundary type
+// ---------------------------------------------------------------------------
 
 /**
  * @description
@@ -17,6 +68,10 @@ type TBoundary = {
   readonly kind: "cursor" | "selStart" | "selEnd";
   readonly cursorId: string;
 };
+
+// ---------------------------------------------------------------------------
+// DomRenderer
+// ---------------------------------------------------------------------------
 
 /**
  * @description
@@ -34,12 +89,14 @@ export class DomRenderer implements IRenderer {
 
   /**
    * @description
-   * Create a DomRenderer targeting a specific element or CSS selector
+   * Create a DomRenderer targeting a specific element or CSS selector.
+   * Also ensures the built-in blink stylesheet is injected into the document.
    *
    * @param target - A CSS selector string or an Element to render into
    */
   constructor(target: string | Element) {
     this._selector = target;
+    ensureBlinkStylesheet();
   }
 
   /**
@@ -75,6 +132,62 @@ export class DomRenderer implements IRenderer {
    */
   unmount(): void {
     this._target = null;
+  }
+
+  /**
+   * @description
+   * Apply animation settings to a cursor span element.
+   * - "blink"  → adds the built-in blink class and sets data-cursor-animation="blink"
+   * - "none"   → disables animation inline and sets data-cursor-animation="none"
+   * - object   → applies inline animation sub-properties and sets data-cursor-animation="custom"
+   *
+   * @param el - The cursor span element to animate
+   * @param animation - The animation setting to apply
+   */
+  private _applyCursorAnimation(el: HTMLElement, animation: TCursorAnimation): void {
+    if (animation === "blink") {
+      el.classList.add(BLINK_CLASS);
+      el.dataset.cursorAnimation = "blink";
+    }
+    else if (animation === "none") {
+      el.style.animation = "none";
+      el.dataset.cursorAnimation = "none";
+    }
+    else {
+      const opts = animation as TCursorAnimationOptions;
+
+      el.style.animationName = opts.name;
+
+      if (opts.duration !== undefined) {
+        el.style.animationDuration = opts.duration;
+      }
+
+      if (opts.timingFunction !== undefined) {
+        el.style.animationTimingFunction = opts.timingFunction;
+      }
+
+      if (opts.delay !== undefined) {
+        el.style.animationDelay = opts.delay;
+      }
+
+      if (opts.iterationCount !== undefined) {
+        el.style.animationIterationCount = opts.iterationCount;
+      }
+
+      if (opts.direction !== undefined) {
+        el.style.animationDirection = opts.direction as CSSStyleDeclaration["animationDirection"];
+      }
+
+      if (opts.fillMode !== undefined) {
+        el.style.animationFillMode = opts.fillMode as CSSStyleDeclaration["animationFillMode"];
+      }
+
+      if (opts.playState !== undefined) {
+        el.style.animationPlayState = opts.playState as CSSStyleDeclaration["animationPlayState"];
+      }
+
+      el.dataset.cursorAnimation = "custom";
+    }
   }
 
   /**
@@ -209,6 +322,9 @@ export class DomRenderer implements IRenderer {
               cursorEl.setAttribute(attrKey, attrValue);
             }
           }
+
+          // Apply animation (default: blink)
+          this._applyCursorAnimation(cursorEl, opts?.animation ?? "blink");
 
           cursorEl.setAttribute("aria-hidden", "true");
           cursorEl.dataset.cursorId = boundary.cursorId;

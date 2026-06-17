@@ -6,4 +6,4 @@ export {
   DEFAULT_CURSOR_RENDER_OPTIONS,
   mergeCursorOptions,
 } from "./cursor-render-options.type";
-export type { TCursorRenderOptions, TResolvedCursorRenderOptions } from "./cursor-render-options.type";
+export type { TCursorAnimation, TCursorAnimationOptions, TCursorRenderOptions, TResolvedCursorRenderOptions } from "./cursor-render-options.type";

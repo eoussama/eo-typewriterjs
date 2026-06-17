@@ -401,6 +401,43 @@ await tw.play();`,
   },
 
   {
+    id: "cursor-animation",
+    title: "Cursor Animation",
+    description: "Control cursor animation: built-in blink, static (no animation), and a fully custom CSS animation.",
+    category: "cursor",
+    difficulty: "beginner",
+    code: `// Three typewriters — each demonstrating a different animation setting.
+
+// 1. Built-in blink (default)
+const twBlink = createTypewriter({ renderer, cursor: { kind: ECursorKind.PIPE, animation: "blink" } });
+twBlink.timeline.type("Blinking cursor...", { by: "char", interval: 40 }).wait(2000);
+await twBlink.play();
+
+// 2. Static — no animation at all
+const twNone = createTypewriter({ renderer, cursor: { kind: ECursorKind.BLOCK, animation: "none" } });
+twNone.timeline.type("Static cursor...", { by: "char", interval: 40 }).wait(2000);
+await twNone.play();
+
+// 3. Custom animation — use a @keyframes name defined in the sandbox stylesheet
+// (tw-cursor-pulse fades the cursor opacity in and out smoothly)
+const twCustom = createTypewriter({
+  renderer,
+  cursor: {
+    kind: ECursorKind.UNDERSCORE,
+    animation: {
+      name: "tw-cursor-pulse",
+      duration: "900ms",
+      timingFunction: "ease-in-out",
+      iterationCount: "infinite",
+      direction: "alternate",
+    },
+  },
+});
+twCustom.timeline.type("Custom animation", { by: "char", interval: 40 });
+await twCustom.play();`,
+  },
+
+  {
     id: "cursor-classes",
     title: "Styled Cursor",
     description: "Apply a custom CSS class to the cursor for a vivid glowing accent effect.",

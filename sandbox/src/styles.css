@@ -454,6 +454,11 @@ body {
   50% { opacity: 0; }
 }
 
+@keyframes tw-cursor-pulse {
+  from { opacity: 1; }
+  to   { opacity: 0.1; }
+}
+
 /* Error panel */
 
 .error-panel {

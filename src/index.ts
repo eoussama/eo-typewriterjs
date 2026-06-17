@@ -22,7 +22,7 @@ export type { TAdvanceMode, TAdvanceModeInput, TAdvanceUnit, TCommandKind, TCurs
 export type { TCommand } from "./core/compiler/index";
 export { ECursorKind } from "./core/cursor/index";
 
-export type { TCursorKind, TCursorRenderOptions, TResolvedCursorRenderOptions } from "./core/cursor/index";
+export type { TCursorAnimation, TCursorAnimationOptions, TCursorKind, TCursorRenderOptions, TResolvedCursorRenderOptions } from "./core/cursor/index";
 
 export { EEventKind } from "./core/events/index";
 export type { TBaseEvent } from "./core/events/index";
