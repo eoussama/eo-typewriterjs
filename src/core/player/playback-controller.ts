@@ -259,7 +259,9 @@ export class PlaybackController {
     }
 
     if (this._status === EPlaybackStatus.PAUSED) {
-      return this._startExecution(this._state);
+      // Resume from the current event-stream position using the timer path,
+      // so playback continues from exactly where it was visually paused.
+      return this._resumeFromPause();
     }
 
     // idle, stopped, or cancelled — mount renderer then start
@@ -272,13 +274,30 @@ export class PlaybackController {
    * @description
    * Pause at the current position.
    * No-op if not currently playing.
+   * When pausing mid-execution, the current timeline position is derived from the
+   * elapsed wall-clock time and state is reconstructed from compiled events at
+   * that position, so resume() can continue from the exact visual pause point.
    */
   pause(): void {
     if (this._status !== EPlaybackStatus.PLAYING) {
       return;
     }
 
+    // Snapshot the current playhead position before cancelling the executor.
+    // _playStartWall / _playStartTimeline are set by _startExecution and
+    // _startTimerResume, so _playhead() is always valid while playing.
+    const pauseTime = Math.min(this._playhead(), this._duration);
+    const pauseEventIndex = findEventIndexAtTime(this._events, pauseTime);
+    const cp = findCheckpointBefore(this._checkpoints, pauseEventIndex);
+
     this._cancelExec();
+    this._cancelTimer();
+
+    this._currentTime = pauseTime;
+    this._currentEventIndex = pauseEventIndex;
+    this._state = reconstructState(cp, this._events, pauseEventIndex);
+    this._renderer.render(this._state);
+
     this._status = EPlaybackStatus.PAUSED;
     this._resolvePlay?.();
     this._resolvePlay = null;
@@ -363,7 +382,7 @@ export class PlaybackController {
     this._renderer.render(this._state);
 
     if (wasPlaying) {
-      this._startTimerResume();
+      void this._startTimerResume();
     }
     else if (targetEventIndex >= this._events.length && this._events.length > 0) {
       this._status = EPlaybackStatus.COMPLETED;
@@ -487,23 +506,32 @@ export class PlaybackController {
 
   /**
    * @description
-   * Resume playback from _currentEventIndex using the timer-based event loop.
-   * Used exclusively by seek() when wasPlaying, to continue applying the
-   * remaining pre-compiled events without re-running the command executor.
+   * Resume playback from the current paused position using the timer-based
+   * event loop, continuing from _currentEventIndex / _currentTime.
+   * Returns a promise that resolves when playback completes or is interrupted.
+   *
+   * @returns A promise that resolves when playback ends
    */
-  private _startTimerResume(): void {
+  private _resumeFromPause(): Promise<void> {
+    return this._startTimerResume();
+  }
+
+  /**
+   * @description
+   * Resume playback from _currentEventIndex using the timer-based event loop.
+   * Used by seek() when wasPlaying and by _resumeFromPause().
+   *
+   * @returns A promise that resolves when the timer run completes or is interrupted
+   */
+  private _startTimerResume(): Promise<void> {
     this._status = EPlaybackStatus.PLAYING;
     this._playStartWall = Date.now();
     this._playStartTimeline = this._currentTime;
 
-    const promise = new Promise<void>((resolve) => {
+    return new Promise<void>((resolve) => {
       this._resolvePlay = resolve;
       this._tickTimer();
     });
-
-    // Fire-and-forget — the play promise was already resolved when the
-    // executor was cancelled; this timer runs to completion independently.
-    void promise;
   }
 
   /**
@@ -618,6 +646,11 @@ export class PlaybackController {
   private _startExecution(startState: TTypewriterState): Promise<void> {
     this._status = EPlaybackStatus.PLAYING;
 
+    // Record wall-clock start so _playhead() correctly reflects elapsed time
+    // while the executor is running (used by pause() to snapshot position).
+    this._playStartWall = Date.now();
+    this._playStartTimeline = this._currentTime;
+
     const ac = new AbortController();
 
     this._execAbortController = ac;
@@ -646,12 +679,21 @@ export class PlaybackController {
         }
 
         resolve();
-        this._resolvePlay = null;
+
+        // Only clear _resolvePlay if it still belongs to this session.
+        // A pause() + resume() sequence may have already replaced it with the
+        // timer session's resolver; clearing it there would break the timer.
+        if (this._resolvePlay === resolve) {
+          this._resolvePlay = null;
+        }
         /* v8 ignore start */
       }).catch(() => {
         // executeCommands never rejects in practice — AbortErrors are caught internally
         resolve();
-        this._resolvePlay = null;
+
+        if (this._resolvePlay === resolve) {
+          this._resolvePlay = null;
+        }
       });
       /* v8 ignore stop */
     });

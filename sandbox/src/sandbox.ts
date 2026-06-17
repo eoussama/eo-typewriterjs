@@ -43,6 +43,10 @@ const elSearchInput = $<HTMLInputElement>("#recipe-search");
 const elRecipeList = $("#recipe-list");
 const elEditorContainer = $("#editor-container");
 const elEditorShortcutHint = $("#editor-shortcut-hint");
+const elApiHelpBtn = $("#api-help-btn");
+const elHelpDialogBackdrop = $("#help-dialog-backdrop");
+const elHelpDialogClose = $("#help-dialog-close");
+const elHelpDialogBody = $("#help-dialog-body");
 const elPkgVersion = $("#pkg-version");
 const elRepoLink = $<HTMLAnchorElement>("#repo-link");
 
@@ -181,6 +185,138 @@ const SANDBOX_GLOBALS: Completion[] = [
     detail: "() => void",
     info: "Cancel playback immediately, preserving the current rendered output. Status transitions to CANCELLED. Unlike stop(), no reset occurs.",
   },
+
+  // ── Playback methods ──────────────────────────────────────────────────────
+  {
+    label: "play",
+    type: "method",
+    detail: "() => Promise<void>",
+    info: "Start or resume playback. Returns a Promise that resolves when playback completes or is interrupted.",
+  },
+  {
+    label: "pause",
+    type: "method",
+    detail: "() => void",
+    info: "Pause at the current position. Call play() to resume from the same point.",
+  },
+  {
+    label: "stop",
+    type: "method",
+    detail: "() => void",
+    info: "Stop playback and reset to blank state.",
+  },
+  {
+    label: "replay",
+    type: "method",
+    detail: "() => Promise<void>",
+    info: "Restart playback from the beginning regardless of current status.",
+  },
+  {
+    label: "seek",
+    type: "method",
+    detail: "(ms: number) => void",
+    info: "Jump to an absolute timeline position in milliseconds.",
+  },
+  {
+    label: "stepForward",
+    type: "method",
+    detail: "() => void",
+    info: "Apply the next event group and pause.",
+  },
+  {
+    label: "stepBackward",
+    type: "method",
+    detail: "() => void",
+    info: "Undo the last event group and pause.",
+  },
+  {
+    label: "setRate",
+    type: "method",
+    detail: "(rate: number) => void",
+    info: "Set playback speed multiplier. rate=2 plays at double speed.",
+  },
+  {
+    label: "getState",
+    type: "method",
+    detail: "() => { status, currentTime, duration, rate }",
+    info: "Return a snapshot of the current playback state.",
+  },
+
+  // ── Timeline builder methods ───────────────────────────────────────────────
+  {
+    label: "type",
+    type: "method",
+    detail: "(text, opts) => TimelineBuilder",
+    info: "Type text character by character (or word/line). opts: { by, interval, cursor, style, before, after }",
+  },
+  {
+    label: "delete",
+    type: "method",
+    detail: "(count, opts) => TimelineBuilder",
+    info: "Delete characters from the cursor. opts: { by, interval, cursor, before, after }",
+  },
+  {
+    label: "wait",
+    type: "method",
+    detail: "(ms, opts?) => TimelineBuilder",
+    info: "Pause the animation for the given duration in milliseconds.",
+  },
+  {
+    label: "moveCursor",
+    type: "method",
+    detail: "(index, opts?) => TimelineBuilder",
+    info: "Move the cursor to an absolute text index.",
+  },
+  {
+    label: "select",
+    type: "method",
+    detail: "(delta, opts?) => TimelineBuilder",
+    info: "Select characters starting from the cursor position.",
+  },
+  {
+    label: "mark",
+    type: "method",
+    detail: "(className, range, opts?) => TimelineBuilder",
+    info: "Apply a CSS class mark to a text range. Range can be { from, to } or \"selection\".",
+  },
+
+  // ── Snippet completions ───────────────────────────────────────────────────
+  {
+    label: "EPlaybackStatus.PLAYING",
+    type: "constant",
+    detail: "\"playing\"",
+    info: "Playback is currently running.",
+  },
+  {
+    label: "EPlaybackStatus.PAUSED",
+    type: "constant",
+    detail: "\"paused\"",
+    info: "Playback is paused mid-animation.",
+  },
+  {
+    label: "EPlaybackStatus.COMPLETED",
+    type: "constant",
+    detail: "\"completed\"",
+    info: "Playback has finished naturally.",
+  },
+  {
+    label: "EPlaybackStatus.CANCELLED",
+    type: "constant",
+    detail: "\"cancelled\"",
+    info: "Playback was cancelled via tw.cancel().",
+  },
+  {
+    label: "EPlaybackStatus.STOPPED",
+    type: "constant",
+    detail: "\"stopped\"",
+    info: "Playback was stopped and reset via tw.stop().",
+  },
+  {
+    label: "EPlaybackStatus.IDLE",
+    type: "constant",
+    detail: "\"idle\"",
+    info: "No playback has started yet.",
+  },
 ];
 
 /**
@@ -274,17 +410,32 @@ function syncTransportState(): void {
   }
 
   const state = activeTw.getState();
-  const isPlaying = state.status === EPlaybackStatus.PLAYING;
-  const isStopped = state.status === EPlaybackStatus.STOPPED;
-  const isCompleted = state.status === EPlaybackStatus.COMPLETED;
-  const isIdle = state.status === EPlaybackStatus.IDLE;
+  const { status } = state;
+  const isPlaying = status === EPlaybackStatus.PLAYING;
+  const isPaused = status === EPlaybackStatus.PAUSED;
+  const isStopped = status === EPlaybackStatus.STOPPED;
+  const isCompleted = status === EPlaybackStatus.COMPLETED;
+  const isIdle = status === EPlaybackStatus.IDLE;
+  const isCancelled = status === EPlaybackStatus.CANCELLED;
 
+  // Play: disabled while already playing; enabled when paused/stopped/completed/cancelled
   elPlayBtn.toggleAttribute("disabled", isPlaying);
+  // Pause: only active while playing
   elPauseBtn.toggleAttribute("disabled", !isPlaying);
+  // Stop: disabled when idle or already stopped
   elStopBtn.toggleAttribute("disabled", isIdle || isStopped);
+  // Replay: disabled only when idle (nothing has run yet)
   elReplayBtn.toggleAttribute("disabled", isIdle);
+  // Step fwd: disabled while playing or at end
   elStepFwdBtn.toggleAttribute("disabled", isPlaying || isCompleted);
+  // Step bwd: disabled while playing or at start (idle)
   elStepBwdBtn.toggleAttribute("disabled", isPlaying || isIdle);
+
+  // Apply status-derived classes for visual feedback
+  elPlayBtn.classList.toggle("transport-btn--active", isPaused || isCancelled || isStopped);
+  elPauseBtn.classList.toggle("transport-btn--active", isPaused);
+  elStopBtn.classList.toggle("transport-btn--active", isStopped);
+  elReplayBtn.classList.toggle("transport-btn--active", isCompleted);
 }
 
 // ---------------------------------------------------------------------------
@@ -559,6 +710,256 @@ function initCategoryChips(): void {
 }
 
 // ---------------------------------------------------------------------------
+// Help dialog builder
+// ---------------------------------------------------------------------------
+
+/**
+ * @description
+ * A single section definition for the help dialog
+ */
+type THelpSection = {
+  readonly id: string;
+  readonly label: string;
+  readonly title: string;
+  readonly desc: string;
+  readonly rows: ReadonlyArray<readonly [string, string]>;
+};
+
+const HELP_SECTIONS: readonly THelpSection[] = [
+  {
+    id: "globals",
+    label: "Globals",
+    title: "Sandbox Globals",
+    desc: "Available automatically in every snippet — no imports needed.",
+    rows: [
+      ["createTypewriter({ renderer })", "Create a typewriter instance"],
+      ["renderer", "The active sandbox renderer (DOM or String)"],
+      ["domRenderer(el)", "Create a DOM renderer targeting an element"],
+      ["StringRenderer", "Headless renderer — new StringRenderer()"],
+      ["TimelineBuilder", "Fluent builder, normally used via tw.timeline"],
+      ["ECommandKind", "Enum-like object of command kind values"],
+      ["EPlaybackStatus", "Enum-like object of playback status values"],
+    ],
+  },
+  {
+    id: "type",
+    label: "type()",
+    title: ".type(text, opts)",
+    desc: "Type a string step by step. Each step inserts one unit (char/word/line) and renders.",
+    rows: [
+      ["text", "The string to type"],
+      ["by", "\"char\" | \"word\" | \"line\" — advance unit per step (default: \"char\")"],
+      ["interval", "Delay in ms between each step (default: 50)"],
+      ["cursor", "\"main\" or an array of cursor IDs to type on simultaneously"],
+      ["style", "CSS class applied to every inserted segment (e.g. \"tw-accent\")"],
+      ["before", "Hook — fires once before typing starts, or per step when unit is set"],
+      ["after", "Hook — fires once after typing ends, or per step when unit is set"],
+    ],
+  },
+  {
+    id: "delete",
+    label: "delete()",
+    title: ".delete(count, opts)",
+    desc: "Delete units backward from the cursor. Each step removes one unit and renders.",
+    rows: [
+      ["count", "Number of units to delete"],
+      ["by", "\"char\" | \"word\" | \"line\" — unit to delete per step (default: \"char\")"],
+      ["interval", "Delay in ms between each deletion step (default: 50)"],
+      ["cursor", "\"main\" or an array of cursor IDs"],
+      ["before", "Hook — fires once before deletion starts, or per step when unit is set"],
+      ["after", "Hook — fires once after deletion ends, or per step when unit is set"],
+    ],
+  },
+  {
+    id: "wait",
+    label: "wait()",
+    title: ".wait(ms, opts?)",
+    desc: "Pause the animation for the given number of milliseconds without changing the document.",
+    rows: [
+      ["ms", "Duration to wait in milliseconds"],
+      ["before", "Hook fired immediately before the wait begins"],
+      ["after", "Hook fired immediately after the wait ends"],
+    ],
+  },
+  {
+    id: "movecursor",
+    label: "moveCursor()",
+    title: ".moveCursor(index, opts?)",
+    desc: "Instantly move a cursor to an absolute character index. Does not modify text.",
+    rows: [
+      ["index", "Target character index (0 = beginning of document)"],
+      ["cursor", "\"main\" or an array of cursor IDs to move (default: \"main\")"],
+      ["before", "Hook fired before the cursor moves"],
+      ["after", "Hook fired after the cursor has moved"],
+    ],
+  },
+  {
+    id: "select",
+    label: "select()",
+    title: ".select(delta, opts?)",
+    desc: "Extend a selection from the current cursor position. Negative delta selects backward.",
+    rows: [
+      ["delta", "Number of units to select (negative = backward)"],
+      ["by", "\"char\" | \"word\" | \"line\" — selection unit (default: \"char\")"],
+      ["cursor", "\"main\" or an array of cursor IDs"],
+      ["before", "Hook fired before the selection is applied"],
+      ["after", "Hook fired after the selection is applied"],
+    ],
+  },
+  {
+    id: "mark",
+    label: "mark()",
+    title: ".mark(className, range, opts?)",
+    desc: "Apply a CSS class to a range of text. The class must be defined in your stylesheet.",
+    rows: [
+      ["className", "CSS class to apply (e.g. \"tw-accent\", \"tw-highlight\")"],
+      ["range", "{ from, to } — absolute indices, or \"selection\" to use the current selection"],
+      ["cursor", "Required when range is \"selection\" — which cursor's selection to use"],
+      ["before", "Hook fired before the mark is applied"],
+      ["after", "Hook fired after the mark is applied"],
+    ],
+  },
+  {
+    id: "call",
+    label: "call()",
+    title: ".call(fn, opts?)",
+    desc: "Schedule an inline callback. The callback receives a context object and may return a Promise — playback awaits it before continuing.",
+    rows: [
+      ["fn", "The callback: (ctx: TCallbackContext) => void | Promise<void>"],
+      ["before", "Hook fired before the callback runs"],
+      ["after", "Hook fired after the callback completes"],
+    ],
+  },
+  {
+    id: "hooks",
+    label: "Hooks & Context",
+    title: "Lifecycle Hooks & Callback Context",
+    desc: "All commands accept optional before and after hooks. Omit unit for a whole-command hook; set unit for a per-step hook that fires once per character/word.",
+    rows: [
+      ["before: { callback }", "Fires once before the whole command starts"],
+      ["after: { callback }", "Fires once after the whole command finishes"],
+      ["before: { callback, unit: \"char\" }", "Fires before each individual step"],
+      ["after: { callback, unit: \"char\" }", "Fires after each individual step"],
+      ["— context: state", "Current TTypewriterState snapshot"],
+      ["— context: stepIndex", "Zero-based index of the current per-unit step"],
+      ["— context: stepCount", "Total step count for the command"],
+      ["— context: unit", "\"char\" | \"word\" | ... or null for whole-command hooks"],
+      ["— context: signal", "AbortSignal — aborted when tw.cancel() is called"],
+    ],
+  },
+  {
+    id: "playback",
+    label: "Playback",
+    title: "Playback Methods",
+    desc: "All playback methods are available on the TTypewriter instance returned by createTypewriter().",
+    rows: [
+      ["tw.play()", "Start or resume playback, returns Promise<void>"],
+      ["tw.pause()", "Pause at the current position; call play() to resume"],
+      ["tw.stop()", "Stop and reset to blank state"],
+      ["tw.replay()", "Restart from the beginning, returns Promise<void>"],
+      ["tw.cancel()", "Stop preserving current output — status → CANCELLED"],
+      ["tw.seek(ms)", "Jump to an absolute timeline position in milliseconds"],
+      ["tw.stepForward()", "Apply the next event group and pause"],
+      ["tw.stepBackward()", "Undo the last event group and pause"],
+      ["tw.setRate(n)", "Set playback speed multiplier (e.g. 2 = double speed)"],
+      ["tw.getState()", "Returns { status, currentTime, duration, rate }"],
+    ],
+  },
+];
+
+/**
+ * @description
+ * Build and inject the help dialog nav + content sections into the DOM,
+ * then wire the nav button click handlers to switch active sections.
+ */
+function buildHelpDialog(): void {
+  // Build nav
+  const nav = document.createElement("nav");
+
+  nav.className = "help-dialog__nav";
+  nav.setAttribute("aria-label", "Help sections");
+
+  // Build content pane
+  const content = document.createElement("div");
+
+  content.className = "help-dialog__content";
+
+  HELP_SECTIONS.forEach((section, idx) => {
+    // Nav button
+    const btn = document.createElement("button");
+
+    btn.className = `help-nav-btn${idx === 0 ? " help-nav-btn--active" : ""}`;
+    btn.dataset.section = section.id;
+    btn.textContent = section.label;
+    nav.appendChild(btn);
+
+    // Section panel
+    const panel = document.createElement("div");
+
+    panel.className = `help-section${idx === 0 ? " help-section--active" : ""}`;
+    panel.dataset.section = section.id;
+
+    const title = document.createElement("p");
+
+    title.className = "help-section__title";
+    title.textContent = section.title;
+
+    const desc = document.createElement("p");
+
+    desc.className = "help-section__desc";
+    desc.textContent = section.desc;
+
+    const table = document.createElement("table");
+
+    table.className = "help-table";
+
+    const tbody = document.createElement("tbody");
+
+    for (const [key, val] of section.rows) {
+      const tr = document.createElement("tr");
+      const td1 = document.createElement("td");
+      const td2 = document.createElement("td");
+      const code = document.createElement("code");
+
+      code.textContent = key;
+      td1.appendChild(code);
+      td2.textContent = val;
+      tr.appendChild(td1);
+      tr.appendChild(td2);
+      tbody.appendChild(tr);
+    }
+
+    table.appendChild(tbody);
+    panel.appendChild(title);
+    panel.appendChild(desc);
+    panel.appendChild(table);
+    content.appendChild(panel);
+  });
+
+  elHelpDialogBody.appendChild(nav);
+  elHelpDialogBody.appendChild(content);
+
+  // Wire nav clicks
+  nav.addEventListener("click", (e) => {
+    const btn = (e.target as HTMLElement).closest<HTMLButtonElement>(".help-nav-btn");
+
+    if (btn === null || btn.dataset.section === undefined) {
+      return;
+    }
+
+    const sectionId = btn.dataset.section;
+
+    nav.querySelectorAll(".help-nav-btn").forEach(b =>
+      b.classList.toggle("help-nav-btn--active", b === btn),
+    );
+
+    content.querySelectorAll(".help-section").forEach(p =>
+      p.classList.toggle("help-section--active", (p as HTMLElement).dataset.section === sectionId),
+    );
+  });
+}
+
+// ---------------------------------------------------------------------------
 // Event wiring
 // ---------------------------------------------------------------------------
 
@@ -580,10 +981,11 @@ function init(): void {
   showRendererPanel(activeRendererKind);
   syncTransportState();
 
-  // Renderer selector
+  // Renderer selector — switch pane and re-run so the new renderer gets live output
   elRendererSelect.addEventListener("change", () => {
     activeRendererKind = elRendererSelect.value as TRendererKind;
     showRendererPanel(activeRendererKind);
+    void runCode();
   });
 
   // Run button
@@ -684,6 +1086,30 @@ function init(): void {
 
   // Recipe search
   elSearchInput.addEventListener("input", () => renderRecipes());
+
+  // Build + wire help dialog
+  buildHelpDialog();
+
+  elApiHelpBtn.addEventListener("click", () => {
+    elHelpDialogBackdrop.style.display = "";
+    elHelpDialogClose.focus();
+  });
+
+  elHelpDialogClose.addEventListener("click", () => {
+    elHelpDialogBackdrop.style.display = "none";
+  });
+
+  elHelpDialogBackdrop.addEventListener("click", (e) => {
+    if (e.target === elHelpDialogBackdrop) {
+      elHelpDialogBackdrop.style.display = "none";
+    }
+  });
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && elHelpDialogBackdrop.style.display !== "none") {
+      elHelpDialogBackdrop.style.display = "none";
+    }
+  });
 
   // Category chips
   initCategoryChips();

@@ -38,12 +38,13 @@
   --color-status-error:     var(--color-danger);
 
   /* recipe category colours */
-  --color-cat-basics:   #6c8ef5;
-  --color-cat-timing:   #b47cf8;
-  --color-cat-editing:  #f6ad55;
-  --color-cat-cursor:   #4dd0e1;
-  --color-cat-styling:  #56c798;
-  --color-cat-advanced: #f56565;
+  --color-cat-basics:     #6c8ef5;
+  --color-cat-timing:     #b47cf8;
+  --color-cat-editing:    #f6ad55;
+  --color-cat-cursor:     #4dd0e1;
+  --color-cat-styling:    #56c798;
+  --color-cat-callbacks:  #f472b6;
+  --color-cat-advanced:   #f56565;
 
   --radius:     10px;
   --radius-sm:  6px;
@@ -249,8 +250,15 @@ body {
 }
 
 .transport-btn:disabled {
-  opacity: 0.3;
+  opacity: 0.22;
   cursor: not-allowed;
+  pointer-events: none;
+}
+
+.transport-btn--active {
+  color: var(--color-accent-hover);
+  border-color: color-mix(in srgb, var(--color-accent) 60%, transparent);
+  background: color-mix(in srgb, var(--color-accent) 12%, var(--color-surface-hi));
 }
 
 .transport-btn--primary {
@@ -556,6 +564,15 @@ body {
   color: var(--color-accent-hover);
 }
 
+/* Per-category active states for the filter chips */
+.cat-chip[data-cat="basics"].cat-chip--active     { border-color: var(--color-cat-basics);     color: var(--color-cat-basics);     background: color-mix(in srgb, var(--color-cat-basics)     15%, transparent); }
+.cat-chip[data-cat="timing"].cat-chip--active      { border-color: var(--color-cat-timing);     color: var(--color-cat-timing);     background: color-mix(in srgb, var(--color-cat-timing)     15%, transparent); }
+.cat-chip[data-cat="editing"].cat-chip--active     { border-color: var(--color-cat-editing);    color: var(--color-cat-editing);    background: color-mix(in srgb, var(--color-cat-editing)    15%, transparent); }
+.cat-chip[data-cat="cursor"].cat-chip--active      { border-color: var(--color-cat-cursor);     color: var(--color-cat-cursor);     background: color-mix(in srgb, var(--color-cat-cursor)     15%, transparent); }
+.cat-chip[data-cat="styling"].cat-chip--active     { border-color: var(--color-cat-styling);    color: var(--color-cat-styling);    background: color-mix(in srgb, var(--color-cat-styling)    15%, transparent); }
+.cat-chip[data-cat="callbacks"].cat-chip--active   { border-color: var(--color-cat-callbacks);  color: var(--color-cat-callbacks);  background: color-mix(in srgb, var(--color-cat-callbacks)  15%, transparent); }
+.cat-chip[data-cat="advanced"].cat-chip--active    { border-color: var(--color-cat-advanced);   color: var(--color-cat-advanced);   background: color-mix(in srgb, var(--color-cat-advanced)   15%, transparent); }
+
 .recipe-list {
   flex: 1;
   overflow-y: auto;
@@ -629,12 +646,13 @@ body {
   border: 1px solid currentColor;
 }
 
-.recipe-item__cat--basics   { color: var(--color-cat-basics);   background: color-mix(in srgb, var(--color-cat-basics)   12%, transparent); }
-.recipe-item__cat--timing   { color: var(--color-cat-timing);   background: color-mix(in srgb, var(--color-cat-timing)   12%, transparent); }
-.recipe-item__cat--editing  { color: var(--color-cat-editing);  background: color-mix(in srgb, var(--color-cat-editing)  12%, transparent); }
-.recipe-item__cat--cursor   { color: var(--color-cat-cursor);   background: color-mix(in srgb, var(--color-cat-cursor)   12%, transparent); }
-.recipe-item__cat--styling  { color: var(--color-cat-styling);  background: color-mix(in srgb, var(--color-cat-styling)  12%, transparent); }
-.recipe-item__cat--advanced { color: var(--color-cat-advanced); background: color-mix(in srgb, var(--color-cat-advanced) 12%, transparent); }
+.recipe-item__cat--basics     { color: var(--color-cat-basics);     background: color-mix(in srgb, var(--color-cat-basics)     12%, transparent); }
+.recipe-item__cat--timing     { color: var(--color-cat-timing);     background: color-mix(in srgb, var(--color-cat-timing)     12%, transparent); }
+.recipe-item__cat--editing    { color: var(--color-cat-editing);    background: color-mix(in srgb, var(--color-cat-editing)    12%, transparent); }
+.recipe-item__cat--cursor     { color: var(--color-cat-cursor);     background: color-mix(in srgb, var(--color-cat-cursor)     12%, transparent); }
+.recipe-item__cat--styling    { color: var(--color-cat-styling);    background: color-mix(in srgb, var(--color-cat-styling)    12%, transparent); }
+.recipe-item__cat--callbacks  { color: var(--color-cat-callbacks);  background: color-mix(in srgb, var(--color-cat-callbacks)  12%, transparent); }
+.recipe-item__cat--advanced   { color: var(--color-cat-advanced);   background: color-mix(in srgb, var(--color-cat-advanced)   12%, transparent); }
 
 /* ─── Editor panel ──────────────────────────────────────────────────────── */
 
@@ -722,29 +740,13 @@ kbd {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 1rem;
+  gap: 0.5rem;
   font-size: 0.65rem;
   color: var(--color-text-dim);
-  padding: 0.35rem 0.75rem;
+  padding: 0.3rem 0.75rem;
   border-top: 1px solid var(--color-border);
   background: var(--color-surface-alt);
-  overflow: hidden;
   flex-shrink: 0;
-}
-
-.editor-context-hint > span:first-child {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  min-width: 0;
-}
-
-.editor-context-hint code {
-  font-family: var(--font-mono);
-  color: var(--color-accent);
-  background: var(--color-accent-glow);
-  border-radius: 3px;
-  padding: 0 3px;
 }
 
 .editor-shortcut-hint {
@@ -754,4 +756,224 @@ kbd {
   flex-shrink: 0;
   color: var(--color-text-dim);
   font-size: 0.62rem;
+}
+
+/* Help trigger button in editor footer */
+.editor-help-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  background: transparent;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 0.18em 0.5em;
+  cursor: pointer;
+  font-family: var(--font-sans);
+  transition: color var(--transition), border-color var(--transition);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.editor-help-btn:hover {
+  color: var(--color-text);
+  border-color: var(--color-border-hi);
+}
+
+/* ─── Help dialog ───────────────────────────────────────────────────────── */
+
+.help-dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(3px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1.25rem;
+}
+
+.help-dialog {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-hi);
+  border-radius: var(--radius);
+  width: 100%;
+  max-width: 680px;
+  max-height: 82vh;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  overflow: hidden;
+  box-shadow: 0 32px 80px rgba(0, 0, 0, 0.6);
+}
+
+.help-dialog__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.7rem 1rem;
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface-alt);
+}
+
+.help-dialog__title {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--color-text);
+  letter-spacing: -0.01em;
+}
+
+.help-dialog__close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  background: transparent;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-muted);
+  cursor: pointer;
+  font-size: 13px;
+  line-height: 1;
+  transition: color var(--transition), border-color var(--transition), background var(--transition);
+}
+
+.help-dialog__close:hover {
+  color: var(--color-text);
+  border-color: var(--color-border-hi);
+  background: var(--color-surface-hi);
+}
+
+.help-dialog__body {
+  overflow-y: auto;
+  display: grid;
+  grid-template-columns: 140px 1fr;
+  min-height: 0;
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border) transparent;
+}
+
+.help-dialog__nav {
+  border-right: 1px solid var(--color-border);
+  background: var(--color-surface-alt);
+  padding: 0.5rem 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+
+.help-nav-btn {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: none;
+  padding: 0.35rem 0.75rem;
+  font-size: 0.7rem;
+  font-weight: 500;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  font-family: var(--font-sans);
+  transition: color var(--transition), background var(--transition);
+  border-left: 2px solid transparent;
+}
+
+.help-nav-btn:hover {
+  color: var(--color-text);
+  background: var(--color-surface-hi);
+}
+
+.help-nav-btn--active {
+  color: var(--color-accent-hover);
+  border-left-color: var(--color-accent);
+  background: color-mix(in srgb, var(--color-accent) 6%, var(--color-surface-alt));
+}
+
+.help-dialog__content {
+  overflow-y: auto;
+  padding: 0;
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border) transparent;
+}
+
+.help-section {
+  display: none;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 0.875rem 1rem;
+}
+
+.help-section--active {
+  display: flex;
+}
+
+.help-section__title {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--color-text);
+  margin-bottom: 0.1rem;
+}
+
+.help-section__desc {
+  font-size: 0.7rem;
+  color: var(--color-text-muted);
+  line-height: 1.5;
+  margin-bottom: 0.1rem;
+}
+
+.help-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.72rem;
+}
+
+.help-table tr:first-child td {
+  border-top: 1px solid var(--color-border);
+}
+
+.help-table tr td {
+  border-bottom: 1px solid var(--color-border);
+  padding: 0.32rem 0.4rem;
+  vertical-align: top;
+  line-height: 1.5;
+}
+
+.help-table td:first-child {
+  white-space: nowrap;
+  padding-right: 1rem;
+  width: 1%;
+  color: var(--color-text);
+}
+
+.help-table td:last-child {
+  color: var(--color-text-muted);
+}
+
+.help-table code {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--color-accent-hover);
+  background: color-mix(in srgb, var(--color-accent) 10%, var(--color-surface-hi));
+  border-radius: 3px;
+  padding: 0.07em 0.35em;
+}
+
+.help-subsection {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.help-subsection__label {
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-text-dim);
+  padding-top: 0.15rem;
 }

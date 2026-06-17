@@ -13,8 +13,6 @@
   <body>
     <div id="app">
       <div class="shell">
-
-        <!-- ── Header ───────────────────────────────────────────────── -->
         <header class="header">
           <div class="header__brand">
             <img class="header__logo" src="/logo.svg" width="26" height="26" alt="EO TypewriterJS logo" />
@@ -24,15 +22,12 @@
           </div>
           <div class="header__meta">
             <a id="repo-link" class="repo-link" href="#" target="_blank" rel="noopener noreferrer" title="View on GitHub">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                <path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/>
-              </svg>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/></svg>
               GitHub
             </a>
           </div>
         </header>
 
-        <!-- ── Preview panel ─────────────────────────────────────────── -->
         <section class="preview-section">
           <div class="preview-section__toolbar">
             <span class="toolbar-label">Renderer</span>
@@ -40,61 +35,37 @@
               <option value="dom">DOM</option>
               <option value="string">String</option>
             </select>
-
             <div class="transport">
-              <button id="step-bwd-btn" class="transport-btn" title="Step backward" disabled>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="19 20 9 12 19 4 19 20"/><line x1="5" y1="19" x2="5" y2="5"/></svg>
-              </button>
-              <button id="stop-btn" class="transport-btn" title="Stop" disabled>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="4" width="16" height="16" rx="2"/></svg>
-              </button>
-              <button id="pause-btn" class="transport-btn" title="Pause" disabled>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>
-              </button>
-              <button id="play-btn" class="transport-btn transport-btn--primary" title="Play" disabled>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-              </button>
-              <button id="replay-btn" class="transport-btn" title="Replay" disabled>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.78"/></svg>
-              </button>
-              <button id="step-fwd-btn" class="transport-btn" title="Step forward" disabled>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 4 15 12 5 20 5 4"/><line x1="19" y1="5" x2="19" y2="19"/></svg>
-              </button>
+              <button id="step-bwd-btn" class="transport-btn" title="Step backward" disabled><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="19 20 9 12 19 4 19 20"/><line x1="5" y1="19" x2="5" y2="5"/></svg></button>
+              <button id="stop-btn" class="transport-btn" title="Stop" disabled><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="4" width="16" height="16" rx="2"/></svg></button>
+              <button id="pause-btn" class="transport-btn" title="Pause" disabled><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg></button>
+              <button id="play-btn" class="transport-btn transport-btn--primary" title="Play" disabled><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg></button>
+              <button id="replay-btn" class="transport-btn" title="Replay" disabled><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.78"/></svg></button>
+              <button id="step-fwd-btn" class="transport-btn" title="Step forward" disabled><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 4 15 12 5 20 5 4"/><line x1="19" y1="5" x2="19" y2="19"/></svg></button>
             </div>
-
             <div class="rate-row">
               <span class="rate-label">Rate</span>
               <input id="rate-slider" class="rate-slider" type="range" min="0.25" max="4" step="0.25" value="1" />
-              <span id="rate-value" class="rate-value">1×</span>
+              <span id="rate-value" class="rate-value">1x</span>
             </div>
           </div>
-
           <div class="preview-output">
             <div id="preview-dom" class="preview-pane preview-pane--dom"></div>
             <div id="preview-string" class="preview-pane preview-pane--string" style="display:none"></div>
           </div>
-
-          <!-- Error panel -->
           <div id="error-panel" class="error-panel" style="display:none">
             <svg class="error-panel__icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
             <span id="error-msg" class="error-panel__msg"></span>
           </div>
         </section>
 
-        <!-- ── Bottom row ────────────────────────────────────────────── -->
         <div class="bottom-row">
-
-          <!-- Recipe picker -->
           <aside class="recipes-panel">
-            <div class="panel-header">
-              <span class="panel-title">Recipes</span>
-            </div>
-
+            <div class="panel-header"><span class="panel-title">Recipes</span></div>
             <div class="search-row">
               <svg class="search-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-              <input id="recipe-search" class="search-input" type="text" placeholder="Search recipes…" />
+              <input id="recipe-search" class="search-input" type="text" placeholder="Search recipes..." />
             </div>
-
             <div class="cat-filter">
               <button class="cat-chip cat-chip--active" data-cat="all">All</button>
               <button class="cat-chip" data-cat="basics">Basics</button>
@@ -105,29 +76,38 @@
               <button class="cat-chip" data-cat="callbacks">Callbacks</button>
               <button class="cat-chip" data-cat="advanced">Advanced</button>
             </div>
-
             <div id="recipe-list" class="recipe-list"></div>
           </aside>
 
-          <!-- Code editor -->
           <div class="editor-panel">
             <div class="panel-header">
               <span class="panel-title">Editor</span>
               <div class="editor-actions">
                 <button id="copy-btn" class="action-btn">Copy</button>
-                <button id="run-btn" class="action-btn action-btn--primary">▶ Run</button>
+                <button id="run-btn" class="action-btn action-btn--primary">&#9654; Run</button>
               </div>
             </div>
-
             <div id="editor-container" class="editor-container"></div>
-
             <div class="editor-context-hint">
-              <span>Globals: <code>createTypewriter</code>, <code>renderer</code>, <code>domRenderer</code>, <code>StringRenderer</code>, <code>TimelineBuilder</code>, <code>ECommandKind</code>, <code>EPlaybackStatus</code> · Methods: <code>tw.call()</code>, <code>tw.cancel()</code> · Hooks: <code>before</code>, <code>after</code></span>
+              <button id="api-help-btn" class="editor-help-btn" type="button">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                API Help
+              </button>
               <span id="editor-shortcut-hint" class="editor-shortcut-hint" style="display:none"><kbd>Ctrl</kbd><kbd>S</kbd> / <kbd>Ctrl</kbd><kbd>Enter</kbd></span>
             </div>
           </div>
-
         </div>
+      </div>
+    </div>
+
+    <!-- API Help dialog — body populated by sandbox.ts -->
+    <div id="help-dialog-backdrop" class="help-dialog-backdrop" style="display:none" role="dialog" aria-modal="true" aria-labelledby="help-dialog-title">
+      <div class="help-dialog">
+        <div class="help-dialog__header">
+          <span id="help-dialog-title" class="help-dialog__title">API Reference</span>
+          <button id="help-dialog-close" class="help-dialog__close" type="button" aria-label="Close">&times;</button>
+        </div>
+        <div class="help-dialog__body" id="help-dialog-body"></div>
       </div>
     </div>
 
