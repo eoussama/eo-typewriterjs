@@ -22,6 +22,7 @@ export type TSandboxCategory
     | "editing"
     | "cursor"
     | "styling"
+    | "callbacks"
     | "advanced";
 
 /**
@@ -677,6 +678,187 @@ tw.timeline
   .type("\\n\u2014 write, compile, play.", { by: "char", interval: 55 });
 
 await tw.play();`,
+  },
+
+  // ── Callbacks, hooks, and cancel ──────────────────────────────────────────
+
+  {
+    id: "call-command",
+    title: "Call Command",
+    description: "Schedule an inline callback mid-animation using call(). The callback receives the current typewriter state.",
+    category: "callbacks",
+    difficulty: "beginner",
+    code: `const tw = createTypewriter({ renderer });
+
+tw.timeline
+  .type("Building", { by: "char", interval: 80 })
+  .wait(200)
+  .type("...", { by: "char", interval: 300 })
+  .call(({ state }) => {
+    // This fires after "Building..." is fully rendered.
+    console.log("Text so far:", state.document.text);
+  })
+  .wait(400)
+  .delete(3, { by: "char", interval: 60 })
+  .type(" complete!", { by: "char", interval: 70 });
+
+await tw.play();`,
+  },
+
+  {
+    id: "async-call",
+    title: "Async Call",
+    description: "call() supports async callbacks — playback is suspended until the returned Promise resolves.",
+    category: "callbacks",
+    difficulty: "intermediate",
+    code: `const tw = createTypewriter({ renderer });
+
+tw.timeline
+  .type("Fetching data", { by: "char", interval: 70 })
+  .type("...", { by: "char", interval: 300 })
+  .call(async () => {
+    // Simulate an async operation (e.g. API fetch).
+    await new Promise(resolve => setTimeout(resolve, 800));
+  })
+  .wait(200)
+  .delete(13, { by: "char", interval: 25 })
+  .type("Data loaded \u2713", { by: "char", interval: 65 });
+
+await tw.play();`,
+  },
+
+  {
+    id: "before-after-whole",
+    title: "Before / After Hooks",
+    description: "Attach before and after hooks to any command. They fire once around the whole command.",
+    category: "callbacks",
+    difficulty: "beginner",
+    code: `const tw = createTypewriter({ renderer });
+const log = [];
+
+tw.timeline
+  .type("Hello, hooks!", {
+    by: "char",
+    interval: 70,
+    before: {
+      callback: ({ state }) => {
+        log.push("before: \\"" + state.document.text + "\\"");
+      },
+    },
+    after: {
+      callback: ({ state }) => {
+        log.push("after: \\"" + state.document.text + "\\"");
+      },
+    },
+  })
+  .call(() => {
+    console.log(log.join("\\n"));
+  });
+
+await tw.play();`,
+  },
+
+  {
+    id: "per-unit-hook",
+    title: "Per-Character Hook",
+    description: "Set unit on a hook to fire it once per character typed. Use stepIndex and stepCount to track progress.",
+    category: "callbacks",
+    difficulty: "intermediate",
+    code: `const tw = createTypewriter({ renderer });
+
+// The after hook fires after each individual character is typed.
+tw.timeline
+  .type("Loading", {
+    by: "char",
+    interval: 120,
+    after: {
+      unit: "char",
+      callback: ({ stepIndex, stepCount, state }) => {
+        const pct = Math.round(((stepIndex + 1) / stepCount) * 100);
+        console.log(\`[\${pct}%] typed so far: "\${state.document.text}"\`);
+      },
+    },
+  });
+
+await tw.play();`,
+  },
+
+  {
+    id: "cancel-from-callback",
+    title: "Cancel from Callback",
+    description: "Use tw.cancel() inside a call() to stop playback at a specific point, preserving the rendered output.",
+    category: "callbacks",
+    difficulty: "intermediate",
+    code: `const tw = createTypewriter({ renderer });
+
+tw.timeline
+  .type("Chapter One", { by: "char", interval: 70 })
+  .wait(400)
+  .call(() => {
+    // Stop here — everything typed so far stays on screen.
+    tw.cancel();
+  })
+  .type(" — continued...", { by: "char", interval: 70 });
+
+// play() resolves as soon as cancel() is called.
+await tw.play();
+console.log("Status:", tw.getState().status); // CANCELLED`,
+  },
+
+  {
+    id: "conditional-branch",
+    title: "Conditional Branch",
+    description: "Use call() to inspect state mid-animation and branch — typing different endings based on text length.",
+    category: "callbacks",
+    difficulty: "advanced",
+    code: `const tw = createTypewriter({ renderer });
+let branch = "short";
+
+tw.timeline
+  .type("Hello!", { by: "char", interval: 70 })
+  .call(({ state }) => {
+    branch = state.document.text.length > 4 ? "long" : "short";
+  })
+  .wait(300);
+
+await tw.play();
+
+// Second animation depends on what call() captured
+const tw2 = createTypewriter({ renderer: tw.getState ? renderer : renderer });
+tw2.timeline
+  .type(branch === "long" ? "\\n(That was a long one.)" : "\\n(Short!)", {
+    by: "char",
+    interval: 60,
+  });
+
+await tw2.play();`,
+  },
+
+  {
+    id: "cancel-after-delay",
+    title: "Auto-Cancel After Delay",
+    description: "Cancel a slow-typing animation from outside after a fixed time — like a timeout guard.",
+    category: "callbacks",
+    difficulty: "intermediate",
+    code: `const tw = createTypewriter({ renderer });
+
+tw.timeline
+  .type(
+    "This very long sentence types one character at a time at a deliberately slow pace to demonstrate the cancel feature.",
+    { by: "char", interval: 120 },
+  );
+
+// Cancel after 600 ms — whatever was typed stays on screen.
+setTimeout(() => {
+  if (tw.getState().status === EPlaybackStatus.PLAYING) {
+    tw.cancel();
+  }
+}, 600);
+
+await tw.play();
+
+const { status } = tw.getState();
+console.log("Final status:", status);`,
   },
 
   {

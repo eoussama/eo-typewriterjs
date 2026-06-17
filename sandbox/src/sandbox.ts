@@ -74,6 +74,7 @@ let pendingTw: TTypewriter | null = null;
 // ---------------------------------------------------------------------------
 
 const SANDBOX_GLOBALS: Completion[] = [
+  // ── Core factory ──────────────────────────────────────────────────────────
   {
     label: "createTypewriter",
     type: "function",
@@ -104,6 +105,8 @@ const SANDBOX_GLOBALS: Completion[] = [
     detail: "class TimelineBuilder",
     info: "Fluent builder for constructing command timelines.",
   },
+
+  // ── Enum-like constants ───────────────────────────────────────────────────
   {
     label: "ECommandKind",
     type: "constant",
@@ -115,6 +118,68 @@ const SANDBOX_GLOBALS: Completion[] = [
     type: "constant",
     detail: "enum-like object",
     info: "Enum-like object containing all playback status values.",
+  },
+
+  // ── call() command ────────────────────────────────────────────────────────
+  {
+    label: "call",
+    type: "function",
+    detail: "(callback, opts?) => TimelineBuilder",
+    info: "Schedule an inline callback in the timeline. The callback receives a TCallbackContext and may return a Promise — playback awaits it before continuing.",
+  },
+
+  // ── Lifecycle hooks (before / after) ─────────────────────────────────────
+  {
+    label: "before",
+    type: "property",
+    detail: "{ callback, unit? }",
+    info: "Hook fired before a command starts. Omit `unit` for a whole-command hook; set `unit` (e.g. \"char\") for a per-step hook that fires once per character/word.",
+  },
+  {
+    label: "after",
+    type: "property",
+    detail: "{ callback, unit? }",
+    info: "Hook fired after a command finishes. Omit `unit` for a whole-command hook; set `unit` for a per-step hook.",
+  },
+  {
+    label: "callback",
+    type: "property",
+    detail: "(ctx: TCallbackContext) => void | Promise<void>",
+    info: "The callback function inside a before/after hook or a call() command. Receives { state, stepIndex, stepCount, unit, signal }.",
+  },
+  {
+    label: "unit",
+    type: "property",
+    detail: "\"char\" | \"word\" | \"line\"",
+    info: "Set on a before/after hook to make it fire once per step (e.g. per character). Without this the hook fires only once for the whole command.",
+  },
+
+  // ── Callback context fields ───────────────────────────────────────────────
+  {
+    label: "stepIndex",
+    type: "property",
+    detail: "number",
+    info: "Zero-based index of the current step within a per-unit hook invocation.",
+  },
+  {
+    label: "stepCount",
+    type: "property",
+    detail: "number",
+    info: "Total number of steps for the current command (useful inside a per-unit hook).",
+  },
+  {
+    label: "signal",
+    type: "property",
+    detail: "AbortSignal",
+    info: "AbortSignal passed to hook callbacks. Becomes aborted when tw.cancel() is called.",
+  },
+
+  // ── Cancel ────────────────────────────────────────────────────────────────
+  {
+    label: "cancel",
+    type: "method",
+    detail: "() => void",
+    info: "Cancel playback immediately, preserving the current rendered output. Status transitions to CANCELLED. Unlike stop(), no reset occurs.",
   },
 ];
 

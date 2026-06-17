@@ -1,11 +1,14 @@
+import type { TCommand } from "../compiler/compile.helper";
 import type { TTimelineEvent } from "../events/timeline-event.type";
 import type { IRenderer } from "../renderer/renderer.interface";
 import type { TTypewriterState } from "../state/typewriter-state.type";
 import type { TCheckpoint } from "./checkpoint.type";
+import type { TExecuteCommandsResult } from "./execute-commands.helper";
 
 import type { TPlaybackStatus } from "./playback-status.enum";
 import { reduce } from "../reducer/reduce.helper";
 import { createInitialState } from "../state/typewriter-state.type";
+import { executeCommands } from "./execute-commands.helper";
 import { EPlaybackStatus } from "./playback-status.enum";
 
 
@@ -142,15 +145,17 @@ function findEventIndexAtTime(events: readonly TTimelineEvent[], time: number): 
 /**
  * @description
  * A persistent playback controller that wraps a compiled event list and drives
- * a renderer through play, pause, stop, replay, seek, step, and rate changes.
+ * a renderer through play, pause, stop, cancel, replay, seek, step, and rate changes.
  *
- * The controller maintains a lazy playback cache — call `load()` whenever the
- * compiled event list changes before invoking any playback method.
+ * Play and replay use the async command executor which supports lifecycle hooks
+ * and async callbacks. Seek, step, and backward navigation use the compiled-event
+ * + checkpoint model for instant, deterministic state reconstruction.
  */
 export class PlaybackController {
   private readonly _renderer: IRenderer;
   private readonly _initialState: TTypewriterState;
 
+  private _commands: TCommand[] = [];
   private _events: TTimelineEvent[] = [];
   private _checkpoints: TCheckpoint[] = [];
   private _duration = 0;
@@ -162,10 +167,13 @@ export class PlaybackController {
   private _currentEventIndex = 0;
   private _state: TTypewriterState;
 
-  // Wall-clock bookkeeping for accurate rate-aware scheduling
+  // Timer-based seek-resume path
+  private _timer: ReturnType<typeof setTimeout> | null = null;
   private _playStartWall = 0;
   private _playStartTimeline = 0;
-  private _timer: ReturnType<typeof setTimeout> | null = null;
+
+  // Async executor session
+  private _execAbortController: AbortController | null = null;
   private _resolvePlay: (() => void) | null = null;
 
   /**
@@ -207,15 +215,18 @@ export class PlaybackController {
 
   /**
    * @description
-   * Load a new compiled event list into the controller, rebuilding checkpoints.
+   * Load a new compiled event list and command list into the controller.
    * Must be called before any playback method when the timeline has changed.
    * Resets playback to idle.
    *
    * @param events - The compiled, time-sorted list of timeline events
+   * @param commands - The original ordered command list (used by the async executor)
    */
-  load(events: TTimelineEvent[]): void {
+  load(events: TTimelineEvent[], commands: TCommand[] = []): void {
+    this._cancelExec();
     this._cancelTimer();
 
+    this._commands = [...commands];
     this._events = [...events].sort((a, b) => a.time - b.time);
     /* v8 ignore next */
     this._duration = this._events.length > 0 ? (this._events[this._events.length - 1]?.time ?? 0) : 0;
@@ -248,13 +259,13 @@ export class PlaybackController {
     }
 
     if (this._status === EPlaybackStatus.PAUSED) {
-      return this._startPlayback();
+      return this._startExecution(this._state);
     }
 
-    // idle or stopped — mount renderer then start
+    // idle, stopped, or cancelled — mount renderer then start
     this._renderer.mount?.(this._state);
 
-    return this._startPlayback();
+    return this._startExecution(this._initialState);
   }
 
   /**
@@ -267,7 +278,7 @@ export class PlaybackController {
       return;
     }
 
-    this._cancelTimer();
+    this._cancelExec();
     this._status = EPlaybackStatus.PAUSED;
     this._resolvePlay?.();
     this._resolvePlay = null;
@@ -279,6 +290,7 @@ export class PlaybackController {
    * Renders the blank initial state but does not unmount.
    */
   stop(): void {
+    this._cancelExec();
     this._cancelTimer();
     this._resolvePlay?.();
     this._resolvePlay = null;
@@ -289,11 +301,33 @@ export class PlaybackController {
 
   /**
    * @description
+   * Cancel any active playback session without resetting state.
+   * Status transitions to CANCELLED.
+   * Unlike stop(), the rendered output is preserved at the point of cancellation.
+   */
+  cancel(): void {
+    if (
+      this._status !== EPlaybackStatus.PLAYING
+      && this._status !== EPlaybackStatus.PAUSED
+    ) {
+      return;
+    }
+
+    this._cancelExec();
+    this._cancelTimer();
+    this._status = EPlaybackStatus.CANCELLED;
+    this._resolvePlay?.();
+    this._resolvePlay = null;
+  }
+
+  /**
+   * @description
    * Replay from the beginning regardless of current status.
    *
    * @returns A promise that resolves when playback completes naturally or is interrupted
    */
   replay(): Promise<void> {
+    this._cancelExec();
     this._cancelTimer();
     this._resolvePlay?.();
     this._resolvePlay = null;
@@ -301,7 +335,7 @@ export class PlaybackController {
     this._renderer.render(this._state);
     this._renderer.mount?.(this._state);
 
-    return this._startPlayback();
+    return this._startExecution(this._initialState);
   }
 
   /**
@@ -316,6 +350,7 @@ export class PlaybackController {
     const targetTime = Math.max(0, Math.min(time, this._duration));
     const wasPlaying = this._status === EPlaybackStatus.PLAYING;
 
+    this._cancelExec();
     this._cancelTimer();
 
     const targetEventIndex = findEventIndexAtTime(this._events, targetTime);
@@ -328,7 +363,7 @@ export class PlaybackController {
     this._renderer.render(this._state);
 
     if (wasPlaying) {
-      this._scheduleNext();
+      this._startTimerResume();
     }
     else if (targetEventIndex >= this._events.length && this._events.length > 0) {
       this._status = EPlaybackStatus.COMPLETED;
@@ -341,6 +376,7 @@ export class PlaybackController {
    * If already at the end, status becomes completed.
    */
   stepForward(): void {
+    this._cancelExec();
     this._cancelTimer();
 
     if (this._currentEventIndex >= this._events.length) {
@@ -388,6 +424,7 @@ export class PlaybackController {
    * If already at the beginning, stays at time 0 in paused status.
    */
   stepBackward(): void {
+    this._cancelExec();
     this._cancelTimer();
 
     if (this._currentEventIndex === 0) {
@@ -433,7 +470,6 @@ export class PlaybackController {
   /**
    * @description
    * Set the playback rate. Must be > 0.
-   * If currently playing, reschedules the pending timer at the new rate immediately.
    *
    * @param rate - Playback speed multiplier (e.g. 0.5 = half speed, 2 = double speed)
    */
@@ -443,11 +479,6 @@ export class PlaybackController {
     }
 
     this._rate = rate;
-
-    if (this._status === EPlaybackStatus.PLAYING) {
-      this._cancelTimer();
-      this._scheduleNext();
-    }
   }
 
   // ---------------------------------------------------------------------------
@@ -456,51 +487,30 @@ export class PlaybackController {
 
   /**
    * @description
-   * Reset runtime playback position to the beginning without changing status
+   * Resume playback from _currentEventIndex using the timer-based event loop.
+   * Used exclusively by seek() when wasPlaying, to continue applying the
+   * remaining pre-compiled events without re-running the command executor.
    */
-  private _reset(): void {
-    this._state = this._initialState;
-    this._currentTime = 0;
-    this._currentEventIndex = 0;
-    this._status = EPlaybackStatus.IDLE;
-  }
-
-  /**
-   * @description
-   * Cancel the currently pending timer, if any
-   */
-  private _cancelTimer(): void {
-    if (this._timer !== null) {
-      clearTimeout(this._timer);
-      this._timer = null;
-    }
-  }
-
-  /**
-   * @description
-   * Start (or resume) playback from the current position.
-   * Records wall-clock origin for rate-aware delay calculation.
-   *
-   * @returns A promise that resolves when playback completes or is interrupted
-   */
-  private _startPlayback(): Promise<void> {
+  private _startTimerResume(): void {
     this._status = EPlaybackStatus.PLAYING;
     this._playStartWall = Date.now();
     this._playStartTimeline = this._currentTime;
 
-    return new Promise<void>((resolve) => {
+    const promise = new Promise<void>((resolve) => {
       this._resolvePlay = resolve;
-      this._scheduleNext();
+      this._tickTimer();
     });
+
+    // Fire-and-forget — the play promise was already resolved when the
+    // executor was cancelled; this timer runs to completion independently.
+    void promise;
   }
 
   /**
    * @description
-   * Compute the current playhead time accounting for rate.
-   * A rate > 1 means the timeline advances faster than wall-clock time.
-   * playhead = playStartTimeline + elapsed_wall * rate
+   * Return the current playhead position accounting for rate
    *
-   * @returns The current playhead position in timeline milliseconds
+   * @returns Current playhead time in timeline milliseconds
    */
   private _playhead(): number {
     const elapsedWall = Date.now() - this._playStartWall;
@@ -510,10 +520,10 @@ export class PlaybackController {
 
   /**
    * @description
-   * Apply all due events, render, then schedule the next tick.
-   * When all events are exhausted, resolves the play promise and marks completed.
+   * Event-timer tick: apply all due events, render, then schedule the next tick.
+   * Used only by the seek-resume path.
    */
-  private _scheduleNext(): void {
+  private _tickTimer(): void {
     /* v8 ignore next 3 */
     if (this._status !== EPlaybackStatus.PLAYING) {
       return;
@@ -522,7 +532,6 @@ export class PlaybackController {
     const playhead = this._playhead();
     let advanced = false;
 
-    // Apply all events whose timeline time <= current playhead
     /* v8 ignore next 4 */
     while (
       this._currentEventIndex < this._events.length
@@ -546,7 +555,6 @@ export class PlaybackController {
     }
 
     if (this._currentEventIndex >= this._events.length) {
-      // All events exhausted — playback complete
       this._status = EPlaybackStatus.COMPLETED;
       this._resolvePlay?.();
       this._resolvePlay = null;
@@ -554,9 +562,6 @@ export class PlaybackController {
       return;
     }
 
-    // Schedule the next tick when the next event becomes due.
-    // `nextEventTime - playhead` is the remaining timeline duration.
-    // Dividing by rate converts that to wall-clock milliseconds.
     /* v8 ignore next */
     const nextEventTime = this._events[this._currentEventIndex]?.time ?? 0;
     const timeUntilNext = (nextEventTime - this._playhead()) / this._rate;
@@ -564,7 +569,91 @@ export class PlaybackController {
 
     this._timer = setTimeout(() => {
       this._timer = null;
-      this._scheduleNext();
+      this._tickTimer();
     }, delay);
+  }
+
+  /**
+   * @description
+   * Reset runtime playback position to the beginning without changing status
+   */
+  private _reset(): void {
+    this._state = this._initialState;
+    this._currentTime = 0;
+    this._currentEventIndex = 0;
+    this._status = EPlaybackStatus.IDLE;
+  }
+
+  /**
+   * @description
+   * Cancel the pending legacy timer, if any
+   */
+  private _cancelTimer(): void {
+    if (this._timer !== null) {
+      clearTimeout(this._timer);
+      this._timer = null;
+    }
+  }
+
+  /**
+   * @description
+   * Abort the active async executor session, if any
+   */
+  private _cancelExec(): void {
+    if (this._execAbortController !== null) {
+      this._execAbortController.abort();
+      this._execAbortController = null;
+    }
+  }
+
+  /**
+   * @description
+   * Start the async executor from the given state.
+   * Creates a fresh AbortController for the session and returns a promise
+   * that resolves when execution completes or is interrupted.
+   *
+   * @param startState - The typewriter state to begin execution from
+   * @returns A promise that resolves when playback completes or is interrupted
+   */
+  private _startExecution(startState: TTypewriterState): Promise<void> {
+    this._status = EPlaybackStatus.PLAYING;
+
+    const ac = new AbortController();
+
+    this._execAbortController = ac;
+
+    return new Promise<void>((resolve) => {
+      this._resolvePlay = resolve;
+
+      executeCommands(
+        this._commands,
+        startState,
+        this._renderer,
+        {
+          signal: ac.signal,
+          getRate: () => this._rate,
+        },
+      ).then((result: TExecuteCommandsResult) => {
+        // Only update status if this session is still the active one
+        if (this._execAbortController === ac) {
+          this._execAbortController = null;
+          this._state = result.state;
+
+          /* v8 ignore next 3 */
+          if (!ac.signal.aborted) {
+            this._status = EPlaybackStatus.COMPLETED;
+          }
+        }
+
+        resolve();
+        this._resolvePlay = null;
+        /* v8 ignore start */
+      }).catch(() => {
+        // executeCommands never rejects in practice — AbortErrors are caught internally
+        resolve();
+        this._resolvePlay = null;
+      });
+      /* v8 ignore stop */
+    });
   }
 }

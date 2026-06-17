@@ -11,6 +11,8 @@ import { TimelineBuilder } from "./core/timeline/index";
 export { ECommandKind } from "./core/commands/index";
 export type { TBaseCommand } from "./core/commands/index";
 export { normalizeCursors } from "./core/commands/index";
+export type { TCallbackContext, TCallbackFn, TCallbackHook } from "./core/commands/index";
+export type { TCallCommand } from "./core/commands/index";
 export type { TAdvanceMode, TAdvanceModeInput, TAdvanceUnit, TCommandKind, TCursorSelector, TDeleteCommand, TMarkCommand, TMarkRange, TMoveCursorCommand, TSelectCommand, TTypeCommand, TWaitCommand } from "./core/commands/index";
 
 export type { TCommand } from "./core/compiler/index";
@@ -32,7 +34,7 @@ export type { TSelectionState, TTypewriterState } from "./core/state/index";
 export { getSelection, withCursor, withSelection, withSelectionCleared } from "./core/state/index";
 
 export { TimelineBuilder } from "./core/timeline/index";
-export type { TDeleteOptions, TMarkOptions, TMoveCursorOptions, TSelectOptions, TTypeOptions } from "./core/timeline/index";
+export type { TCommandHookOptions, TDeleteOptions, TMarkOptions, TMoveCursorOptions, TSelectOptions, TTypeOptions, TWaitOptions } from "./core/timeline/index";
 
 export { DomRenderer, domRenderer } from "./renderers/index";
 export { StringRenderer, stringRenderer } from "./renderers/index";
@@ -55,6 +57,7 @@ export type TTypewriter = {
   play: () => Promise<void>;
   pause: () => void;
   stop: () => void;
+  cancel: () => void;
   replay: () => Promise<void>;
   seek: (time: number) => void;
   stepForward: () => void;
@@ -67,7 +70,7 @@ export type TTypewriter = {
  * @description
  * Create a new typewriter instance with the given renderer.
  * Use `tw.timeline.type(...)` to schedule commands, then call `tw.play()` to execute them.
- * All playback controls (pause, stop, seek, step, rate) are available on the returned object.
+ * All playback controls (pause, stop, cancel, seek, step, rate) are available on the returned object.
  *
  * @param options - Configuration options including the renderer to use
  * @returns A TTypewriter instance with a timeline builder and full playback controls
@@ -85,7 +88,9 @@ export function createTypewriter(options: TTypewriterOptions): TTypewriter {
    */
   function ensureLoaded(): void {
     if (timeline.version !== cachedVersion) {
-      controller.load(compile([...timeline.commands]));
+      const commands = [...timeline.commands];
+
+      controller.load(compile(commands), commands);
       cachedVersion = timeline.version;
     }
   }
@@ -105,6 +110,10 @@ export function createTypewriter(options: TTypewriterOptions): TTypewriter {
 
     stop(): void {
       controller.stop();
+    },
+
+    cancel(): void {
+      controller.cancel();
     },
 
     replay(): Promise<void> {

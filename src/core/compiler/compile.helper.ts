@@ -1,3 +1,4 @@
+import type { TCallCommand } from "../commands/call-command.type";
 import type { TDeleteCommand } from "../commands/delete-command.type";
 import type { TMarkCommand } from "../commands/mark-command.type";
 import type { TMoveCursorCommand } from "../commands/move-cursor-command.type";
@@ -19,7 +20,7 @@ import { compileType } from "./compile-type.helper";
  * @description
  * A union of all supported command types.
  */
-export type TCommand = TTypeCommand | TWaitCommand | TDeleteCommand | TMoveCursorCommand | TSelectCommand | TMarkCommand;
+export type TCommand = TTypeCommand | TWaitCommand | TDeleteCommand | TMoveCursorCommand | TSelectCommand | TMarkCommand | TCallCommand;
 
 /**
  * @description
@@ -80,6 +81,10 @@ export function compile(commands: TCommand[]): TTimelineEvent[] {
         // endTime unchanged — mark is instant
         break;
       }
+
+      case ECommandKind.CALL:
+        // call commands emit no timeline events — they are handled at runtime by the executor
+        break;
 
       default:
         break;

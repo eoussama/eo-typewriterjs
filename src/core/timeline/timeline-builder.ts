@@ -1,4 +1,5 @@
 import type { TCommand } from "../commands";
+import type { TCallbackFn, TCallbackHook } from "../commands/callback-hook.type";
 import type { TMarkRange } from "../commands/mark-command.type";
 import type { TAdvanceModeInput, TCursorSelector } from "../commands/type-command.type";
 import type { TStyleRef } from "../state/rich-text-document.type";
@@ -9,9 +10,27 @@ import { ECommandKind } from "../commands/command-kind.enum";
 
 /**
  * @description
+ * Shared lifecycle hook options available on all builder methods that support them
+ */
+export type TCommandHookOptions = {
+  /**
+   * @description
+   * Hook invoked before the command (or before each step when `unit` is set)
+   */
+  readonly before?: TCallbackHook;
+
+  /**
+   * @description
+   * Hook invoked after the command (or after each step when `unit` is set)
+   */
+  readonly after?: TCallbackHook;
+};
+
+/**
+ * @description
  * Options accepted by the `select` builder method
  */
-export type TSelectOptions = {
+export type TSelectOptions = TCommandHookOptions & {
   readonly by?: TAdvanceModeInput;
   readonly cursor?: TCursorSelector;
 };
@@ -20,7 +39,7 @@ export type TSelectOptions = {
  * @description
  * Options accepted by the `delete` builder method
  */
-export type TDeleteOptions = {
+export type TDeleteOptions = TCommandHookOptions & {
   readonly by?: TAdvanceModeInput;
   readonly interval?: number;
   readonly cursor?: TCursorSelector;
@@ -30,7 +49,7 @@ export type TDeleteOptions = {
  * @description
  * Options accepted by the `moveCursor` builder method
  */
-export type TMoveCursorOptions = {
+export type TMoveCursorOptions = TCommandHookOptions & {
   readonly cursor?: TCursorSelector;
 };
 
@@ -38,7 +57,7 @@ export type TMoveCursorOptions = {
  * @description
  * Options accepted by the `type` builder method
  */
-export type TTypeOptions = {
+export type TTypeOptions = TCommandHookOptions & {
   readonly by?: TAdvanceModeInput;
   readonly interval?: number;
   readonly style?: TStyleRef;
@@ -49,9 +68,15 @@ export type TTypeOptions = {
  * @description
  * Options accepted by the `mark` builder method
  */
-export type TMarkOptions = {
+export type TMarkOptions = TCommandHookOptions & {
   readonly cursor?: TCursorSelector;
 };
+
+/**
+ * @description
+ * Options accepted by the `wait` builder method
+ */
+export type TWaitOptions = TCommandHookOptions;
 
 
 
@@ -95,13 +120,16 @@ export class TimelineBuilder {
    * Schedule a wait command that pauses the timeline for a given duration
    *
    * @param duration - The duration to wait in milliseconds
+   * @param options - Optional lifecycle hooks (before, after)
    * @returns This builder instance for future chaining
    */
-  wait(duration: number): this {
+  wait(duration: number, options?: TWaitOptions): this {
     this._commands.push({
       id: `cmd_${++commandCounter}`,
       kind: ECommandKind.WAIT,
       duration,
+      before: options?.before,
+      after: options?.after,
     });
 
     this._version++;
@@ -116,7 +144,7 @@ export class TimelineBuilder {
    * The selection is cleared by any subsequent type, delete, or moveCursor command.
    *
    * @param count - Number of units to select; positive = forward, negative = backward
-   * @param options - Optional configuration (advance mode, cursor id)
+   * @param options - Optional configuration (advance mode, cursor id, lifecycle hooks)
    * @returns This builder instance for future chaining
    */
   select(count: number, options?: TSelectOptions): this {
@@ -126,6 +154,8 @@ export class TimelineBuilder {
       cursor: options?.cursor ?? "main",
       count,
       by: options?.by,
+      before: options?.before,
+      after: options?.after,
     });
 
     this._version++;
@@ -139,7 +169,7 @@ export class TimelineBuilder {
    * This command is instant and does not advance the timeline clock.
    *
    * @param index - The absolute document index to move the cursor to
-   * @param options - Optional configuration (cursor id)
+   * @param options - Optional configuration (cursor id, lifecycle hooks)
    * @returns This builder instance for future chaining
    */
   moveCursor(index: number, options?: TMoveCursorOptions): this {
@@ -148,6 +178,8 @@ export class TimelineBuilder {
       kind: ECommandKind.MOVE_CURSOR,
       cursor: options?.cursor ?? "main",
       index,
+      before: options?.before,
+      after: options?.after,
     });
 
     this._version++;
@@ -160,7 +192,7 @@ export class TimelineBuilder {
    * Schedule a delete command that removes text backward from the cursor
    *
    * @param count - The number of units to delete
-   * @param options - Optional delete configuration (advance mode, interval, cursor)
+   * @param options - Optional delete configuration (advance mode, interval, cursor, lifecycle hooks)
    * @returns This builder instance for future chaining
    */
   delete(count: number, options?: TDeleteOptions): this {
@@ -171,6 +203,8 @@ export class TimelineBuilder {
       count,
       by: options?.by,
       interval: options?.interval,
+      before: options?.before,
+      after: options?.after,
     });
 
     this._version++;
@@ -183,7 +217,7 @@ export class TimelineBuilder {
    * Schedule a type command that inserts text into the document
    *
    * @param text - The text to type
-   * @param options - Optional typing configuration (advance mode, interval, style, cursor)
+   * @param options - Optional typing configuration (advance mode, interval, style, cursor, lifecycle hooks)
    * @returns This builder instance for future chaining
    */
   type(text: string, options?: TTypeOptions): this {
@@ -195,6 +229,8 @@ export class TimelineBuilder {
       by: options?.by,
       interval: options?.interval,
       style: options?.style,
+      before: options?.before,
+      after: options?.after,
     });
 
     this._version++;
@@ -211,7 +247,7 @@ export class TimelineBuilder {
    *
    * @param style - The style reference to apply (class name string or TStyleObject)
    * @param range - The target range — either absolute `{ from, to }` indices or `"selection"`
-   * @param options - Optional configuration (cursor id, used only for selection-based marks)
+   * @param options - Optional configuration (cursor id, lifecycle hooks)
    * @returns This builder instance for future chaining
    */
   mark(style: TStyleRef, range: TMarkRange | "selection", options?: TMarkOptions): this {
@@ -221,6 +257,32 @@ export class TimelineBuilder {
       cursor: options?.cursor ?? "main",
       style,
       range,
+      before: options?.before,
+      after: options?.after,
+    });
+
+    this._version++;
+
+    return this;
+  }
+
+  /**
+   * @description
+   * Schedule a call command that invokes a callback function as a named step in the timeline.
+   * The callback may be async — playback waits for the returned promise to settle before
+   * advancing to the next command.
+   *
+   * @param callback - The function to invoke
+   * @param options - Optional lifecycle hooks (before, after)
+   * @returns This builder instance for future chaining
+   */
+  call(callback: TCallbackFn, options?: TCommandHookOptions): this {
+    this._commands.push({
+      id: `cmd_${++commandCounter}`,
+      kind: ECommandKind.CALL,
+      callback,
+      before: options?.before,
+      after: options?.after,
     });
 
     this._version++;

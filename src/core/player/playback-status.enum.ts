@@ -8,6 +8,7 @@ export const EPlaybackStatus = {
   PAUSED: "paused",
   STOPPED: "stopped",
   COMPLETED: "completed",
+  CANCELLED: "cancelled",
 } as const;
 
 export type TPlaybackStatus = (typeof EPlaybackStatus)[keyof typeof EPlaybackStatus];

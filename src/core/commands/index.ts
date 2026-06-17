@@ -1,5 +1,7 @@
 export type { TCommand } from "../compiler/compile.helper";
 export type { TBaseCommand } from "./base-command.type";
+export type { TCallCommand } from "./call-command.type";
+export type { TCallbackContext, TCallbackFn, TCallbackHook } from "./callback-hook.type";
 export { ECommandKind } from "./command-kind.enum";
 
 export type { TCommandKind } from "./command-kind.enum";
