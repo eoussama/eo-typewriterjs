@@ -369,6 +369,12 @@ export class PlaybackController {
     const targetTime = Math.max(0, Math.min(time, this._duration));
     const wasPlaying = this._status === EPlaybackStatus.PLAYING;
 
+    // If the renderer has never been mounted (idle, stopped, cancelled),
+    // mount it first so the render call below is visible immediately.
+    const needsMount = this._status === EPlaybackStatus.IDLE
+      || this._status === EPlaybackStatus.STOPPED
+      || this._status === EPlaybackStatus.CANCELLED;
+
     this._cancelExec();
     this._cancelTimer();
 
@@ -379,6 +385,10 @@ export class PlaybackController {
     this._currentTime = targetTime;
     this._currentEventIndex = targetEventIndex;
 
+    if (needsMount) {
+      this._renderer.mount?.(this._state);
+    }
+
     this._renderer.render(this._state);
 
     if (wasPlaying) {
@@ -386,6 +396,10 @@ export class PlaybackController {
     }
     else if (targetEventIndex >= this._events.length && this._events.length > 0) {
       this._status = EPlaybackStatus.COMPLETED;
+    }
+    else if (needsMount) {
+      // Stay in PAUSED so subsequent play() resumes from the seek position
+      this._status = EPlaybackStatus.PAUSED;
     }
   }
 

@@ -176,7 +176,7 @@ export default defineConfig({
     },
 
     editLink: {
-      pattern: "https://github.com/eoussama/eo-typewriterjs/edit/main/docs/:path",
+      pattern: "https://github.com/eoussama/eo-typewriterjs/edit/master/docs/:path",
       text: "Edit this page on GitHub",
     },
 
