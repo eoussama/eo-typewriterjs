@@ -153,7 +153,7 @@ function findEventIndexAtTime(events: readonly TTimelineEvent[], time: number): 
  */
 export class PlaybackController {
   private readonly _renderer: IRenderer;
-  private readonly _initialState: TTypewriterState;
+  private _initialState: TTypewriterState;
 
   private _commands: TCommand[] = [];
   private _events: TTimelineEvent[] = [];
@@ -196,6 +196,28 @@ export class PlaybackController {
 
   /**
    * @description
+   * Return the current live typewriter state (document + cursors + selections)
+   *
+   * @returns The current TTypewriterState
+   */
+  getLiveState(): TTypewriterState {
+    return this._state;
+  }
+
+  /**
+   * @description
+   * Replace the controller's current live state and immediately re-render.
+   * Used by runtime cursor mutations so their changes persist even during active
+   * playback where the executor would otherwise overwrite the old state.
+   *
+   * @param state - The new live state to adopt
+   */
+  setLiveState(state: TTypewriterState): void {
+    this._state = state;
+  }
+
+  /**
+   * @description
    * Return an observable snapshot of the current controller state
    *
    * @returns A TPlaybackControllerState snapshot
@@ -212,6 +234,18 @@ export class PlaybackController {
   // ---------------------------------------------------------------------------
   // Cache loading
   // ---------------------------------------------------------------------------
+
+  /**
+   * @description
+   * Replace the initial state used by load(), play(), and replay().
+   * Useful for propagating runtime cursor mutations back into the controller
+   * so that replay() and post-seek play() start from the updated cursor configuration.
+   *
+   * @param initialState - The new initial state to use as the playback baseline
+   */
+  setInitialState(initialState: TTypewriterState): void {
+    this._initialState = initialState;
+  }
 
   /**
    * @description
@@ -669,16 +703,31 @@ export class PlaybackController {
 
     this._execAbortController = ac;
 
+    // Wrap the renderer so that every render() call keeps _state in sync.
+    // This ensures getLiveState() always returns the evolving execution state
+    // rather than the stale initial state, which is critical for runtime
+    // cursor mutations (setCursorVisible, setCursorOptions) to read the
+    // correct live document text and not re-render from an empty baseline.
+    const trackingRenderer: IRenderer = {
+      mount: this._renderer.mount?.bind(this._renderer),
+      render: (state: TTypewriterState) => {
+        this._state = state;
+        this._renderer.render(state);
+      },
+      unmount: this._renderer.unmount?.bind(this._renderer),
+    };
+
     return new Promise<void>((resolve) => {
       this._resolvePlay = resolve;
 
       executeCommands(
         this._commands,
         startState,
-        this._renderer,
+        trackingRenderer,
         {
           signal: ac.signal,
           getRate: () => this._rate,
+          getLiveState: () => this._state,
         },
       ).then((result: TExecuteCommandsResult) => {
         // Only update status if this session is still the active one

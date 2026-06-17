@@ -345,13 +345,44 @@ body {
 /* Typewriter engine output helpers */
 
 .typewriter-cursor {
-  display: inline-block;
-  width: 2px;
-  height: 1em;
-  background: var(--color-accent);
-  border-radius: 1px;
-  vertical-align: text-bottom;
-  animation: blink 1.1s step-end infinite;
+  display: inline;
+  font-style: normal;
+  animation: blink 1s step-end infinite;
+}
+
+/* ── Cursor kind utility classes ─────────────────────────────────── */
+
+/* Blink animation helper (reusable) */
+.tw-cursor-blink {
+  animation: blink 1s step-end infinite;
+}
+
+/* Accent colour for the cursor — bright, bold */
+.tw-cursor-accent {
+  color: #b47cf8;
+  font-weight: 900;
+  font-size: 1.15em;
+  vertical-align: -0.05em;
+}
+
+/* Neon glow effect — combine with .tw-cursor-accent */
+.tw-cursor-glow {
+  text-shadow:
+    0 0 6px #b47cf8,
+    0 0 14px #b47cf8,
+    0 0 28px #b47cf8;
+  animation: glowBlink 0.75s step-end infinite;
+}
+
+/* Block cursor rendered via a custom content glyph */
+.tw-cursor-block {
+  font-style: normal;
+  opacity: 0.85;
+}
+
+@keyframes glowBlink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.15; }
 }
 
 .typewriter-selection {

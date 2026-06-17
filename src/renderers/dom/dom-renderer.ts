@@ -173,9 +173,43 @@ export class DomRenderer implements IRenderer {
           openSelections.delete(boundary.cursorId);
         }
         else if (boundary.kind === "cursor") {
-          const cursorEl = document.createElement("span");
+          const cursor = state.cursors[boundary.cursorId];
 
+          // If the cursor is marked invisible, skip rendering it entirely
+          if (cursor !== undefined && !cursor.renderOptions.visible) {
+            continue;
+          }
+
+          const cursorEl = document.createElement("span");
+          const opts = cursor?.renderOptions;
+
+          // Base class is always present
           cursorEl.className = "typewriter-cursor";
+
+          // Append any custom classes
+          if (opts?.className !== undefined && opts.className.trim().length > 0) {
+            const extraClasses = opts.className.trim().split(/\s+/).filter(Boolean);
+
+            cursorEl.classList.add(...extraClasses);
+          }
+
+          // Set data-cursor-kind for CSS targeting
+          if (opts?.kind !== undefined) {
+            cursorEl.dataset.cursorKind = opts.kind;
+          }
+
+          // Render the glyph content
+          if (opts?.content !== undefined) {
+            cursorEl.textContent = opts.content;
+          }
+
+          // Apply extra attributes
+          if (opts?.attrs !== undefined) {
+            for (const [attrKey, attrValue] of Object.entries(opts.attrs)) {
+              cursorEl.setAttribute(attrKey, attrValue);
+            }
+          }
+
           cursorEl.setAttribute("aria-hidden", "true");
           cursorEl.dataset.cursorId = boundary.cursorId;
           fragment.appendChild(cursorEl);

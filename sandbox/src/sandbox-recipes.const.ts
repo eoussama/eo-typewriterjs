@@ -326,6 +326,105 @@ await tw.play();`,
   },
 
   {
+    id: "cursor-styles",
+    title: "Cursor Styles",
+    description: "Compare all five built-in cursor kinds: pipe, underscore, block, block-underscore, and caret.",
+    category: "cursor",
+    difficulty: "beginner",
+    code: `// Each typewriter uses a different cursor kind.
+// Kinds in order: pipe, underscore, block, block-underscore, caret.
+const kinds = [
+  { kind: ECursorKind.PIPE,             label: "Pipe cursor" },
+  { kind: ECursorKind.UNDERSCORE,       label: "Underscore cursor" },
+  { kind: ECursorKind.BLOCK,            label: "Block cursor" },
+  { kind: ECursorKind.BLOCK_UNDERSCORE, label: "Block-underscore cursor" },
+  { kind: ECursorKind.CARET,            label: "Caret cursor" },
+];
+
+for (const k of kinds) {
+  const tw = createTypewriter({ renderer, cursor: { kind: k.kind } });
+  tw.timeline.type(k.label, { by: "char", interval: 35 }).wait(600);
+  await tw.play();
+}`,
+  },
+
+  {
+    id: "cursor-hidden",
+    title: "Hidden Cursor",
+    description: "Start with the cursor hidden, type text silently, then reveal the cursor at the end.",
+    category: "cursor",
+    difficulty: "beginner",
+    code: `const tw = createTypewriter({
+  renderer,
+  cursor: { visible: false },
+});
+
+tw.timeline
+  .type("Cursor is hidden while typing...", { by: "char", interval: 60 })
+  .wait(400)
+  .call(() => {
+    // Reveal the cursor — it will appear at the end of the text
+    tw.setCursorVisible(true);
+  })
+  .wait(1200);
+
+await tw.play();`,
+  },
+
+  {
+    id: "cursor-swap",
+    title: "Runtime Cursor Swap",
+    description: "Switch the cursor kind dynamically mid-animation using setCursorOptions().",
+    category: "cursor",
+    difficulty: "intermediate",
+    code: `const tw = createTypewriter({ renderer, cursor: { kind: ECursorKind.PIPE } });
+
+// call() fires synchronously during playback and swaps the cursor immediately.
+// The document text is preserved across each swap.
+tw.timeline
+  .type("pipe ", { by: "char", interval: 60 })
+  .wait(400)
+  .call(() => tw.setCursorOptions({ kind: ECursorKind.UNDERSCORE }))
+  .type("underscore ", { by: "char", interval: 60 })
+  .wait(400)
+  .call(() => tw.setCursorOptions({ kind: ECursorKind.BLOCK }))
+  .type("block ", { by: "char", interval: 60 })
+  .wait(400)
+  .call(() => tw.setCursorOptions({ kind: ECursorKind.BLOCK_UNDERSCORE }))
+  .type("block-underscore ", { by: "char", interval: 60 })
+  .wait(400)
+  .call(() => tw.setCursorOptions({ kind: ECursorKind.CARET }))
+  .type("caret", { by: "char", interval: 60 })
+  .wait(700);
+
+await tw.play();`,
+  },
+
+  {
+    id: "cursor-classes",
+    title: "Styled Cursor",
+    description: "Apply a custom CSS class to the cursor for a vivid glowing accent effect.",
+    category: "cursor",
+    difficulty: "intermediate",
+    code: `// .tw-cursor-accent is defined in the sandbox stylesheet:
+// bright accent color, bold weight, and a glow via text-shadow.
+const tw = createTypewriter({
+  renderer,
+  cursor: {
+    kind: "custom",
+    content: "▍",
+    className: "tw-cursor-accent tw-cursor-glow",
+  },
+});
+
+tw.timeline
+  .type("Glowing block cursor", { by: "char", interval: 70 })
+  .wait(1400);
+
+await tw.play();`,
+  },
+
+  {
     id: "move-cursor",
     title: "Move Cursor",
     description: "Move the cursor to a specific position in the text.",

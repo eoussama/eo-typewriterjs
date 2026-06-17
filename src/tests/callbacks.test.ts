@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
 import { compile } from "../core/compiler/compile.helper";
+import { DEFAULT_CURSOR_RENDER_OPTIONS } from "../core/cursor/cursor-render-options.type";
 import { deleteTextAtCursor } from "../core/reducer/delete-text-at-cursor.helper";
 import { insertTextAtCursor } from "../core/reducer/insert.helper";
 import { createInitialState, withCursor, withSelection } from "../core/state/index";
@@ -854,8 +855,8 @@ describe("deleteTextAtCursor — additional branch coverage", () => {
     const state: ReturnType<typeof createInitialState> = {
       document: { text: "abcde", marks: [] },
       cursors: {
-        main: { id: "main", index: 5, visible: true },
-        b: { id: "b", index: 3, visible: true },
+        main: { id: "main", index: 5, visible: true, renderOptions: DEFAULT_CURSOR_RENDER_OPTIONS },
+        b: { id: "b", index: 3, visible: true, renderOptions: DEFAULT_CURSOR_RENDER_OPTIONS },
       },
       selections: {},
     };
@@ -884,8 +885,8 @@ describe("deleteTextAtCursor — additional branch coverage", () => {
     const state: ReturnType<typeof createInitialState> = {
       document: { text: "abcde", marks: [] },
       cursors: {
-        main: { id: "main", index: 5, visible: true },
-        b: { id: "b", index: 4, visible: true },
+        main: { id: "main", index: 5, visible: true, renderOptions: DEFAULT_CURSOR_RENDER_OPTIONS },
+        b: { id: "b", index: 4, visible: true, renderOptions: DEFAULT_CURSOR_RENDER_OPTIONS },
       },
       selections: {
         b: { from: 2, to: 4 },
@@ -915,8 +916,8 @@ describe("deleteTextAtCursor — additional branch coverage", () => {
     const state = {
       document: { text: "hello", marks: [] },
       cursors: {
-        main: { id: "main", index: 5, visible: true },
-        b: { id: "b", index: 2, visible: true },
+        main: { id: "main", index: 5, visible: true, renderOptions: DEFAULT_CURSOR_RENDER_OPTIONS },
+        b: { id: "b", index: 2, visible: true, renderOptions: DEFAULT_CURSOR_RENDER_OPTIONS },
       },
       selections: {
         // eslint-disable-next-line ts/no-explicit-any
@@ -950,8 +951,8 @@ describe("insertTextAtCursor — additional branch coverage", () => {
     const state = {
       document: { text: "ab", marks: [] },
       cursors: {
-        main: { id: "main", index: 2, visible: true },
-        b: { id: "b", index: 0, visible: true },
+        main: { id: "main", index: 2, visible: true, renderOptions: DEFAULT_CURSOR_RENDER_OPTIONS },
+        b: { id: "b", index: 0, visible: true, renderOptions: DEFAULT_CURSOR_RENDER_OPTIONS },
       },
       selections: {
         // eslint-disable-next-line ts/no-explicit-any
@@ -984,8 +985,8 @@ describe("insertTextAtCursor — additional branch coverage", () => {
       ...state,
       document: { text: "abc", marks: [] },
       cursors: {
-        main: { id: "main", index: 2, visible: true },
-        b: { id: "b", index: 1, visible: true },
+        main: { id: "main", index: 2, visible: true, renderOptions: DEFAULT_CURSOR_RENDER_OPTIONS },
+        b: { id: "b", index: 1, visible: true, renderOptions: DEFAULT_CURSOR_RENDER_OPTIONS },
       },
     };
     state = withSelection(state, "b", 0, 1);

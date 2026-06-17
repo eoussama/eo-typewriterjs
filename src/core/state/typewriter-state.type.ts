@@ -1,7 +1,10 @@
 import type { TNullable } from "@eoussama/core";
 
+import type { TCursorRenderOptions, TResolvedCursorRenderOptions } from "../cursor/cursor-render-options.type";
 import type { TCursorState } from "./cursor-state.type";
 import type { TRichTextDocument } from "./rich-text-document.type";
+
+import { DEFAULT_CURSOR_RENDER_OPTIONS, mergeCursorOptions } from "../cursor/cursor-render-options.type";
 
 
 
@@ -32,11 +35,17 @@ export type TTypewriterState = {
 
 /**
  * @description
- * Create the default initial typewriter state with a single main cursor
+ * Create the default initial typewriter state with a single main cursor.
+ * An optional cursor render options object is merged with the library defaults.
  *
+ * @param cursorOptions - Optional partial render options to apply to all initial cursors
  * @returns A fresh initial TTypewriterState
  */
-export function createInitialState(): TTypewriterState {
+export function createInitialState(cursorOptions?: TCursorRenderOptions): TTypewriterState {
+  const resolvedOptions: TResolvedCursorRenderOptions = cursorOptions !== undefined
+    ? mergeCursorOptions(DEFAULT_CURSOR_RENDER_OPTIONS, cursorOptions)
+    : DEFAULT_CURSOR_RENDER_OPTIONS;
+
   return {
     document: {
       text: "",
@@ -46,7 +55,8 @@ export function createInitialState(): TTypewriterState {
       main: {
         id: "main",
         index: 0,
-        visible: true,
+        visible: resolvedOptions.visible,
+        renderOptions: resolvedOptions,
       },
     },
     selections: {},
@@ -115,6 +125,12 @@ export function withCursor(state: TTypewriterState, cursorId: string): TTypewrit
     return state;
   }
 
+  // Inherit render options from the main cursor so additional cursors look the same by default
+  const mainCursor = state.cursors.main;
+  const inheritedOptions: TResolvedCursorRenderOptions = mainCursor !== undefined
+    ? mainCursor.renderOptions
+    : DEFAULT_CURSOR_RENDER_OPTIONS;
+
   return {
     ...state,
     cursors: {
@@ -122,7 +138,8 @@ export function withCursor(state: TTypewriterState, cursorId: string): TTypewrit
       [cursorId]: {
         id: cursorId,
         index: 0,
-        visible: true,
+        visible: inheritedOptions.visible,
+        renderOptions: inheritedOptions,
       },
     },
   };

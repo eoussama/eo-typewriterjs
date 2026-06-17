@@ -45,6 +45,15 @@ export type TExecuteCommandsOptions = {
    * Delays are divided by this value, so rate=2 plays at double speed.
    */
   readonly getRate: () => number;
+
+  /**
+   * @description
+   * Optional callback that returns the current live typewriter state from the
+   * controller. When provided, executeCall() reads this back after each
+   * callback fires so that runtime mutations made inside call() (e.g.
+   * setCursorVisible, setCursorOptions) are reflected in subsequent commands.
+   */
+  readonly getLiveState?: () => TTypewriterState;
 };
 
 /**
@@ -487,11 +496,14 @@ async function executeMark(
 /**
  * @description
  * Execute a call command — invoke the callback with the current state context.
+ * After the callback completes, if a getLiveState function is provided via options,
+ * the live state is read back so that runtime mutations made inside the callback
+ * (e.g. setCursorVisible, setCursorOptions) are reflected in subsequent commands.
  *
  * @param command - The call command to execute
  * @param state - The current typewriter state
  * @param options - Executor control options
- * @returns The unchanged state
+ * @returns The state after the call — updated with any runtime mutations if getLiveState is set
  */
 async function executeCall(
   command: TCallCommand,
@@ -502,6 +514,12 @@ async function executeCall(
 
   if (!options.signal.aborted) {
     await command.callback(makeContext(state, 0, 1, null, options.signal));
+  }
+
+  // Sync back any runtime mutations (setCursorVisible, setCursorOptions, etc.)
+  // that the callback may have applied to the controller's live state.
+  if (!options.signal.aborted && options.getLiveState !== undefined) {
+    state = options.getLiveState();
   }
 
   if (!options.signal.aborted) {

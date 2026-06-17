@@ -1,9 +1,10 @@
-import type { IRenderer, TTypewriter } from "@eo-typewriterjs";
+import type { IRenderer, TTypewriter, TTypewriterState } from "@eo-typewriterjs";
 
 import {
   createTypewriter,
   domRenderer,
   ECommandKind,
+  ECursorKind,
   EPlaybackStatus,
   StringRenderer,
   TimelineBuilder,
@@ -32,6 +33,35 @@ export type TRendererKind = (typeof ERendererKind)[keyof typeof ERendererKind];
 
 /**
  * @description
+ * Build a string preview that includes a visible cursor glyph inserted at the
+ * correct position within the plain document text.
+ * Only cursors whose renderOptions.visible is true are rendered.
+ * When multiple cursors are present each is inserted in reverse order (highest
+ * index first) so earlier insertions do not shift subsequent positions.
+ *
+ * @param state - The current typewriter state
+ * @returns The document text with cursor glyphs spliced in
+ */
+function buildStringPreview(state: TTypewriterState): string {
+  const text = state.document.text;
+  const entries = Object.values(state.cursors)
+    .filter(c => c.visible && c.renderOptions.visible)
+    .sort((a, b) => b.index - a.index); // highest index first to avoid shifts
+
+  let result = text;
+
+  for (const cursor of entries) {
+    const glyph = cursor.renderOptions.content;
+    const idx = Math.max(0, Math.min(cursor.index, result.length));
+
+    result = result.slice(0, idx) + glyph + result.slice(idx);
+  }
+
+  return result;
+}
+
+/**
+ * @description
  * Create an IRenderer for the given kind, wiring string output to a target element
  *
  * @param kind - The renderer kind
@@ -50,11 +80,11 @@ export function createSandboxRenderer(
     return {
       mount(state) {
         sr.mount(state);
-        stringTarget.textContent = sr.toString();
+        stringTarget.textContent = buildStringPreview(state);
       },
       render(state) {
         sr.render(state);
-        stringTarget.textContent = sr.toString();
+        stringTarget.textContent = buildStringPreview(state);
       },
     };
   }
@@ -118,6 +148,7 @@ export async function runUserCode(
     StringRenderer,
     TimelineBuilder,
     ECommandKind,
+    ECursorKind,
     EPlaybackStatus,
   };
 
@@ -131,6 +162,7 @@ export default async function __sandbox__(ctx) {
     StringRenderer,
     TimelineBuilder,
     ECommandKind,
+    ECursorKind,
     EPlaybackStatus,
   } = ctx;
 

@@ -1,7 +1,11 @@
+import type { TCursorSelector } from "./core/commands/type-command.type";
+import type { TCursorRenderOptions } from "./core/cursor/index";
 import type { TPlaybackControllerState } from "./core/player/index";
 import type { IRenderer } from "./core/renderer/index";
 
+import { normalizeCursors } from "./core/commands/index";
 import { compile } from "./core/compiler/index";
+import { mergeCursorOptions } from "./core/cursor/index";
 import { PlaybackController } from "./core/player/index";
 import { createInitialState } from "./core/state/index";
 import { TimelineBuilder } from "./core/timeline/index";
@@ -10,12 +14,15 @@ import { TimelineBuilder } from "./core/timeline/index";
 
 export { ECommandKind } from "./core/commands/index";
 export type { TBaseCommand } from "./core/commands/index";
+
 export { normalizeCursors } from "./core/commands/index";
 export type { TCallbackContext, TCallbackFn, TCallbackHook } from "./core/commands/index";
 export type { TCallCommand } from "./core/commands/index";
 export type { TAdvanceMode, TAdvanceModeInput, TAdvanceUnit, TCommandKind, TCursorSelector, TDeleteCommand, TMarkCommand, TMarkRange, TMoveCursorCommand, TSelectCommand, TTypeCommand, TWaitCommand } from "./core/commands/index";
-
 export type { TCommand } from "./core/compiler/index";
+export { ECursorKind } from "./core/cursor/index";
+
+export type { TCursorKind, TCursorRenderOptions, TResolvedCursorRenderOptions } from "./core/cursor/index";
 
 export { EEventKind } from "./core/events/index";
 export type { TBaseEvent } from "./core/events/index";
@@ -45,6 +52,13 @@ export { StringRenderer, stringRenderer } from "./renderers/index";
  */
 export type TTypewriterOptions = {
   readonly renderer: IRenderer;
+
+  /**
+   * @description
+   * Default render options applied to all cursors.
+   * Individual cursors inherit these at creation time.
+   */
+  readonly cursor?: TCursorRenderOptions;
 };
 
 /**
@@ -64,6 +78,27 @@ export type TTypewriter = {
   stepBackward: () => void;
   setRate: (rate: number) => void;
   getState: () => TPlaybackControllerState;
+
+  /**
+   * @description
+   * Show or hide one or all cursors at runtime.
+   * Changes take effect immediately on the next render.
+   *
+   * @param visible - Whether the cursor(s) should be visible
+   * @param cursor - Optional cursor selector; defaults to all cursors when omitted
+   */
+  setCursorVisible: (visible: boolean, cursor?: TCursorSelector) => void;
+
+  /**
+   * @description
+   * Update the render options of one or all cursors at runtime.
+   * Only the provided fields are changed; others keep their current values.
+   * Changes take effect immediately on the next render.
+   *
+   * @param options - Partial render options to apply
+   * @param cursor - Optional cursor selector; defaults to all cursors when omitted
+   */
+  setCursorOptions: (options: TCursorRenderOptions, cursor?: TCursorSelector) => void;
 };
 
 /**
@@ -76,15 +111,21 @@ export type TTypewriter = {
  * @returns A TTypewriter instance with a timeline builder and full playback controls
  */
 export function createTypewriter(options: TTypewriterOptions): TTypewriter {
-  const { renderer } = options;
+  const { renderer, cursor: cursorDefaults } = options;
   const timeline = new TimelineBuilder();
-  const controller = new PlaybackController(renderer, createInitialState());
+
+  // Build the initial state using any cursor defaults provided
+  let currentState = createInitialState(cursorDefaults);
+  const controller = new PlaybackController(renderer, currentState);
 
   let cachedVersion = -1;
 
   /**
    * @description
-   * Recompile the timeline if the version has changed since last load
+   * Recompile the timeline if the version has changed since last load.
+   * Also syncs the current state into the controller so runtime cursor
+   * mutations (setCursorVisible / setCursorOptions) are preserved across
+   * a load() call.
    */
   function ensureLoaded(): void {
     if (timeline.version !== cachedVersion) {
@@ -144,5 +185,113 @@ export function createTypewriter(options: TTypewriterOptions): TTypewriter {
     getState() {
       return controller.getState();
     },
+
+    setCursorVisible(visible: boolean, cursor?: TCursorSelector): void {
+      // Apply onto the controller's live state (which has typed text etc.)
+      // so that the re-render is visually correct.
+      const liveState = controller.getLiveState();
+      const ids = resolveCursorIds(cursor, liveState);
+      let updatedLive = liveState;
+
+      for (const id of ids) {
+        const existing = updatedLive.cursors[id];
+
+        if (existing === undefined) {
+          continue;
+        }
+
+        const updated = mergeCursorOptions(existing.renderOptions, { visible });
+
+        updatedLive = {
+          ...updatedLive,
+          cursors: {
+            ...updatedLive.cursors,
+            [id]: { ...existing, visible, renderOptions: updated },
+          },
+        };
+
+        // Keep the cursor-config baseline (initial state) in sync too
+        const baseExisting = currentState.cursors[id];
+
+        if (baseExisting !== undefined) {
+          currentState = {
+            ...currentState,
+            cursors: {
+              ...currentState.cursors,
+              [id]: { ...baseExisting, visible, renderOptions: updated },
+            },
+          };
+        }
+      }
+
+      controller.setInitialState(currentState);
+      controller.setLiveState(updatedLive);
+      renderer.render(updatedLive);
+    },
+
+    setCursorOptions(opts: TCursorRenderOptions, cursor?: TCursorSelector): void {
+      const liveState = controller.getLiveState();
+      const ids = resolveCursorIds(cursor, liveState);
+      let updatedLive = liveState;
+
+      for (const id of ids) {
+        const existing = updatedLive.cursors[id];
+
+        if (existing === undefined) {
+          continue;
+        }
+
+        const updated = mergeCursorOptions(existing.renderOptions, opts);
+        const newVisible = opts.visible ?? existing.visible;
+
+        updatedLive = {
+          ...updatedLive,
+          cursors: {
+            ...updatedLive.cursors,
+            [id]: { ...existing, visible: newVisible, renderOptions: updated },
+          },
+        };
+
+        const baseExisting = currentState.cursors[id];
+
+        if (baseExisting !== undefined) {
+          currentState = {
+            ...currentState,
+            cursors: {
+              ...currentState.cursors,
+              [id]: { ...baseExisting, visible: newVisible, renderOptions: updated },
+            },
+          };
+        }
+      }
+
+      controller.setInitialState(currentState);
+      controller.setLiveState(updatedLive);
+      renderer.render(updatedLive);
+    },
   };
+}
+
+// ---------------------------------------------------------------------------
+// Internal helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * @description
+ * Resolve a TCursorSelector to an array of cursor IDs present in state.
+ * When no selector is provided all cursor IDs are returned.
+ *
+ * @param cursor - Optional cursor selector
+ * @param state - Current typewriter state
+ * @returns Array of matching cursor IDs
+ */
+function resolveCursorIds(
+  cursor: TCursorSelector | undefined,
+  state: ReturnType<typeof createInitialState>,
+): string[] {
+  if (cursor === undefined) {
+    return Object.keys(state.cursors);
+  }
+
+  return normalizeCursors(cursor).filter(id => id in state.cursors);
 }
