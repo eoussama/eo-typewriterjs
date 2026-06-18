@@ -1,3 +1,4 @@
+import type { TAudioCommandOverride } from "../audio/audio-command-override.type";
 import type { TCommand } from "../commands";
 import type { TCallbackFn, TCallbackHook } from "../commands/callback-hook.type";
 import type { TMarkRange } from "../commands/mark-command.type";
@@ -43,6 +44,13 @@ export type TDeleteOptions = TCommandHookOptions & {
   readonly by?: TAdvanceModeInput;
   readonly interval?: number;
   readonly cursor?: TCursorSelector;
+
+  /**
+   * @description
+   * Per-command audio override.
+   * Set to `false` to silence delete sounds for this command.
+   */
+  readonly audio?: TAudioCommandOverride;
 };
 
 /**
@@ -62,6 +70,13 @@ export type TTypeOptions = TCommandHookOptions & {
   readonly interval?: number;
   readonly style?: TStyleRef;
   readonly cursor?: TCursorSelector;
+
+  /**
+   * @description
+   * Per-command audio override.
+   * Set to `false` to silence typing sounds for this command.
+   */
+  readonly audio?: TAudioCommandOverride;
 };
 
 /**
@@ -203,6 +218,7 @@ export class TimelineBuilder {
       count,
       by: options?.by,
       interval: options?.interval,
+      audio: options?.audio,
       before: options?.before,
       after: options?.after,
     });
@@ -229,6 +245,7 @@ export class TimelineBuilder {
       by: options?.by,
       interval: options?.interval,
       style: options?.style,
+      audio: options?.audio,
       before: options?.before,
       after: options?.after,
     });

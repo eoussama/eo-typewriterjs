@@ -1,8 +1,10 @@
+import type { TAudioOptions } from "./core/audio/index";
 import type { TCursorSelector } from "./core/commands/type-command.type";
 import type { TCursorRenderOptions } from "./core/cursor/index";
 import type { TPlaybackControllerState } from "./core/player/index";
 import type { IRenderer } from "./core/renderer/index";
 
+import { AudioManagerHelper } from "./core/audio/index";
 import { normalizeCursors } from "./core/commands/index";
 import { compile } from "./core/compiler/index";
 import { mergeCursorOptions } from "./core/cursor/index";
@@ -11,6 +13,12 @@ import { createInitialState } from "./core/state/index";
 import { TimelineBuilder } from "./core/timeline/index";
 
 
+
+export { AudioManagerHelper } from "./core/audio/index";
+export { EAudioStrategy } from "./core/audio/index";
+export { DEFAULT_VOICE_PACK } from "./core/audio/index";
+
+export type { TAudioChannelOptions, TAudioCommandOverride, TAudioOptions, TAudioStrategy, TAudioVoice, TAudioVoicePack } from "./core/audio/index";
 
 export { ECommandKind } from "./core/commands/index";
 export type { TBaseCommand } from "./core/commands/index";
@@ -59,6 +67,14 @@ export type TTypewriterOptions = {
    * Individual cursors inherit these at creation time.
    */
   readonly cursor?: TCursorRenderOptions;
+
+  /**
+   * @description
+   * Audio configuration for typing and delete sounds.
+   * Omit to use the built-in default voice pack with shuffle-bag variance.
+   * Set `enabled: false` to disable audio entirely.
+   */
+  readonly audio?: TAudioOptions;
 };
 
 /**
@@ -78,6 +94,40 @@ export type TTypewriter = {
   stepBackward: () => void;
   setRate: (rate: number) => void;
   getState: () => TPlaybackControllerState;
+
+  /**
+   * @description
+   * Enable or disable typing/delete audio at runtime.
+   *
+   * @param enabled - Whether audio should be active
+   */
+  setAudioEnabled: (enabled: boolean) => void;
+
+  /**
+   * @description
+   * Set the master audio volume at runtime. Clamped to [0, 1].
+   *
+   * @param volume - New master volume
+   */
+  setAudioVolume: (volume: number) => void;
+
+  /**
+   * @description
+   * Replace the full audio configuration at runtime.
+   * Channel selection state (shuffle-bag, round-robin) is reset so new
+   * voices and strategies take effect immediately on the next keystroke.
+   *
+   * @param options - The new audio options to apply
+   */
+  setAudioOptions: (options: TAudioOptions) => void;
+
+  /**
+   * @description
+   * Return a snapshot of the current audio options
+   *
+   * @returns The current TAudioOptions, or null if audio was never configured
+   */
+  getAudioOptions: () => TAudioOptions | null;
 
   /**
    * @description
@@ -111,12 +161,21 @@ export type TTypewriter = {
  * @returns A TTypewriter instance with a timeline builder and full playback controls
  */
 export function createTypewriter(options: TTypewriterOptions): TTypewriter {
-  const { renderer, cursor: cursorDefaults } = options;
+  const { renderer, cursor: cursorDefaults, audio: audioOptions } = options;
   const timeline = new TimelineBuilder();
 
   // Build the initial state using any cursor defaults provided
   let currentState = createInitialState(cursorDefaults);
-  const controller = new PlaybackController(renderer, currentState);
+
+  // Create the audio manager only when audio is explicitly provided or when no
+  // config is passed (default-on). When `audio.enabled === false` is the only
+  // field set, we still create the manager so it can be toggled at runtime.
+  const audioManager: AudioManagerHelper | null
+    = audioOptions === undefined
+      ? new AudioManagerHelper()
+      : new AudioManagerHelper(audioOptions);
+
+  const controller = new PlaybackController(renderer, currentState, audioManager);
 
   let cachedVersion = -1;
 
@@ -184,6 +243,23 @@ export function createTypewriter(options: TTypewriterOptions): TTypewriter {
 
     getState() {
       return controller.getState();
+    },
+
+    setAudioEnabled(enabled: boolean): void {
+      audioManager.setEnabled(enabled);
+    },
+
+    setAudioVolume(volume: number): void {
+      audioManager.setVolume(volume);
+    },
+
+    setAudioOptions(opts: TAudioOptions): void {
+      audioManager.setOptions(opts);
+      controller.setAudioManager(audioManager);
+    },
+
+    getAudioOptions(): TAudioOptions | null {
+      return audioManager.getOptions();
     },
 
     setCursorVisible(visible: boolean, cursor?: TCursorSelector): void {

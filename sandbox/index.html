@@ -48,6 +48,14 @@
               <input id="rate-slider" class="rate-slider" type="range" min="0.25" max="4" step="0.25" value="1" />
               <span id="rate-value" class="rate-value">1x</span>
             </div>
+            <div class="audio-row">
+              <button id="audio-mute-btn" class="transport-btn" title="Toggle audio">
+                <svg id="audio-icon-on" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+                <svg id="audio-icon-off" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>
+              </button>
+              <input id="volume-slider" class="rate-slider" type="range" min="0" max="1" step="0.05" value="1" />
+              <span id="volume-value" class="rate-value">100%</span>
+            </div>
           </div>
           <div class="preview-output">
             <div id="preview-dom" class="preview-pane preview-pane--dom"></div>

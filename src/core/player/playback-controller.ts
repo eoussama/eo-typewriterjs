@@ -1,3 +1,4 @@
+import type { AudioManagerHelper } from "../audio/audio-manager.helper";
 import type { TCommand } from "../compiler/compile.helper";
 import type { TTimelineEvent } from "../events/timeline-event.type";
 import type { IRenderer } from "../renderer/renderer.interface";
@@ -153,6 +154,7 @@ function findEventIndexAtTime(events: readonly TTimelineEvent[], time: number): 
  */
 export class PlaybackController {
   private readonly _renderer: IRenderer;
+  private _audioManager: AudioManagerHelper | null;
   private _initialState: TTypewriterState;
 
   private _commands: TCommand[] = [];
@@ -182,12 +184,14 @@ export class PlaybackController {
    *
    * @param renderer - The renderer to mount, render, and unmount
    * @param initialState - The typewriter state to start from (defaults to blank state)
+   * @param audioManager - Optional audio manager instance for typing/delete sounds
    */
-  constructor(renderer: IRenderer, initialState?: TTypewriterState) {
+  constructor(renderer: IRenderer, initialState?: TTypewriterState, audioManager?: AudioManagerHelper | null) {
     this._renderer = renderer;
     /* v8 ignore next */
     this._initialState = initialState ?? createInitialState();
     this._state = this._initialState;
+    this._audioManager = audioManager ?? null;
   }
 
   // ---------------------------------------------------------------------------
@@ -536,6 +540,18 @@ export class PlaybackController {
 
   /**
    * @description
+   * Set the audio manager instance used during playback.
+   * Changes take effect on the next play or replay.
+   * Pass `null` to disable audio.
+   *
+   * @param audioManager - The new audio manager, or null to disable audio
+   */
+  setAudioManager(audioManager: AudioManagerHelper | null): void {
+    this._audioManager = audioManager;
+  }
+
+  /**
+   * @description
    * Set the playback rate. Must be > 0.
    *
    * @param rate - Playback speed multiplier (e.g. 0.5 = half speed, 2 = double speed)
@@ -728,6 +744,7 @@ export class PlaybackController {
           signal: ac.signal,
           getRate: () => this._rate,
           getLiveState: () => this._state,
+          getAudioManager: () => this._audioManager,
         },
       ).then((result: TExecuteCommandsResult) => {
         // Only update status if this session is still the active one

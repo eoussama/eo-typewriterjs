@@ -1,3 +1,4 @@
+import type { AudioManagerHelper } from "../audio/audio-manager.helper";
 import type { TCallCommand } from "../commands/call-command.type";
 import type { TCallbackContext, TCallbackHook } from "../commands/callback-hook.type";
 import type { TDeleteCommand } from "../commands/delete-command.type";
@@ -54,6 +55,13 @@ export type TExecuteCommandsOptions = {
    * setCursorVisible, setCursorOptions) are reflected in subsequent commands.
    */
   readonly getLiveState?: () => TTypewriterState;
+
+  /**
+   * @description
+   * Optional audio manager instance.
+   * When provided, typing and delete sounds are played on each step.
+   */
+  readonly getAudioManager?: () => AudioManagerHelper | null;
 };
 
 /**
@@ -246,6 +254,8 @@ async function executeType(
       state = reduce(state, event);
     }
 
+    options.getAudioManager?.()?.playTyping(command.audio);
+
     renderer.render(state);
 
     if (perUnitAfter !== undefined) {
@@ -332,6 +342,8 @@ async function executeDelete(
 
       state = reduce(state, event);
     }
+
+    options.getAudioManager?.()?.playDelete(command.audio);
 
     renderer.render(state);
 

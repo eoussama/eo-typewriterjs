@@ -30,6 +30,11 @@ const elStepFwdBtn = $("#step-fwd-btn");
 const elStepBwdBtn = $("#step-bwd-btn");
 const elRateSlider = $<HTMLInputElement>("#rate-slider");
 const elRateValue = $("#rate-value");
+const elAudioMuteBtn = $("#audio-mute-btn");
+const elAudioIconOn = $("#audio-icon-on");
+const elAudioIconOff = $("#audio-icon-off");
+const elVolumeSlider = $<HTMLInputElement>("#volume-slider");
+const elVolumeValue = $("#volume-value");
 const elErrorPanel = $("#error-panel");
 const elErrorMsg = $("#error-msg");
 const elCopyBtn = $("#copy-btn");
@@ -52,6 +57,8 @@ let activeRendererKind: TRendererKind = ERendererKind.DOM;
 let activeTw: TTypewriter | null = null;
 let activeCategory: TSandboxCategory = "all";
 let rafId: number | null = null;
+let sandboxAudioEnabled = true;
+let sandboxAudioVolume = 1;
 
 /**
  * Monotonically incrementing token used to discard results from stale runCode calls.
@@ -104,6 +111,19 @@ function syncRateUI(): void {
 
   elRateSlider.value = String(rate);
   elRateValue.textContent = `${rate}×`;
+}
+
+/**
+ * @description
+ * Sync the audio mute button icon and volume display with current audio state
+ */
+function syncAudioUI(): void {
+  elAudioIconOn.style.display = sandboxAudioEnabled ? "" : "none";
+  elAudioIconOff.style.display = sandboxAudioEnabled ? "none" : "";
+  elAudioMuteBtn.classList.toggle("transport-btn--active", !sandboxAudioEnabled);
+  elVolumeSlider.value = String(sandboxAudioVolume);
+  elVolumeSlider.disabled = !sandboxAudioEnabled;
+  elVolumeValue.textContent = `${Math.round(sandboxAudioVolume * 100)}%`;
 }
 
 /**
@@ -286,6 +306,11 @@ async function runCode(): Promise<void> {
 
     pendingTw = tw;
     activeTw = tw;
+
+    // Apply current sandbox audio settings to the new typewriter
+    tw.setAudioEnabled(sandboxAudioEnabled);
+    tw.setAudioVolume(sandboxAudioVolume);
+
     elRunBtn.removeAttribute("disabled");
     syncTransportState();
     startTick();
@@ -695,6 +720,7 @@ function init(): void {
   // Initial renderer panel
   showRendererPanel(activeRendererKind);
   syncTransportState();
+  syncAudioUI();
 
   // Renderer selector — switch pane and re-run so the new renderer gets live output
   elRendererSelect.addEventListener("change", () => {
@@ -785,6 +811,20 @@ function init(): void {
 
     elRateValue.textContent = `${rate}×`;
     activeTw?.setRate(rate);
+  });
+
+  // Audio mute toggle
+  elAudioMuteBtn.addEventListener("click", () => {
+    sandboxAudioEnabled = !sandboxAudioEnabled;
+    activeTw?.setAudioEnabled(sandboxAudioEnabled);
+    syncAudioUI();
+  });
+
+  // Volume slider
+  elVolumeSlider.addEventListener("input", () => {
+    sandboxAudioVolume = Number(elVolumeSlider.value);
+    elVolumeValue.textContent = `${Math.round(sandboxAudioVolume * 100)}%`;
+    activeTw?.setAudioVolume(sandboxAudioVolume);
   });
 
   // Copy button

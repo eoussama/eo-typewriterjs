@@ -289,6 +289,15 @@ body {
   color: var(--color-text-dim);
 }
 
+/* Audio */
+
+.audio-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-shrink: 0;
+}
+
 .rate-slider {
   width: 90px;
   -webkit-appearance: none;
