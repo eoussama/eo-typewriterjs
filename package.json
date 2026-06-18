@@ -43,6 +43,7 @@
     "lint": "dx lint",
     "lint:fix": "dx lint --fix",
     "sandbox": "vite --config sandbox/vite.config.ts",
+    "sandbox:build": "vite build --config sandbox/vite.config.ts",
     "docs:api": "typedoc",
     "docs:dev": "vitepress dev docs",
     "docs:build": "pnpm docs:api && vitepress build docs",
