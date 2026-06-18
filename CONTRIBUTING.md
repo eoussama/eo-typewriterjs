@@ -21,7 +21,7 @@ Please read and follow our [Code of Conduct](CODE_OF_CONDUCT.md) before contribu
 1. Fork the repository on GitHub
 2. Clone your forked repository: `git clone https://github.com/eoussama/eo-typewriterjs.git`
 3. Navigate to the project directory: `cd eo-typewriterjs`
-4. Install dependencies: `npm install`
+4. Install dependencies: `pnpm install`
 5. Create a new branch for your feature: `git checkout -b feature/your-feature-name`
 
 ## How to Contribute
@@ -46,26 +46,28 @@ Please read and follow our [Code of Conduct](CODE_OF_CONDUCT.md) before contribu
 
 1. Ensure your code follows our [Coding Standards](#coding-standards)
 2. Update the README.md with details of changes if applicable
-3. Make sure all tests pass before submitting
+3. Make sure all tests pass before submitting: `pnpm test`, `pnpm coverage` and `pnpm e2e`
 4. Your pull request will be reviewed by maintainers
 5. Once approved, your pull request will be merged
 
 ## Coding Standards
 
+- Use TypeScript throughout the codebase
 - Use meaningful variable and function names
-- Write clear comments for complex logic
-- Follow JavaScript best practices
-- Maintain consistent indentation (2 spaces)
+- Write comments only for non-obvious logic
+- Follow the existing project code style and linting rules: `pnpm lint`
 - Write unit tests for new features
 
 ## Reporting Bugs
 
-When reporting bugs, please include:
+Please do **not** report security vulnerabilities through public issues. See [SECURITY.md](SECURITY.md) for the correct process.
+
+When reporting regular bugs, please include:
 
 - A clear description of the bug
 - Steps to reproduce the issue
 - Expected vs actual behavior
-- Browser and OS information
+- Browser and OS information if relevant
 - Any relevant code snippets or screenshots
 
 ## Suggesting Features

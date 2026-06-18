@@ -2,12 +2,15 @@
 
 ## Reporting a Vulnerability
 
-Vulnerabilities can be reported on the [Issues](https://github.com/eoussama/eo-typewriterjs/issues) tab.
+Please do **not** report security vulnerabilities through public GitHub Issues.
 
-Please follow these steps to report a security vulnerability:
+Instead, send a detailed report directly to [oussama.essamadi@gmail.com](mailto:oussama.essamadi@gmail.com).
 
-1. Go to the [Issues](https://github.com/eoussama/eo-typewriterjs/issues) tab.
+Include as much of the following information as possible:
 
-2. Click on the "New Issue" button.
+- A clear description of the vulnerability
+- Steps to reproduce the issue
+- Potential impact or affected versions
+- Any relevant code snippets or proof-of-concept
 
-3. Fill out the form with as much detail as possible, including a clear description of the vulnerability and any steps to reproduce it.
+All reports will be reviewed and responded to promptly.
