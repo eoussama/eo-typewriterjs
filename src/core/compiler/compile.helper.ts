@@ -1,18 +1,22 @@
 import type { TCallCommand } from "../commands/call-command.type";
+import type { TClearSelectionCommand } from "../commands/clear-selection-command.type";
 import type { TDeleteCommand } from "../commands/delete-command.type";
 import type { TMarkCommand } from "../commands/mark-command.type";
 import type { TMoveCursorCommand } from "../commands/move-cursor-command.type";
 import type { TSelectCommand } from "../commands/select-command.type";
 import type { TTypeCommand } from "../commands/type-command.type";
+import type { TUnmarkCommand } from "../commands/unmark-command.type";
 import type { TWaitCommand } from "../commands/wait-command.type";
 import type { TTimelineEvent } from "../events/timeline-event.type";
 
 import { ECommandKind } from "../commands/command-kind.enum";
+import { compileClearSelection } from "./compile-clear-selection.helper";
 import { compileDelete } from "./compile-delete.helper";
 import { compileMark } from "./compile-mark.helper";
 import { compileMoveCursor } from "./compile-move-cursor.helper";
 import { compileSelect } from "./compile-select.helper";
 import { compileType } from "./compile-type.helper";
+import { compileUnmark } from "./compile-unmark.helper";
 
 
 
@@ -20,7 +24,7 @@ import { compileType } from "./compile-type.helper";
  * @description
  * A union of all supported command types.
  */
-export type TCommand = TTypeCommand | TWaitCommand | TDeleteCommand | TMoveCursorCommand | TSelectCommand | TMarkCommand | TCallCommand;
+export type TCommand = TTypeCommand | TWaitCommand | TDeleteCommand | TMoveCursorCommand | TSelectCommand | TClearSelectionCommand | TMarkCommand | TUnmarkCommand | TCallCommand;
 
 /**
  * @description
@@ -74,11 +78,27 @@ export function compile(commands: TCommand[]): TTimelineEvent[] {
         break;
       }
 
+      case ECommandKind.CLEAR_SELECTION: {
+        const result = compileClearSelection(command as TClearSelectionCommand, cursor);
+
+        events.push(...result.events);
+        // endTime unchanged, clearSelection is instant
+        break;
+      }
+
       case ECommandKind.MARK: {
         const result = compileMark(command as TMarkCommand, cursor);
 
         events.push(...result.events);
         // endTime unchanged, mark is instant
+        break;
+      }
+
+      case ECommandKind.UNMARK: {
+        const result = compileUnmark(command as TUnmarkCommand, cursor);
+
+        events.push(...result.events);
+        // endTime unchanged, unmark is instant
         break;
       }
 

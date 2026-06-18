@@ -7,7 +7,9 @@ export const EEventKind = {
   DELETE: "delete",
   MOVE_CURSOR: "moveCursor",
   SELECT: "select",
+  CLEAR_SELECTION: "clearSelection",
   MARK: "mark",
+  UNMARK: "unmark",
 } as const;
 
 /**

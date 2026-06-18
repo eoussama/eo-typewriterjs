@@ -520,6 +520,18 @@ const HELP_SECTIONS: readonly THelpSection[] = [
     ],
   },
   {
+    id: "clearselection",
+    label: "clearSelection()",
+    title: ".clearSelection(opts?)",
+    desc: "Remove the active text selection from one or more cursors. If the cursor has no selection the state is left unchanged. Instant command — does not advance the clock.",
+    rows: [
+      ["cursor", "\"main\" or an array of cursor IDs (default: \"main\")"],
+      ["before", "Hook fired before the selection is cleared"],
+      ["after", "Hook fired after the selection is cleared"],
+      ["audio", "Per-command audio override"],
+    ],
+  },
+  {
     id: "mark",
     label: "mark()",
     title: ".mark(style, range, opts?)",
@@ -531,6 +543,20 @@ const HELP_SECTIONS: readonly THelpSection[] = [
       ["before", "Hook fired before the mark is applied"],
       ["after", "Hook fired after the mark is applied"],
       ["audio", "Per-command audio override"],
+    ],
+  },
+  {
+    id: "unmark",
+    label: "unmark()",
+    title: ".unmark(range, opts?)",
+    desc: "Remove style marks that overlap a range. Marks partially overlapping the range are clipped rather than fully removed. range is { from, to } or \"selection\". Instant command — does not advance the clock.",
+    rows: [
+      ["range", "{ from, to } — absolute indices, or \"selection\" to unmark the cursor's active selection"],
+      ["cursor", "Whose selection to use when range is \"selection\" (default: \"main\")"],
+      ["before", "Hook fired before the marks are removed"],
+      ["after", "Hook fired after the marks are removed"],
+      ["audio", "Per-command audio override"],
+      ["— clipping behavior", "Outside range: preserved. Inside range: removed. Partial overlap: clipped. Spanning range: split into two fragments."],
     ],
   },
   {

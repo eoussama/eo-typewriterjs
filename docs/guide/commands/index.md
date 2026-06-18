@@ -11,7 +11,9 @@ Commands are the building blocks of a typewriter animation. They are scheduled o
 | [Delete](/guide/commands/delete) | `.delete(count, options?)` | ✅ yes | ✅ yes — removes text |
 | [Move Cursor](/guide/commands/move-cursor) | `.moveCursor(index, options?)` | ❌ instant | ❌ no |
 | [Select](/guide/commands/select) | `.select(count, options?)` | ❌ instant | ❌ no |
+| [Clear Selection](/guide/commands/clear-selection) | `.clearSelection(options?)` | ❌ instant | ❌ no |
 | [Mark](/guide/commands/mark) | `.mark(style, range, options?)` | ❌ instant | ✅ yes — applies style |
+| [Unmark](/guide/commands/unmark) | `.unmark(range, options?)` | ❌ instant | ✅ yes — removes style |
 | [Call](/guide/commands/call) | `.call(fn, options?)` | ❌ instant | ❌ no |
 
 ## Shared options
@@ -86,5 +88,7 @@ The `callback` function receives a `TCallbackContext`:
 - [delete](/guide/commands/delete)
 - [moveCursor](/guide/commands/move-cursor)
 - [select](/guide/commands/select)
+- [clearSelection](/guide/commands/clear-selection)
 - [mark](/guide/commands/mark)
+- [unmark](/guide/commands/unmark)
 - [call](/guide/commands/call)

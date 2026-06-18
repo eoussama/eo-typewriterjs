@@ -62,4 +62,55 @@ export const STYLING_SCENARIOS: readonly TScenario[] = [
       await tw.play();
     },
   },
+  {
+    id: "clear-selection",
+    async run({ el }) {
+      const tw = createTypewriter({ renderer: domRenderer(el) });
+
+      tw.timeline
+        .type("Hello World", { by: "char", interval: 1 })
+        .moveCursor(6)
+        .select(5)
+        .clearSelection();
+      await tw.play();
+    },
+  },
+  {
+    id: "unmark-range",
+    async run({ el }) {
+      const tw = createTypewriter({ renderer: domRenderer(el) });
+
+      tw.timeline
+        .type("Hello World", { by: "char", interval: 1 })
+        .mark("tw-highlight", { from: 0, to: 11 })
+        .unmark({ from: 6, to: 11 });
+      await tw.play();
+    },
+  },
+  {
+    id: "unmark-selection",
+    async run({ el }) {
+      const tw = createTypewriter({ renderer: domRenderer(el) });
+
+      tw.timeline
+        .type("Hello World", { by: "char", interval: 1 })
+        .mark("tw-highlight", { from: 0, to: 11 })
+        .moveCursor(6)
+        .select(5)
+        .unmark("selection");
+      await tw.play();
+    },
+  },
+  {
+    id: "unmark-split",
+    async run({ el }) {
+      const tw = createTypewriter({ renderer: domRenderer(el) });
+
+      tw.timeline
+        .type("Hello World", { by: "char", interval: 1 })
+        .mark("tw-highlight", { from: 0, to: 11 })
+        .unmark({ from: 3, to: 8 });
+      await tw.play();
+    },
+  },
 ];

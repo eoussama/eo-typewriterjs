@@ -1,11 +1,14 @@
 import type { TDeleteEvent } from "../core/events/delete-event.type";
 import type { TInsertEvent } from "../core/events/insert-event.type";
 import type { TMarkEvent } from "../core/events/mark-event.type";
+import type { TUnmarkEvent } from "../core/events/unmark-event.type";
 import { describe, expect, it } from "vitest";
 import { compile } from "../core/compiler/compile.helper";
 import { play } from "../core/player/player.helper";
 import { applyMark } from "../core/reducer/apply-mark.helper";
+import { clearSelection as clearSelectionReducer } from "../core/reducer/clear-selection.helper";
 import { reduce } from "../core/reducer/reduce.helper";
+import { removeMarks } from "../core/reducer/remove-marks.helper";
 import { createInitialState, getSelection, withSelection, withSelectionCleared } from "../core/state/index";
 import { mergeStyles, resolveStyleRef, segmentRichText } from "../core/state/segment-rich-text.helper";
 import { chunkSteps } from "../core/stepping/chunk-steps.helper";
@@ -2038,5 +2041,434 @@ describe("deleteTextAtCursor, cursor and selection shifting branches", () => {
     await tw.play();
 
     expect(renderer.toString()).toBe("abc");
+  });
+});
+
+
+describe("compile (clearSelection)", () => {
+  it("compiles a clearSelection command into one event per cursor", () => {
+    const events = compile([
+      { id: "cs1", kind: "clearSelection" as const, cursor: "main" },
+    ]);
+
+    expect(events).toHaveLength(1);
+    expect(events[0]?.kind).toBe("clearSelection");
+    expect(events[0]?.cursorId).toBe("main");
+  });
+
+  it("fans out one event per cursor for multi-cursor clearSelection", () => {
+    const events = compile([
+      { id: "cs2", kind: "clearSelection" as const, cursor: ["a", "b"] },
+    ]);
+
+    expect(events).toHaveLength(2);
+    expect(events.every(e => e.kind === "clearSelection")).toBe(true);
+    expect(events.map(e => e.cursorId).sort()).toEqual(["a", "b"]);
+  });
+
+  it("does not advance the clock", () => {
+    const events = compile([
+      { id: "cs3a", kind: "type" as const, cursor: "main", text: "Hi", by: "char" as const, interval: 100 },
+      { id: "cs3b", kind: "clearSelection" as const, cursor: "main" },
+      { id: "cs3c", kind: "type" as const, cursor: "main", text: "AB", by: "char" as const, interval: 50 },
+    ]);
+
+    const abEvents = events.filter(e => (e as TInsertEvent).text === "A" || (e as TInsertEvent).text === "B");
+
+    expect(events.filter(e => e.kind === "clearSelection")[0]?.time).toBe(200);
+    expect(abEvents[0]?.time).toBe(200);
+  });
+});
+
+
+describe("compile (unmark)", () => {
+  it("compiles a fixed-range unmark into exactly one event", () => {
+    const events = compile([
+      { id: "um1", kind: "unmark" as const, cursor: "main", range: { from: 0, to: 5 } },
+    ]);
+
+    expect(events).toHaveLength(1);
+    expect(events[0]?.kind).toBe("unmark");
+  });
+
+  it("fixed-range unmark event carries correct from and to values", () => {
+    const events = compile([
+      { id: "um2", kind: "unmark" as const, cursor: "main", range: { from: 2, to: 9 } },
+    ]);
+
+    const evt = events[0] as TUnmarkEvent;
+
+    expect(evt.from).toBe(2);
+    expect(evt.to).toBe(9);
+  });
+
+  it("does not advance the clock", () => {
+    const events = compile([
+      { id: "um3a", kind: "type" as const, cursor: "main", text: "Hi", by: "char" as const, interval: 100 },
+      { id: "um3b", kind: "unmark" as const, cursor: "main", range: { from: 0, to: 2 } },
+      { id: "um3c", kind: "type" as const, cursor: "main", text: "X", by: "char" as const, interval: 50 },
+    ]);
+
+    expect(events.filter(e => e.kind === "unmark")[0]?.time).toBe(200);
+    expect(events.filter(e => (e as TInsertEvent).text === "X")[0]?.time).toBe(200);
+  });
+
+  it("selection-range unmark emits one event per cursor with sentinel from/to of -1", () => {
+    const events = compile([
+      { id: "um4", kind: "unmark" as const, cursor: ["a", "b"], range: "selection" as const },
+    ]);
+
+    const unmarkEvents = events.filter(e => e.kind === "unmark") as TUnmarkEvent[];
+
+    expect(unmarkEvents).toHaveLength(2);
+    unmarkEvents.forEach((e) => {
+      expect(e.from).toBe(-1);
+      expect(e.to).toBe(-1);
+    });
+    expect(unmarkEvents.map(e => e.cursorId).sort()).toEqual(["a", "b"]);
+  });
+});
+
+
+describe("reduce (clearSelection)", () => {
+  it("clearSelection removes an active selection for the targeted cursor", () => {
+    let state = createInitialState();
+
+    state = withSelection(state, "main", 2, 7);
+    expect(state.selections.main).toStrictEqual({ from: 2, to: 7 });
+
+    const event = { id: "e1", kind: "clearSelection" as const, time: 0, cursorId: "main", sourceCommandId: "c1" };
+    const next = clearSelectionReducer(state, event);
+
+    expect(next.selections.main).toBeUndefined();
+  });
+
+  it("clearSelection on a cursor with no selection returns state unchanged", () => {
+    const state = createInitialState();
+    const event = { id: "e1", kind: "clearSelection" as const, time: 0, cursorId: "main", sourceCommandId: "c1" };
+    const next = clearSelectionReducer(state, event);
+
+    expect(next).toBe(state);
+  });
+
+  it("reduce dispatches clearSelection event correctly", () => {
+    let state = createInitialState();
+
+    state = withSelection(state, "main", 1, 5);
+
+    const event = { id: "e1", kind: "clearSelection" as const, time: 0, cursorId: "main", sourceCommandId: "c1" };
+    const next = reduce(state, event);
+
+    expect(next.selections.main).toBeUndefined();
+  });
+});
+
+
+describe("reduce (removeMarks / unmark)", () => {
+  it("removes a mark entirely inside the unmark range", () => {
+    let state = createInitialState();
+
+    state = {
+      ...state,
+      document: {
+        ...state.document,
+        text: "Hello world",
+        marks: [{ from: 2, to: 5, style: "tw-a" }],
+      },
+    };
+
+    const event: TUnmarkEvent = { id: "e1", kind: "unmark" as const, time: 0, from: 0, to: 11, sourceCommandId: "c1" };
+    const next = removeMarks(state, event);
+
+    expect(next.document.marks).toHaveLength(0);
+  });
+
+  it("preserves a mark entirely outside the unmark range", () => {
+    let state = createInitialState();
+
+    state = {
+      ...state,
+      document: {
+        ...state.document,
+        text: "Hello world",
+        marks: [{ from: 0, to: 3, style: "tw-a" }],
+      },
+    };
+
+    const event: TUnmarkEvent = { id: "e1", kind: "unmark" as const, time: 0, from: 6, to: 11, sourceCommandId: "c1" };
+    const next = removeMarks(state, event);
+
+    expect(next.document.marks).toHaveLength(1);
+    expect(next.document.marks[0]).toStrictEqual({ from: 0, to: 3, style: "tw-a" });
+  });
+
+  it("clips a mark overlapping from the left", () => {
+    let state = createInitialState();
+
+    state = {
+      ...state,
+      document: {
+        ...state.document,
+        text: "Hello world",
+        marks: [{ from: 0, to: 7, style: "tw-a" }],
+      },
+    };
+
+    const event: TUnmarkEvent = { id: "e1", kind: "unmark" as const, time: 0, from: 5, to: 11, sourceCommandId: "c1" };
+    const next = removeMarks(state, event);
+
+    expect(next.document.marks).toHaveLength(1);
+    expect(next.document.marks[0]).toStrictEqual({ from: 0, to: 5, style: "tw-a" });
+  });
+
+  it("clips a mark overlapping from the right", () => {
+    let state = createInitialState();
+
+    state = {
+      ...state,
+      document: {
+        ...state.document,
+        text: "Hello world",
+        marks: [{ from: 4, to: 11, style: "tw-a" }],
+      },
+    };
+
+    const event: TUnmarkEvent = { id: "e1", kind: "unmark" as const, time: 0, from: 0, to: 6, sourceCommandId: "c1" };
+    const next = removeMarks(state, event);
+
+    expect(next.document.marks).toHaveLength(1);
+    expect(next.document.marks[0]).toStrictEqual({ from: 6, to: 11, style: "tw-a" });
+  });
+
+  it("splits a mark that spans the entire unmark range into two fragments", () => {
+    let state = createInitialState();
+
+    state = {
+      ...state,
+      document: {
+        ...state.document,
+        text: "Hello world",
+        marks: [{ from: 0, to: 11, style: "tw-a" }],
+      },
+    };
+
+    const event: TUnmarkEvent = { id: "e1", kind: "unmark" as const, time: 0, from: 3, to: 8, sourceCommandId: "c1" };
+    const next = removeMarks(state, event);
+
+    expect(next.document.marks).toHaveLength(2);
+    expect(next.document.marks[0]).toStrictEqual({ from: 0, to: 3, style: "tw-a" });
+    expect(next.document.marks[1]).toStrictEqual({ from: 8, to: 11, style: "tw-a" });
+  });
+
+  it("selection-based unmark resolves range from cursor selection and clears selection", () => {
+    let state = createInitialState();
+
+    state = withSelection(state, "main", 6, 11);
+    state = {
+      ...state,
+      document: {
+        ...state.document,
+        text: "Hello world",
+        marks: [{ from: 0, to: 11, style: "tw-a" }],
+      },
+    };
+
+    const event: TUnmarkEvent = { id: "e1", kind: "unmark" as const, time: 0, from: -1, to: -1, cursorId: "main", sourceCommandId: "c1" };
+    const next = removeMarks(state, event);
+
+    expect(next.selections.main).toBeUndefined();
+    expect(next.document.marks).toHaveLength(1);
+    expect(next.document.marks[0]).toStrictEqual({ from: 0, to: 6, style: "tw-a" });
+  });
+
+  it("selection-based unmark with no active selection returns state unchanged", () => {
+    const state = createInitialState();
+    const event: TUnmarkEvent = { id: "e1", kind: "unmark" as const, time: 0, from: -1, to: -1, cursorId: "main", sourceCommandId: "c1" };
+    const next = removeMarks(state, event);
+
+    expect(next).toBe(state);
+  });
+
+  it("selection-based unmark with missing cursorId returns state unchanged", () => {
+    const state = createInitialState();
+    const event = { id: "e1", kind: "unmark" as const, time: 0, from: -1, to: -1, cursorId: undefined as unknown as string, sourceCommandId: "c1" };
+    const next = removeMarks(state, event as TUnmarkEvent);
+
+    expect(next).toBe(state);
+  });
+
+  it("unmark with from >= to is a no-op", () => {
+    let state = createInitialState();
+
+    state = {
+      ...state,
+      document: {
+        ...state.document,
+        text: "Hello",
+        marks: [{ from: 0, to: 5, style: "tw-a" }],
+      },
+    };
+
+    const event: TUnmarkEvent = { id: "e1", kind: "unmark" as const, time: 0, from: 3, to: 3, sourceCommandId: "c1" };
+    const next = removeMarks(state, event);
+
+    expect(next.document.marks).toHaveLength(1);
+  });
+
+  it("reduce dispatches unmark event correctly", () => {
+    let state = createInitialState();
+
+    state = {
+      ...state,
+      document: {
+        ...state.document,
+        text: "Hello",
+        marks: [{ from: 0, to: 5, style: "tw-a" }],
+      },
+    };
+
+    const event: TUnmarkEvent = { id: "e1", kind: "unmark" as const, time: 0, from: 0, to: 5, sourceCommandId: "c1" };
+    const next = reduce(state, event);
+
+    expect(next.document.marks).toHaveLength(0);
+  });
+});
+
+
+describe("integration (clearSelection)", () => {
+  it("clearSelection removes an active selection without moving the cursor", async () => {
+    const renderer = stringRenderer();
+    const tw = createTypewriter({ renderer });
+
+    tw.timeline
+      .type("Hello World", { by: "char", interval: 1 })
+      .moveCursor(6)
+      .select(5)
+      .clearSelection();
+    await tw.play();
+
+    const live = tw.getLiveState();
+
+    expect(live.selections.main).toBeUndefined();
+    expect(live.cursors.main?.index).toBe(6);
+    expect(renderer.toString()).toBe("Hello World");
+  });
+
+  it("clearSelection on a cursor with no selection is a no-op", async () => {
+    const renderer = stringRenderer();
+    const tw = createTypewriter({ renderer });
+
+    tw.timeline
+      .type("Hello", { by: "char", interval: 1 })
+      .clearSelection();
+    await tw.play();
+
+    const live = tw.getLiveState();
+
+    expect(live.selections.main).toBeUndefined();
+    expect(renderer.toString()).toBe("Hello");
+  });
+
+  it("clearSelection for multi-cursor removes selections from all targeted cursors", async () => {
+    const renderer = stringRenderer();
+    const tw = createTypewriter({ renderer });
+
+    tw.timeline
+      .type("ABCDE", { by: "char", interval: 1 })
+      .select(2, { cursor: "a" })
+      .select(3, { cursor: "b" })
+      .clearSelection({ cursor: ["a", "b"] });
+    await tw.play();
+
+    const live = tw.getLiveState();
+
+    expect(live.selections.a).toBeUndefined();
+    expect(live.selections.b).toBeUndefined();
+  });
+});
+
+
+describe("integration (unmark)", () => {
+  it("unmark by absolute range removes marks from the document", async () => {
+    const renderer = stringRenderer();
+    const tw = createTypewriter({ renderer });
+
+    tw.timeline
+      .type("Hello World", { by: "char", interval: 1 })
+      .mark("tw-a", { from: 0, to: 11 })
+      .unmark({ from: 6, to: 11 });
+    await tw.play();
+
+    const live = tw.getLiveState();
+
+    expect(renderer.toString()).toBe("Hello World");
+    expect(live.document.marks).toHaveLength(1);
+    expect(live.document.marks[0]).toStrictEqual({ from: 0, to: 6, style: "tw-a" });
+  });
+
+  it("unmark by selection removes marks in the selection range and clears selection", async () => {
+    const renderer = stringRenderer();
+    const tw = createTypewriter({ renderer });
+
+    tw.timeline
+      .type("Hello World", { by: "char", interval: 1 })
+      .mark("tw-a", { from: 0, to: 11 })
+      .moveCursor(6)
+      .select(5)
+      .unmark("selection");
+    await tw.play();
+
+    const live = tw.getLiveState();
+
+    expect(live.selections.main).toBeUndefined();
+    expect(live.document.marks).toHaveLength(1);
+    expect(live.document.marks[0]).toStrictEqual({ from: 0, to: 6, style: "tw-a" });
+  });
+
+  it("unmark splitting a spanning mark produces two fragments", async () => {
+    const renderer = stringRenderer();
+    const tw = createTypewriter({ renderer });
+
+    tw.timeline
+      .type("Hello World", { by: "char", interval: 1 })
+      .mark("tw-a", { from: 0, to: 11 })
+      .unmark({ from: 3, to: 8 });
+    await tw.play();
+
+    const live = tw.getLiveState();
+
+    expect(live.document.marks).toHaveLength(2);
+    expect(live.document.marks[0]).toStrictEqual({ from: 0, to: 3, style: "tw-a" });
+    expect(live.document.marks[1]).toStrictEqual({ from: 8, to: 11, style: "tw-a" });
+  });
+
+  it("unmark on document with no marks is a no-op", async () => {
+    const renderer = stringRenderer();
+    const tw = createTypewriter({ renderer });
+
+    tw.timeline
+      .type("Hello", { by: "char", interval: 1 })
+      .unmark({ from: 0, to: 5 });
+    await tw.play();
+
+    const live = tw.getLiveState();
+
+    expect(live.document.marks).toHaveLength(0);
+    expect(renderer.toString()).toBe("Hello");
+  });
+
+  it("unmark by selection with no active selection is a no-op", async () => {
+    const renderer = stringRenderer();
+    const tw = createTypewriter({ renderer });
+
+    tw.timeline
+      .type("Hello", { by: "char", interval: 1 })
+      .mark("tw-a", { from: 0, to: 5 })
+      .unmark("selection");
+    await tw.play();
+
+    const live = tw.getLiveState();
+
+    expect(live.document.marks).toHaveLength(1);
   });
 });

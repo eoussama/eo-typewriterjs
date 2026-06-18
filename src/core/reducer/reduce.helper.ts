@@ -1,16 +1,20 @@
+import type { TClearSelectionEvent } from "../events/clear-selection-event.type";
 import type { TDeleteEvent } from "../events/delete-event.type";
 import type { TInsertEvent } from "../events/insert-event.type";
 import type { TMarkEvent } from "../events/mark-event.type";
 import type { TMoveCursorEvent } from "../events/move-cursor-event.type";
 import type { TSelectEvent } from "../events/select-event.type";
 import type { TTimelineEvent } from "../events/timeline-event.type";
+import type { TUnmarkEvent } from "../events/unmark-event.type";
 import type { TTypewriterState } from "../state/typewriter-state.type";
 
 import { EEventKind } from "../events/event-kind.enum";
 import { applyMark } from "./apply-mark.helper";
+import { clearSelection } from "./clear-selection.helper";
 import { deleteTextAtCursor } from "./delete-text-at-cursor.helper";
 import { insertTextAtCursor } from "./insert.helper";
 import { moveCursor } from "./move-cursor.helper";
+import { removeMarks } from "./remove-marks.helper";
 import { selectText } from "./select-text.helper";
 
 
@@ -38,8 +42,14 @@ export function reduce(state: TTypewriterState, event: TTimelineEvent): TTypewri
     case EEventKind.SELECT:
       return selectText(state, event as TSelectEvent);
 
+    case EEventKind.CLEAR_SELECTION:
+      return clearSelection(state, event as TClearSelectionEvent);
+
     case EEventKind.MARK:
       return applyMark(state, event as TMarkEvent);
+
+    case EEventKind.UNMARK:
+      return removeMarks(state, event as TUnmarkEvent);
 
     default:
       return state;

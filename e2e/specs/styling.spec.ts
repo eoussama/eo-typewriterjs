@@ -68,4 +68,55 @@ test.describe("styling", () => {
 
     expect(await getOutputText(page)).toBe("Styled");
   });
+
+  test("clearSelection removes the selection highlight without moving the cursor", async ({ page }) => {
+    await gotoScenario(page, "clear-selection");
+
+    await expect(
+      getOutputLocator(page).locator(".typewriter-selection"),
+    ).toHaveCount(0);
+
+    expect(await getOutputText(page)).toBe("Hello World");
+  });
+
+  test("unmark by range removes the styled span from the unmarked portion", async ({ page }) => {
+    await gotoScenario(page, "unmark-range");
+
+    const highlight = getOutputLocator(page).locator("span.tw-highlight");
+
+    await expect(highlight).toBeVisible();
+
+    const markedText = await highlight.textContent();
+
+    expect(markedText).toBe("Hello ");
+  });
+
+  test("unmark by selection removes style from the selected range and clears selection", async ({ page }) => {
+    await gotoScenario(page, "unmark-selection");
+
+    await expect(
+      getOutputLocator(page).locator(".typewriter-selection"),
+    ).toHaveCount(0);
+
+    const highlight = getOutputLocator(page).locator("span.tw-highlight");
+
+    await expect(highlight).toBeVisible();
+
+    const markedText = await highlight.textContent();
+
+    expect(markedText).toBe("Hello ");
+  });
+
+  test("unmark splitting a spanning mark produces two styled fragments", async ({ page }) => {
+    await gotoScenario(page, "unmark-split");
+
+    const highlights = getOutputLocator(page).locator("span.tw-highlight");
+
+    expect(await highlights.count()).toBe(2);
+
+    const texts = await highlights.allTextContents();
+
+    expect(texts[0]).toBe("Hel");
+    expect(texts[1]).toBe("rld");
+  });
 });

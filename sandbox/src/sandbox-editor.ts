@@ -103,7 +103,9 @@ const TIMELINE_METHODS: Completion[] = [
   snip("wait", "wait(${1:500})", "method", "(ms, opts?) => TimelineBuilder", "Pause without changing the document."),
   snip("moveCursor", "moveCursor(${1:0})", "method", "(index, opts?) => TimelineBuilder", "Move cursor to an absolute index."),
   snip("select", "select(${1:5})", "method", "(delta, opts?) => TimelineBuilder", "Extend selection. Negative = backward."),
+  snip("clearSelection", "clearSelection()", "method", "(opts?) => TimelineBuilder", "Remove the active selection from the cursor. Instant — no clock advance."),
   snip("mark", "mark(\"${1:tw-accent}\", { from: ${2:0}, to: ${3:5} })", "method", "(cls, range, opts?) => TimelineBuilder", "Apply a CSS class to a text range."),
+  snip("unmark", "unmark({ from: ${1:0}, to: ${2:5} })", "method", "(range, opts?) => TimelineBuilder", "Remove marks overlapping the given range. Partial overlaps are clipped."),
   snip("call", "call(async ({ signal }) => {\n  ${1:// your code here}\n})", "method", "(fn, opts?) => TimelineBuilder", "Schedule an inline async callback."),
   snip("build", "build()", "method", "() => TTimeline", "Finalise and return the compiled timeline."),
 ];
@@ -239,7 +241,9 @@ const COMMAND_KIND_MEMBERS: Completion[] = [
   { label: "WAIT", type: "constant", detail: "\"wait\"" },
   { label: "MOVE_CURSOR", type: "constant", detail: "\"moveCursor\"" },
   { label: "SELECT", type: "constant", detail: "\"select\"" },
+  { label: "CLEAR_SELECTION", type: "constant", detail: "\"clearSelection\"" },
   { label: "MARK", type: "constant", detail: "\"mark\"" },
+  { label: "UNMARK", type: "constant", detail: "\"unmark\"" },
   { label: "CALL", type: "constant", detail: "\"call\"" },
 ];
 

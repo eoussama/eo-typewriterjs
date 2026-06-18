@@ -1,11 +1,13 @@
 import type { AudioManagerHelper } from "../audio/audio-manager.helper";
 import type { TCallCommand } from "../commands/call-command.type";
 import type { TCallbackContext, TCallbackHook } from "../commands/callback-hook.type";
+import type { TClearSelectionCommand } from "../commands/clear-selection-command.type";
 import type { TDeleteCommand } from "../commands/delete-command.type";
 import type { TMarkCommand } from "../commands/mark-command.type";
 import type { TMoveCursorCommand } from "../commands/move-cursor-command.type";
 import type { TSelectCommand } from "../commands/select-command.type";
 import type { TAdvanceModeInput, TTypeCommand } from "../commands/type-command.type";
+import type { TUnmarkCommand } from "../commands/unmark-command.type";
 import type { TWaitCommand } from "../commands/wait-command.type";
 import type { TCommand } from "../compiler/compile.helper";
 import type { TDeleteEvent } from "../events/delete-event.type";
@@ -15,9 +17,11 @@ import type { TTypewriterState } from "../state/typewriter-state.type";
 
 import { ECommandKind } from "../commands/command-kind.enum";
 import { normalizeCursors } from "../commands/normalize-cursors.helper";
+import { compileClearSelection } from "../compiler/compile-clear-selection.helper";
 import { compileMark } from "../compiler/compile-mark.helper";
 import { compileMoveCursor } from "../compiler/compile-move-cursor.helper";
 import { compileSelect } from "../compiler/compile-select.helper";
+import { compileUnmark } from "../compiler/compile-unmark.helper";
 import { EEventKind } from "../events/event-kind.enum";
 import { reduce } from "../reducer/reduce.helper";
 import { chunkSteps } from "../stepping/chunk-steps.helper";
@@ -473,6 +477,44 @@ async function executeSelect(
 
 /**
  * @description
+ * Execute a clearSelection command (instant), invoking hooks around it.
+ *
+ * @param command - The clearSelection command to execute
+ * @param state - The state before this command
+ * @param renderer - The renderer to update
+ * @param options - Executor control options
+ * @returns The state after the selection is cleared
+ */
+async function executeClearSelection(
+  command: TClearSelectionCommand,
+  state: TTypewriterState,
+  renderer: IRenderer,
+  options: TExecuteCommandsOptions,
+): Promise<TTypewriterState> {
+  await invokeHook(command.before, makeContext(state, 0, 1, null, options.signal));
+
+  if (options.signal.aborted) {
+    return state;
+  }
+
+  const { events } = compileClearSelection(command, 0);
+
+  for (const event of events) {
+    state = reduce(state, event);
+  }
+
+  options.getAudioManager?.()?.playTyping(command.audio);
+  renderer.render(state);
+
+  if (!options.signal.aborted) {
+    await invokeHook(command.after, makeContext(state, 0, 1, null, options.signal));
+  }
+
+  return state;
+}
+
+/**
+ * @description
  * Execute a mark command (instant), invoking hooks around it.
  *
  * @param command - The mark command to execute
@@ -494,6 +536,44 @@ async function executeMark(
   }
 
   const { events } = compileMark(command, 0);
+
+  for (const event of events) {
+    state = reduce(state, event);
+  }
+
+  options.getAudioManager?.()?.playTyping(command.audio);
+  renderer.render(state);
+
+  if (!options.signal.aborted) {
+    await invokeHook(command.after, makeContext(state, 0, 1, null, options.signal));
+  }
+
+  return state;
+}
+
+/**
+ * @description
+ * Execute an unmark command (instant), invoking hooks around it.
+ *
+ * @param command - The unmark command to execute
+ * @param state - The state before this command
+ * @param renderer - The renderer to update
+ * @param options - Executor control options
+ * @returns The state after marks are removed or clipped
+ */
+async function executeUnmark(
+  command: TUnmarkCommand,
+  state: TTypewriterState,
+  renderer: IRenderer,
+  options: TExecuteCommandsOptions,
+): Promise<TTypewriterState> {
+  await invokeHook(command.before, makeContext(state, 0, 1, null, options.signal));
+
+  if (options.signal.aborted) {
+    return state;
+  }
+
+  const { events } = compileUnmark(command, 0);
 
   for (const event of events) {
     state = reduce(state, event);
@@ -603,8 +683,16 @@ export async function executeCommands(
           state = await executeSelect(command as TSelectCommand, state, renderer, options);
           break;
 
+        case ECommandKind.CLEAR_SELECTION:
+          state = await executeClearSelection(command as TClearSelectionCommand, state, renderer, options);
+          break;
+
         case ECommandKind.MARK:
           state = await executeMark(command as TMarkCommand, state, renderer, options);
+          break;
+
+        case ECommandKind.UNMARK:
+          state = await executeUnmark(command as TUnmarkCommand, state, renderer, options);
           break;
 
         case ECommandKind.CALL:

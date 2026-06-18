@@ -789,6 +789,116 @@ tw.timeline
 await tw.play();`,
   },
 
+  {
+    id: "clear-selection",
+    title: "Clear Selection",
+    description: "Create a selection, keep it visible for a moment, then dismiss it with clearSelection() without moving the cursor.",
+    category: "styling",
+    code: `const tw = createTypewriter({ renderer });
+
+// select() creates the selection; clearSelection() removes it.
+// The cursor stays at index 6 — only the highlight disappears.
+tw.timeline
+  .type("Hello World", { by: "char", interval: 70 })
+  .wait(400)
+  .moveCursor(6)
+  .select(5)
+  .wait(800)
+  .clearSelection()
+  .wait(600);
+
+await tw.play();`,
+  },
+
+  {
+    id: "unmark-range",
+    title: "Unmark by Range",
+    description: "Mark the full text, then unmark a specific range — the unmarked region loses its style while the rest keeps it.",
+    category: "styling",
+    code: `const tw = createTypewriter({ renderer });
+
+// Mark everything, then unmark "World" (indices 6-11).
+// Marks that partially overlap are clipped — "Hello " keeps its style.
+tw.timeline
+  .type("Hello World", { by: "char", interval: 70 })
+  .wait(400)
+  .mark("tw-highlight", { from: 0, to: 11 })
+  .wait(800)
+  .unmark({ from: 6, to: 11 })
+  .wait(600);
+
+await tw.play();`,
+  },
+
+  {
+    id: "unmark-selection",
+    title: "Unmark by Selection",
+    description: "Select a range, then pass \"selection\" to unmark() to remove marks in that region using the cursor selection as the target.",
+    category: "styling",
+    code: `const tw = createTypewriter({ renderer });
+
+// "selection" resolves to the cursor's active selection at play time.
+// The selection is also cleared after the unmark fires.
+tw.timeline
+  .type("Hello World", { by: "char", interval: 70 })
+  .wait(400)
+  .mark("tw-highlight", { from: 0, to: 11 })
+  .wait(400)
+  .moveCursor(6)
+  .select(5)
+  .wait(600)
+  .unmark("selection")
+  .wait(600);
+
+await tw.play();`,
+  },
+
+  {
+    id: "unmark-split",
+    title: "Unmark Split",
+    description: "Unmark the middle of a marked range — the mark is split into two fragments covering the regions outside the unmark range.",
+    category: "styling",
+    code: `const tw = createTypewriter({ renderer });
+
+// Mark all 11 chars, then unmark indices 3-8 (the middle portion).
+// Result: two fragments: [0,3] and [8,11] both keep tw-highlight.
+// Characters 3-7 carry no mark.
+tw.timeline
+  .type("Hello World", { by: "char", interval: 70 })
+  .wait(400)
+  .mark("tw-highlight", { from: 0, to: 11 })
+  .wait(800)
+  .unmark({ from: 3, to: 8 })
+  .wait(600);
+
+await tw.play();`,
+  },
+
+  {
+    id: "mark-unmark-cycle",
+    title: "Mark/Unmark Cycle",
+    description: "Apply and remove a style in a loop to create a pulsing highlight effect.",
+    category: "styling",
+    code: `const tw = createTypewriter({ renderer });
+
+// Each loop applies a mark then removes it to create a visual blink.
+tw.timeline
+  .type("Blinking highlight", { by: "char", interval: 70 })
+  .wait(300)
+  .mark("tw-highlight", { from: 0, to: 18 })
+  .wait(400)
+  .unmark({ from: 0, to: 18 })
+  .wait(400)
+  .mark("tw-highlight", { from: 0, to: 18 })
+  .wait(400)
+  .unmark({ from: 0, to: 18 })
+  .wait(400)
+  .mark("tw-highlight", { from: 0, to: 18 })
+  .wait(600);
+
+await tw.play();`,
+  },
+
   // ── Callbacks ─────────────────────────────────────────────────────────────
 
   {

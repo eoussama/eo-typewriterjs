@@ -5,7 +5,6 @@ import type { TMarkRange } from "../commands/mark-command.type";
 import type { TAdvanceModeInput, TCursorSelector } from "../commands/type-command.type";
 import type { TStyleRef } from "../state/rich-text-document.type";
 
-
 import { ECommandKind } from "../commands/command-kind.enum";
 
 
@@ -80,6 +79,22 @@ export type TTypeOptions = TCommandHookOptions & {
  * Options accepted by the `mark` builder method
  */
 export type TMarkOptions = TCommandHookOptions & {
+  readonly cursor?: TCursorSelector;
+};
+
+/**
+ * @description
+ * Options accepted by the `clearSelection` builder method
+ */
+export type TClearSelectionOptions = TCommandHookOptions & {
+  readonly cursor?: TCursorSelector;
+};
+
+/**
+ * @description
+ * Options accepted by the `unmark` builder method
+ */
+export type TUnmarkOptions = TCommandHookOptions & {
   readonly cursor?: TCursorSelector;
 };
 
@@ -272,6 +287,58 @@ export class TimelineBuilder {
       kind: ECommandKind.MARK,
       cursor: options?.cursor ?? "main",
       style,
+      range,
+      audio: options?.audio,
+      before: options?.before,
+      after: options?.after,
+    });
+
+    this._version++;
+
+    return this;
+  }
+
+  /**
+   * @description
+   * Schedule a clearSelection command that removes the active text selection for one or more cursors.
+   * If the targeted cursor has no active selection the state is left unchanged.
+   * This command is instant and does not advance the timeline clock.
+   *
+   * @param options - Optional configuration (cursor id, lifecycle hooks)
+   * @returns This builder instance for future chaining
+   */
+  clearSelection(options?: TClearSelectionOptions): this {
+    this._commands.push({
+      id: `cmd_${++commandCounter}`,
+      kind: ECommandKind.CLEAR_SELECTION,
+      cursor: options?.cursor ?? "main",
+      audio: options?.audio,
+      before: options?.before,
+      after: options?.after,
+    });
+
+    this._version++;
+
+    return this;
+  }
+
+  /**
+   * @description
+   * Schedule an unmark command that removes style marks overlapping a document range or cursor selection.
+   * Marks that partially overlap the range are clipped rather than fully removed.
+   * When `range` is `"selection"`, the marks are removed from each targeted cursor's current selection.
+   * When `range` is a `{ from, to }` object, marks overlapping those absolute document indices are affected.
+   * This command is instant and does not advance the timeline clock.
+   *
+   * @param range - The target range, either absolute `{ from, to }` indices or `"selection"`
+   * @param options - Optional configuration (cursor id, lifecycle hooks)
+   * @returns This builder instance for future chaining
+   */
+  unmark(range: TMarkRange | "selection", options?: TUnmarkOptions): this {
+    this._commands.push({
+      id: `cmd_${++commandCounter}`,
+      kind: ECommandKind.UNMARK,
+      cursor: options?.cursor ?? "main",
       range,
       audio: options?.audio,
       before: options?.before,

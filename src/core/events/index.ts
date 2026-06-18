@@ -1,4 +1,5 @@
 export type { TBaseEvent } from "./base-event.type";
+export type { TClearSelectionEvent } from "./clear-selection-event.type";
 
 export type { TDeleteEvent } from "./delete-event.type";
 export { EEventKind } from "./event-kind.enum";
@@ -8,3 +9,4 @@ export type { TMarkEvent } from "./mark-event.type";
 export type { TMoveCursorEvent } from "./move-cursor-event.type";
 export type { TSelectEvent } from "./select-event.type";
 export type { TTimelineEvent } from "./timeline-event.type";
+export type { TUnmarkEvent } from "./unmark-event.type";
