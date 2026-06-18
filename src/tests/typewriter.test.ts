@@ -15,10 +15,6 @@ import { createTypewriter, EPlaybackStatus, stringRenderer, StringRenderer } fro
 
 
 
-// ---------------------------------------------------------------------------
-// Stepping — segmentText
-// ---------------------------------------------------------------------------
-
 describe("segmentText", () => {
   it("splits plain ASCII text by character", () => {
     expect(segmentText("Hello", "char")).toEqual(["H", "e", "l", "l", "o"]);
@@ -59,9 +55,6 @@ describe("segmentText", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// Stepping — chunkSteps
-// ---------------------------------------------------------------------------
 
 describe("chunkSteps", () => {
   it("returns individual tokens when amount is 1", () => {
@@ -81,9 +74,6 @@ describe("chunkSteps", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// Compiler — type command
-// ---------------------------------------------------------------------------
 
 describe("compile", () => {
   it("compiles a type command into insert events", () => {
@@ -141,9 +131,6 @@ describe("compile", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// Compiler — wait
-// ---------------------------------------------------------------------------
 
 describe("compile (wait)", () => {
   it("advances time cursor by wait duration", () => {
@@ -177,9 +164,6 @@ describe("compile (wait)", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// Compiler — delete
-// ---------------------------------------------------------------------------
 
 describe("compile (delete)", () => {
   it("compiles a delete command into delete events", () => {
@@ -227,9 +211,6 @@ describe("compile (delete)", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// Compiler — moveCursor
-// ---------------------------------------------------------------------------
 
 describe("compile (moveCursor)", () => {
   it("compiles a moveCursor command into a single event", () => {
@@ -252,9 +233,6 @@ describe("compile (moveCursor)", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// Compiler — select
-// ---------------------------------------------------------------------------
 
 describe("compile (select)", () => {
   it("compiles a select command into a single event", () => {
@@ -284,9 +262,6 @@ describe("compile (select)", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// Compiler — mark command
-// ---------------------------------------------------------------------------
 
 describe("compile (mark)", () => {
   it("compiles a fixed-range mark into exactly one event", () => {
@@ -371,9 +346,6 @@ describe("compile (mark)", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// Compiler — multi-cursor fan-out
-// ---------------------------------------------------------------------------
 
 describe("compile (multi-cursor)", () => {
   it("fans out type events for each cursor at the same timestamps", () => {
@@ -423,9 +395,6 @@ describe("compile (multi-cursor)", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// Reducer — reduce default branch
-// ---------------------------------------------------------------------------
 
 describe("reduce (default branch)", () => {
   it("returns state unchanged for an unknown event kind", () => {
@@ -437,13 +406,7 @@ describe("reduce (default branch)", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// Reducer — mark
-// ---------------------------------------------------------------------------
 
-// ---------------------------------------------------------------------------
-// Reducer — selectText edge cases (count=0, empty text)
-// ---------------------------------------------------------------------------
 
 describe("reduce (selectText edge cases)", () => {
   it("select forward with object by {unit, amount} resolves unit and amount correctly", () => {
@@ -518,9 +481,6 @@ describe("reduce (selectText edge cases)", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// Reducer — delete with marks covering filter/map branches
-// ---------------------------------------------------------------------------
 
 describe("reduce (delete mark clamp branches)", () => {
   it("clamps a partially overlapping mark that starts before removeStart", () => {
@@ -706,9 +666,6 @@ describe("reduce (mark)", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// Reducer — delete with marks
-// ---------------------------------------------------------------------------
 
 describe("reduce (delete with marks)", () => {
   it("trimming marks when deleting overlapping text", () => {
@@ -748,9 +705,6 @@ describe("reduce (delete with marks)", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// Reducer — insert with style
-// ---------------------------------------------------------------------------
 
 describe("reduce (insert with style)", () => {
   it("insert with style creates a mark on the inserted range", () => {
@@ -770,9 +724,6 @@ describe("reduce (insert with style)", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// State helpers — withSelection / withSelectionCleared / getSelection
-// ---------------------------------------------------------------------------
 
 describe("state helpers", () => {
   it("withSelection sets a selection for a cursor", () => {
@@ -814,9 +765,7 @@ describe("state helpers", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
 // segmentRichText / resolveStyleRef / mergeStyles
-// ---------------------------------------------------------------------------
 
 describe("segmentRichText", () => {
   it("returns empty array for empty document", () => {
@@ -909,9 +858,6 @@ describe("mergeStyles", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// StringRenderer — toAnsiString
-// ---------------------------------------------------------------------------
 
 describe("stringRenderer.toAnsiString", () => {
   it("returns empty string when nothing rendered", () => {
@@ -939,7 +885,7 @@ describe("stringRenderer.toAnsiString", () => {
       .mark("tw-class", { from: 0, to: 5 });
     await tw.play();
 
-    // mark has no ansi — plain text returned
+    // mark has no ansi, plain text returned
     expect(renderer.toAnsiString()).toBe("Hello");
   });
 
@@ -967,7 +913,7 @@ describe("stringRenderer.toAnsiString", () => {
       .mark({ css: { color: "red" } }, { from: 0, to: 2 });
     await tw.play();
 
-    // css mark but no ansi — treated as plain text
+    // css mark but no ansi, treated as plain text
     expect(renderer.toAnsiString()).toBe("AB");
   });
 
@@ -980,7 +926,7 @@ describe("stringRenderer.toAnsiString", () => {
       .mark({ ansi: {} }, { from: 0, to: 2 });
     await tw.play();
 
-    // empty ansi map — no codes to emit, treated as plain text
+    // empty ansi map, no codes to emit, treated as plain text
     expect(renderer.toAnsiString()).toBe("AB");
   });
 
@@ -997,9 +943,6 @@ describe("stringRenderer.toAnsiString", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// Timeline builder — select method
-// ---------------------------------------------------------------------------
 
 describe("timelineBuilder.select", () => {
   it("select with default cursor adds a select command", async () => {
@@ -1025,11 +968,8 @@ describe("timelineBuilder.select", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// player.helper — standalone play function
-// ---------------------------------------------------------------------------
 
-describe("player.helper — play()", () => {
+describe("player.helper, play()", () => {
   it("plays events through a renderer and resolves to final state", async () => {
     const events = compile([
       { id: "p1", kind: "type", cursor: "main", text: "Hi", by: "char", interval: 1 },
@@ -1054,9 +994,6 @@ describe("player.helper — play()", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// Integration — createTypewriter + stringRenderer
-// ---------------------------------------------------------------------------
 
 describe("createTypewriter", () => {
   it("types text by char and resolves to the full string", async () => {
@@ -1199,11 +1136,8 @@ describe("createTypewriter", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// Playback controls — status
-// ---------------------------------------------------------------------------
 
-describe("playback controls — status", () => {
+describe("playback controls, status", () => {
   it("starts in idle status", () => {
     const tw = createTypewriter({ renderer: stringRenderer() });
 
@@ -1226,7 +1160,7 @@ describe("playback controls — status", () => {
     const tw = createTypewriter({ renderer: stringRenderer() });
 
     tw.timeline.type("Hello", { by: "char", interval: 1 });
-    // status is IDLE — pause should do nothing
+    // status is IDLE, pause should do nothing
     tw.pause();
 
     expect(tw.getState().status).toBe(EPlaybackStatus.IDLE);
@@ -1238,7 +1172,7 @@ describe("playback controls — status", () => {
 
     tw.timeline.type("Hello", { by: "char", interval: 20 });
     const first = tw.play();
-    const second = tw.play(); // already playing — no-op
+    const second = tw.play(); // already playing, no-op
 
     await Promise.all([first, second]);
 
@@ -1336,11 +1270,8 @@ describe("playback controls — status", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// Playback controls — rate
-// ---------------------------------------------------------------------------
 
-describe("playback controls — rate", () => {
+describe("playback controls, rate", () => {
   it("getState() reports default rate of 1", () => {
     const tw = createTypewriter({ renderer: stringRenderer() });
 
@@ -1411,11 +1342,8 @@ describe("playback controls — rate", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// Playback controls — seek
-// ---------------------------------------------------------------------------
 
-describe("playback controls — seek", () => {
+describe("playback controls, seek", () => {
   it("seek to 0 applies the t=0 event (first char)", () => {
     const renderer = stringRenderer();
     const tw = createTypewriter({ renderer });
@@ -1490,11 +1418,8 @@ describe("playback controls — seek", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// Playback controls — stepForward / stepBackward
-// ---------------------------------------------------------------------------
 
-describe("playback controls — stepping", () => {
+describe("playback controls, stepping", () => {
   it("stepForward applies one event group and pauses", () => {
     const renderer = stringRenderer();
     const tw = createTypewriter({ renderer });
@@ -1584,9 +1509,7 @@ describe("playback controls — stepping", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// Delete unit handling — word / line / char
-// ---------------------------------------------------------------------------
+// Delete unit handling, word / line / char
 
 describe("delete (unit handling)", () => {
   it("delete by word removes the last word from the document", async () => {
@@ -1678,7 +1601,7 @@ describe("delete (unit handling)", () => {
       .delete(1, { by: "word", interval: 1 });
     await tw.play();
 
-    // Cursor at 0 — no text before it — nothing is removed
+    // Cursor at 0, no text before it, nothing is removed
     expect(renderer.toString()).toBe("hi");
   });
 
@@ -1699,16 +1622,13 @@ describe("delete (unit handling)", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// Multi-cursor — cursor index drift correction on insert
-// ---------------------------------------------------------------------------
 
 describe("multi-cursor insert index adjustment", () => {
   it("inserting at a lower-index cursor shifts a higher-index cursor forward", async () => {
     const renderer = stringRenderer();
     const tw = createTypewriter({ renderer });
 
-    // "ab" — main at 2, cursor "b" parked at 1 (between a and b).
+    // "ab", main at 2, cursor "b" parked at 1 (between a and b).
     // Type "X" with cursor "b" (at 1) → inserts at 1, main shifts from 2 to 3.
     // Then type "Y" with main (now at 3) → appends after "b", result: "aXbY"
     tw.timeline
@@ -1725,7 +1645,7 @@ describe("multi-cursor insert index adjustment", () => {
     const renderer = stringRenderer();
     const tw = createTypewriter({ renderer });
 
-    // "ab" — main at 2, cursor "b" parked at 0.
+    // "ab", main at 2, cursor "b" parked at 0.
     // Type "Y" with main (at 2) → inserts at 2, "b" stays at 0.
     // Then type "X" with "b" (still 0) → inserts at 0, result: "XabY"
     tw.timeline
@@ -1742,8 +1662,8 @@ describe("multi-cursor insert index adjustment", () => {
     const renderer = stringRenderer();
     const tw = createTypewriter({ renderer });
 
-    // "Name: \\nRole: " — main at 13, "b" at 6
-    // Both type "Alice" simultaneously — result must be "Name: Alice\\nRole: Alice"
+    // "Name: \\nRole: ", main at 13, "b" at 6
+    // Both type "Alice" simultaneously, result must be "Name: Alice\\nRole: Alice"
     tw.timeline
       .type("Name: \nRole: ", { by: "char", interval: 1 })
       .moveCursor(6, { cursor: "b" })
@@ -1757,7 +1677,7 @@ describe("multi-cursor insert index adjustment", () => {
     const renderer = stringRenderer();
     const tw = createTypewriter({ renderer });
 
-    // "City: \\nCountry: " — "b" at 6, main at 17
+    // "City: \\nCountry: ", "b" at 6, main at 17
     // Type "Paris" at "b" (lower), then "France" at main (shifts up)
     tw.timeline
       .type("City: \nCountry: ", { by: "char", interval: 1 })
@@ -1770,16 +1690,13 @@ describe("multi-cursor insert index adjustment", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// Multi-cursor — cursor index drift correction on delete
-// ---------------------------------------------------------------------------
 
 describe("multi-cursor delete index adjustment", () => {
   it("deleting with a lower-index cursor shifts a higher-index cursor backward", async () => {
     const renderer = stringRenderer();
     const tw = createTypewriter({ renderer });
 
-    // "abcd" — main at 4, "b" at 2. Delete 1 with "b" → removes "b"(1) leaving "acd",
+    // "abcd", main at 4, "b" at 2. Delete 1 with "b" → removes "b"(1) leaving "acd",
     // main shifts from 4 to 3. Then type "Z" at main (3) → "acdZ"
     tw.timeline
       .type("abcd", { by: "char", interval: 1 })
@@ -1795,7 +1712,7 @@ describe("multi-cursor delete index adjustment", () => {
     const renderer = stringRenderer();
     const tw = createTypewriter({ renderer });
 
-    // "abcd" — main at 4, "b" at 1. Delete 1 with main → removes "d" leaving "abc",
+    // "abcd", main at 4, "b" at 1. Delete 1 with main → removes "d" leaving "abc",
     // "b" stays at 1. Then type "X" at "b" (1) → "aXbc"
     tw.timeline
       .type("abcd", { by: "char", interval: 1 })
@@ -1808,9 +1725,6 @@ describe("multi-cursor delete index adjustment", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// Delete unit — select unit handling
-// ---------------------------------------------------------------------------
 
 describe("select (unit handling)", () => {
   it("select forward by word covers one full word", () => {
@@ -1867,10 +1781,8 @@ describe("select (unit handling)", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
 // Command × unit × by-shape matrix
 // Every command that accepts `by` is exercised with all 5 units × 2 by-shapes
-// ---------------------------------------------------------------------------
 
 describe("command × unit × by-shape matrix", () => {
   const TEXT = "one two three\nfour five";
@@ -1935,16 +1847,14 @@ describe("command × unit × by-shape matrix", () => {
   }
 });
 
-// ---------------------------------------------------------------------------
-// Reducer branch coverage — insertTextAtCursor selection shifting
-// ---------------------------------------------------------------------------
+// Reducer branch coverage, insertTextAtCursor selection shifting
 
-describe("insertTextAtCursor — selection shifting branches", () => {
+describe("insertTextAtCursor, selection shifting branches", () => {
   it("shifts sel.from and sel.to of another cursor when both are strictly after insertIndex", async () => {
     const renderer = stringRenderer();
     const tw = createTypewriter({ renderer });
 
-    // "abcde" — main at 5, cursor "b" has a selection [3, 5]
+    // "abcde", main at 5, cursor "b" has a selection [3, 5]
     // Insert "X" with a third cursor "c" at index 1 → text becomes "aXbcde"
     // "b"'s selection [3, 5] should shift to [4, 6]
     tw.timeline
@@ -1965,7 +1875,7 @@ describe("insertTextAtCursor — selection shifting branches", () => {
     const renderer = stringRenderer();
     const tw = createTypewriter({ renderer });
 
-    // "abcde" — "b" selection covers [0, 2] (before insert point)
+    // "abcde", "b" selection covers [0, 2] (before insert point)
     // Insert "X" with "c" at index 3 → sel.from=0 stays 0, sel.to=2 stays 2
     tw.timeline
       .type("abcde", { by: "char", interval: 1 })
@@ -1983,7 +1893,7 @@ describe("insertTextAtCursor — selection shifting branches", () => {
     const renderer = stringRenderer();
     const tw = createTypewriter({ renderer });
 
-    // "abcde" — "b" selection covers [1, 4], insert "X" at index 2
+    // "abcde", "b" selection covers [1, 4], insert "X" at index 2
     // sel.from=1 <= 2 → stays 1; sel.to=4 > 2 → becomes 5
     tw.timeline
       .type("abcde", { by: "char", interval: 1 })
@@ -2003,8 +1913,8 @@ describe("insertTextAtCursor — selection shifting branches", () => {
     const renderer = stringRenderer();
     const tw = createTypewriter({ renderer });
 
-    // "ab" — cursor "b" is present but has no selection.
-    // Insert "X" at main (index 2) — the loop over selections for "b" entry
+    // "ab", cursor "b" is present but has no selection.
+    // Insert "X" at main (index 2), the loop over selections for "b" entry
     // that is absent should be a no-op (key won't appear, so the branch
     // is hit when we force a selection entry of undefined in state directly).
     tw.timeline
@@ -2017,16 +1927,14 @@ describe("insertTextAtCursor — selection shifting branches", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// Reducer branch coverage — deleteTextAtCursor cursor/selection shifting
-// ---------------------------------------------------------------------------
+// Reducer branch coverage, deleteTextAtCursor cursor/selection shifting
 
-describe("deleteTextAtCursor — cursor and selection shifting branches", () => {
+describe("deleteTextAtCursor, cursor and selection shifting branches", () => {
   it("clamps another cursor that is inside the deleted range to removeStart", async () => {
     const renderer = stringRenderer();
     const tw = createTypewriter({ renderer });
 
-    // "abcde" — cursor "b" parked at 2 (inside delete range [1, 4]).
+    // "abcde", cursor "b" parked at 2 (inside delete range [1, 4]).
     // Delete 3 chars with main (cursor at 4) → removes [1,4] → text = "ae".
     // Cursor "b" (at 2, inside [1,4]) should be clamped to 1.
     // Then type "X" at "b" (now at 1) → "aXe"
@@ -2045,7 +1953,7 @@ describe("deleteTextAtCursor — cursor and selection shifting branches", () => 
     const renderer = stringRenderer();
     const tw = createTypewriter({ renderer });
 
-    // "abcde" — cursor "b" at 1 (before delete range [2, 5]).
+    // "abcde", cursor "b" at 1 (before delete range [2, 5]).
     // Delete 3 chars with main (cursor at 5) → text = "ab".
     // Cursor "b" stays at 1. Type "X" at "b" → "aXb"
     tw.timeline
@@ -2062,7 +1970,7 @@ describe("deleteTextAtCursor — cursor and selection shifting branches", () => 
     const renderer = stringRenderer();
     const tw = createTypewriter({ renderer });
 
-    // "abcde" — "b" has selection [3, 5].
+    // "abcde", "b" has selection [3, 5].
     // Main cursor at 3 deletes 2 chars (range [1, 3]) → text = "ade".
     // "b" sel.from=3 >= removeEnd=3 → shifts to 3-2=1
     // "b" sel.to=5 >= removeEnd=3 → shifts to 5-2=3
@@ -2081,7 +1989,7 @@ describe("deleteTextAtCursor — cursor and selection shifting branches", () => 
     const renderer = stringRenderer();
     const tw = createTypewriter({ renderer });
 
-    // "abcde" — "b" has selection [2, 5].
+    // "abcde", "b" has selection [2, 5].
     // Main at 4 deletes 3 chars (range [1, 4]) → text = "ae".
     // "b" sel.from=2: removeStart=1, removeEnd=4 → 2 > removeStart and < removeEnd → clamped to 1
     // "b" sel.to=5 >= removeEnd=4 → shifts to 5-3=2
@@ -2100,7 +2008,7 @@ describe("deleteTextAtCursor — cursor and selection shifting branches", () => 
     const renderer = stringRenderer();
     const tw = createTypewriter({ renderer });
 
-    // "abcde" — "b" has selection [0, 3].
+    // "abcde", "b" has selection [0, 3].
     // Main at 5 deletes 3 chars (range [2, 5]) → text = "ab".
     // "b" sel.from=0 <= removeStart=2 → stays 0
     // "b" sel.to=3: removeStart=2, removeEnd=5 → 3 > removeStart and < removeEnd → clamped to 2
@@ -2118,7 +2026,7 @@ describe("deleteTextAtCursor — cursor and selection shifting branches", () => 
     const renderer = stringRenderer();
     const tw = createTypewriter({ renderer });
 
-    // "abcde" — "b" has selection [0, 1].
+    // "abcde", "b" has selection [0, 1].
     // Main at 5 deletes 2 chars (range [3, 5]) → text = "abc".
     // "b" sel.from=0 <= removeStart=3 → stays 0
     // "b" sel.to=1 <= removeStart=3 → stays 1

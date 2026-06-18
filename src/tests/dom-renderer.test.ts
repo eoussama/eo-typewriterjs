@@ -7,10 +7,6 @@ import { DomRenderer, domRenderer } from "../renderers/dom/dom-renderer";
 
 
 
-// ---------------------------------------------------------------------------
-// DomRenderer — basic rendering
-// ---------------------------------------------------------------------------
-
 describe("domRenderer", () => {
   it("mounts and renders plain text into a target element", async () => {
     const el = document.createElement("div");
@@ -84,7 +80,7 @@ describe("domRenderer", () => {
 
     tw.stop();
 
-    // stop calls render with reset state — should not throw
+    // stop calls render with reset state, should not throw
     expect(() => tw.stop()).not.toThrow();
   });
 
@@ -182,11 +178,8 @@ describe("domRenderer", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// DomRenderer — cursor kind glyphs
-// ---------------------------------------------------------------------------
 
-describe("domRenderer — cursor kind glyphs", () => {
+describe("domRenderer, cursor kind glyphs", () => {
   it("default cursor renders with pipe glyph", async () => {
     const el = document.createElement("div");
     const tw = createTypewriter({ renderer: new DomRenderer(el) });
@@ -289,11 +282,8 @@ describe("domRenderer — cursor kind glyphs", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// DomRenderer — cursor visibility
-// ---------------------------------------------------------------------------
 
-describe("domRenderer — cursor visibility", () => {
+describe("domRenderer, cursor visibility", () => {
   it("visible: false hides the cursor entirely (no span rendered)", async () => {
     const el = document.createElement("div");
     const tw = createTypewriter({ renderer: new DomRenderer(el), cursor: { visible: false } });
@@ -316,11 +306,8 @@ describe("domRenderer — cursor visibility", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// DomRenderer — cursor classes and attrs
-// ---------------------------------------------------------------------------
 
-describe("domRenderer — cursor classes and attrs", () => {
+describe("domRenderer, cursor classes and attrs", () => {
   it("extra className is appended to the cursor span", async () => {
     const el = document.createElement("div");
     const tw = createTypewriter({
@@ -368,11 +355,8 @@ describe("domRenderer — cursor classes and attrs", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// DomRenderer — runtime cursor mutations via setCursorVisible / setCursorOptions
-// ---------------------------------------------------------------------------
 
-describe("domRenderer — runtime cursor mutations", () => {
+describe("domRenderer, runtime cursor mutations", () => {
   it("setCursorVisible(false) hides cursor immediately", async () => {
     const el = document.createElement("div");
     const renderer = new DomRenderer(el);
@@ -470,7 +454,7 @@ describe("domRenderer — runtime cursor mutations", () => {
 
     tw.setCursorVisible(false, "b");
 
-    // "main" still visible, "b" hidden — but "b" may not have been added
+    // "main" still visible, "b" hidden, but "b" may not have been added
     // depending on cursor count; just ensure no error and main is still there
     expect(el.querySelector(".typewriter-cursor[data-cursor-id='main']")).not.toBeNull();
     expect(before).toBeGreaterThanOrEqual(1);
@@ -508,7 +492,7 @@ describe("domRenderer — runtime cursor mutations", () => {
 
     await tw.play();
 
-    // After call(), the cursor glyph should be the block ▋ — not the initial |
+    // After call(), the cursor glyph should be the block ▋, not the initial |
     expect(glyphAfterSwap).toBe("▋");
     // The document text should be preserved (not wiped to empty string)
     expect(el.textContent?.startsWith("Hi")).toBe(true);
@@ -535,11 +519,8 @@ describe("domRenderer — runtime cursor mutations", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// DomRenderer — cursor animation
-// ---------------------------------------------------------------------------
 
-describe("domRenderer — cursor animation", () => {
+describe("domRenderer, cursor animation", () => {
   it("default cursor has data-cursor-animation=blink and blink class", async () => {
     const el = document.createElement("div");
     const tw = createTypewriter({ renderer: new DomRenderer(el) });

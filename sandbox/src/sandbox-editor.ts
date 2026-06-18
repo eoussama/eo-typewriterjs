@@ -35,8 +35,6 @@ import {
 
 
 
-// ─── Snippet helper ────────────────────────────────────────────────────────
-
 /**
  * @description
  * Build a snippet completion using CodeMirror's ${N:placeholder} syntax
@@ -52,7 +50,6 @@ function snip(label: string, template: string, type: string, detail: string, inf
   return snippetCompletion(template, { label, type, detail, info });
 }
 
-// ─── Completion data ───────────────────────────────────────────────────────
 
 /**
  * @description
@@ -246,7 +243,6 @@ const COMMAND_KIND_MEMBERS: Completion[] = [
   { label: "CALL", type: "constant", detail: "\"call\"" },
 ];
 
-// ─── Context helpers ───────────────────────────────────────────────────────
 
 /**
  * @description
@@ -257,7 +253,7 @@ const COMMAND_KIND_MEMBERS: Completion[] = [
  */
 function getChainBefore(textBefore: string): string {
   const tail = textBefore.slice(-200);
-  // Non-capturing group — we only need the full match prefix
+  // Non-capturing group, we only need the full match prefix
   const m = tail.match(/\w[\w.]*\.\s*$/);
 
   return m !== null ? `${m[0].replace(/\.\s*$/, "").toLowerCase()}.` : "";
@@ -280,7 +276,7 @@ function detectCommandOptsContext(textBefore: string): Completion[] | null {
     return null;
   }
 
-  // Extract the command name from the last .name( before the open brace — slice off the leading dot
+  // Extract the command name from the last .name( before the open brace, slice off the leading dot
   const cmdMatches = tail.match(/\.\w+(?=\s*\()/g);
   const cmd = cmdMatches !== null ? cmdMatches[cmdMatches.length - 1]!.slice(1).toLowerCase() : "";
 
@@ -331,7 +327,6 @@ function isInsideCallbackBody(textBefore: string): boolean {
     || /call\s*\(\s*async\s*\([^)]*\)\s*=>\s*\{[^}]*$/.test(tail);
 }
 
-// ─── Main completion source ────────────────────────────────────────────────
 
 /**
  * @description
@@ -397,7 +392,6 @@ function sandboxCompletionSource(context: CompletionContext): CompletionResult |
   return { from: word.from, options: GLOBAL_COMPLETIONS, validFor: /^\w*$/ };
 }
 
-// ─── Editor factory ────────────────────────────────────────────────────────
 
 /**
  * @description
@@ -410,18 +404,11 @@ function sandboxCompletionSource(context: CompletionContext): CompletionResult |
  */
 export function createSandboxEditor(parent: HTMLElement, initialDoc: string): EditorView {
   const extensions = [
-    // ── Language ─────────────────────────────────────────────────────────
     javascript(),
-
-    // ── Theme ─────────────────────────────────────────────────────────────
     oneDark,
-
-    // ── Gutter ────────────────────────────────────────────────────────────
     lineNumbers(),
     highlightActiveLineGutter(),
     foldGutter(),
-
-    // ── Editing behaviour ─────────────────────────────────────────────────
     history(),
     closeBrackets(),
     bracketMatching(),
@@ -429,16 +416,12 @@ export function createSandboxEditor(parent: HTMLElement, initialDoc: string): Ed
     drawSelection(),
     rectangularSelection(),
     highlightActiveLine(),
-
-    // ── Autocomplete ──────────────────────────────────────────────────────
     autocompletion({
       override: [sandboxCompletionSource],
       defaultKeymap: true,
       activateOnTyping: true,
       activateOnTypingDelay: 120,
     }),
-
-    // ── Keymaps ───────────────────────────────────────────────────────────
     keymap.of([
       ...defaultKeymap,
       ...historyKeymap,
@@ -447,8 +430,6 @@ export function createSandboxEditor(parent: HTMLElement, initialDoc: string): Ed
       ...closeBracketsKeymap,
       indentWithTab,
     ]),
-
-    // ── Editor theme overrides ─────────────────────────────────────────────
     EditorView.theme({
       "&": {
         height: "100%",

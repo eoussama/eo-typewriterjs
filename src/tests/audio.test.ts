@@ -5,11 +5,7 @@ import { createTypewriter, EAudioStrategy, stringRenderer } from "../index";
 
 
 
-// ---------------------------------------------------------------------------
-// AudioManagerHelper — construction and settings
-// ---------------------------------------------------------------------------
-
-describe("audioManagerHelper — construction and settings", () => {
+describe("audioManagerHelper construction and settings", () => {
   it("constructs with default empty options", () => {
     const mgr = new AudioManagerHelper();
 
@@ -71,16 +67,13 @@ describe("audioManagerHelper — construction and settings", () => {
       mgr.playTyping();
     }
 
-    // setOptions resets everything — should not throw
+    // setOptions resets everything should not throw
     expect(() => mgr.setOptions({ volume: 1 })).not.toThrow();
   });
 });
 
-// ---------------------------------------------------------------------------
-// AudioManagerHelper — playTyping disabled / override guards
-// ---------------------------------------------------------------------------
 
-describe("audioManagerHelper — enabled and override guards", () => {
+describe("audioManagerHelper enabled and override guards", () => {
   it("playTyping does not throw when enabled is false", () => {
     const mgr = new AudioManagerHelper({ enabled: false });
 
@@ -121,11 +114,8 @@ describe("audioManagerHelper — enabled and override guards", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// AudioManagerHelper — voice resolution precedence
-// ---------------------------------------------------------------------------
 
-describe("audioManagerHelper — voice resolution precedence", () => {
+describe("audioManagerHelper voice resolution precedence", () => {
   const pack = {
     a: { samples: ["a1", "a2"] },
     b: { samples: ["b1"] },
@@ -187,11 +177,8 @@ describe("audioManagerHelper — voice resolution precedence", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// AudioManagerHelper — delete channel fallback
-// ---------------------------------------------------------------------------
 
-describe("audioManagerHelper — delete channel", () => {
+describe("audioManagerHelper delete channel", () => {
   it("delete falls back to typing channel when no delete config given", () => {
     const mgr = new AudioManagerHelper({
       voices: { d: { samples: ["d1"] } },
@@ -212,11 +199,8 @@ describe("audioManagerHelper — delete channel", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// AudioManagerHelper — sample selection strategies
-// ---------------------------------------------------------------------------
 
-describe("audioManagerHelper — strategies", () => {
+describe("audioManagerHelper strategies", () => {
   const pack = {
     default: { samples: ["s1", "s2", "s3"] },
   };
@@ -305,11 +289,8 @@ describe("audioManagerHelper — strategies", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// AudioManagerHelper — jitter options
-// ---------------------------------------------------------------------------
 
-describe("audioManagerHelper — jitter", () => {
+describe("audioManagerHelper jitter", () => {
   const pack = { default: { samples: ["j1", "j2"] } };
 
   it("playbackRateJitter does not throw", () => {
@@ -349,11 +330,8 @@ describe("audioManagerHelper — jitter", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// createTypewriter — audio runtime controls
-// ---------------------------------------------------------------------------
 
-describe("createTypewriter — audio runtime controls", () => {
+describe("createTypewriter audio runtime controls", () => {
   it("getAudioOptions returns disabled by default when audio is omitted", () => {
     const tw = createTypewriter({ renderer: stringRenderer() });
     const opts = tw.getAudioOptions();
@@ -495,9 +473,6 @@ describe("createTypewriter — audio runtime controls", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// Regression — stepForward after async completion does not append
-// ---------------------------------------------------------------------------
 
 describe("stepForward after completion regression", () => {
   it("play() → stepBackward() → stepForward() starts from correct position", async () => {
@@ -509,11 +484,11 @@ describe("stepForward after completion regression", () => {
 
     expect(renderer.toString()).toBe("Hi");
 
-    // Step back one group — should undo the last character
+    // Step back one group should undo the last character
     tw.stepBackward();
     expect(renderer.toString()).toBe("H");
 
-    // Step forward from the reconstructed position — should re-add the last character only
+    // Step forward from the reconstructed position should re-add the last character only
     tw.stepForward();
     expect(renderer.toString()).toBe("Hi");
   });

@@ -30,7 +30,7 @@ export default defineConfig({
       reporter: ["text", "html", "lcov"],
       reportsDirectory: "coverage",
       exclude: [
-        // Barrel re-export files — contain only module-level re-export statements
+        // Barrel re-export files that contain only module-level re-export statements,
         // which v8 does not track as executable code; no business logic to test.
         "**/index.ts",
       ],

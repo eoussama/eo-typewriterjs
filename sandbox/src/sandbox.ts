@@ -10,10 +10,6 @@ import { createSandboxRenderer, ERendererKind, runUserCode } from "./sandbox-run
 
 
 
-// ---------------------------------------------------------------------------
-// DOM refs
-// ---------------------------------------------------------------------------
-
 function $<T extends HTMLElement = HTMLElement>(sel: string): T {
   return document.querySelector<T>(sel)!;
 }
@@ -49,9 +45,6 @@ const elHelpDialogBody = $("#help-dialog-body");
 const elPkgVersion = $("#pkg-version");
 const elRepoLink = $<HTMLAnchorElement>("#repo-link");
 
-// ---------------------------------------------------------------------------
-// State
-// ---------------------------------------------------------------------------
 
 let activeRendererKind: TRendererKind = ERendererKind.DOM;
 let activeTw: TTypewriter | null = null;
@@ -74,17 +67,11 @@ let runToken = 0;
  */
 let pendingTw: TTypewriter | null = null;
 
-// ---------------------------------------------------------------------------
-// CodeMirror editor setup
-// ---------------------------------------------------------------------------
 
 const initialRecipe = SANDBOX_RECIPES[0];
 
 const editorView = createSandboxEditor(elEditorContainer, initialRecipe.code);
 
-// ---------------------------------------------------------------------------
-// Renderer panel visibility
-// ---------------------------------------------------------------------------
 
 /**
  * @description
@@ -97,9 +84,6 @@ function showRendererPanel(kind: TRendererKind): void {
   elPreviewString.style.display = kind === ERendererKind.STRING ? "" : "none";
 }
 
-// ---------------------------------------------------------------------------
-// Transport button states
-// ---------------------------------------------------------------------------
 
 /**
  * @description
@@ -166,16 +150,12 @@ function syncTransportState(): void {
   // Step bwd: disabled while playing or at start (idle)
   elStepBwdBtn.toggleAttribute("disabled", isPlaying || isIdle);
 
-  // Apply status-derived classes for visual feedback
   elPlayBtn.classList.toggle("transport-btn--active", isPaused || isCancelled || isStopped);
   elPauseBtn.classList.toggle("transport-btn--active", isPaused);
   elStopBtn.classList.toggle("transport-btn--active", isStopped);
   elReplayBtn.classList.toggle("transport-btn--active", isCompleted);
 }
 
-// ---------------------------------------------------------------------------
-// RAF tick for live UI updates during playback
-// ---------------------------------------------------------------------------
 
 /**
  * @description
@@ -213,9 +193,6 @@ function tick(): void {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Error panel
-// ---------------------------------------------------------------------------
 
 /**
  * @description
@@ -236,9 +213,6 @@ function hideError(): void {
   elErrorPanel.style.display = "none";
 }
 
-// ---------------------------------------------------------------------------
-// Run user code
-// ---------------------------------------------------------------------------
 
 /**
  * @description
@@ -264,7 +238,7 @@ function getEditorCode(): string {
  * @returns A promise that resolves when execution is complete, with the result or an error.
  */
 async function runCode(): Promise<void> {
-  // Increment token — any in-flight run with an older token will be ignored
+  // Increment token: any in-flight run with an older token will be ignored
   const token = ++runToken;
 
   hideError();
@@ -275,12 +249,10 @@ async function runCode(): Promise<void> {
   pendingTw?.stop();
   pendingTw = null;
 
-  // Also stop any previously completed/active animation
   activeTw?.stop();
   activeTw = null;
   syncTransportState();
 
-  // Clear preview panels
   elPreviewDom.innerHTML = "";
   elPreviewString.textContent = "";
 
@@ -296,9 +268,9 @@ async function runCode(): Promise<void> {
 
   const result = await runUserCode(code, renderer, (tw) => {
     // Called synchronously the moment createTypewriter() runs inside user code,
-    // before any await tw.play() — so we can immediately wire up transport.
+    // before any await tw.play(), so we can immediately wire up transport.
     if (token !== runToken) {
-      // A newer run already started — stop this tw right away
+      // A newer run already started, stop this tw right away
       tw.stop();
 
       return;
@@ -307,7 +279,7 @@ async function runCode(): Promise<void> {
     pendingTw = tw;
     activeTw = tw;
 
-    // Sync sandbox toolbar state FROM the new typewriter's actual config
+    // Sync sandbox toolbar state from the new typewriter's actual config
     // so recipe-level audio options are respected and the UI reflects them.
     const opts = tw.getAudioOptions();
 
@@ -323,7 +295,6 @@ async function runCode(): Promise<void> {
     startTick();
   });
 
-  // Discard if a newer run has already started
   if (token !== runToken) {
     return;
   }
@@ -341,16 +312,13 @@ async function runCode(): Promise<void> {
     return;
   }
 
-  // Play has finished (or was stopped) — clean up pendingTw reference and
+  // Play has finished (or was stopped), clean up pendingTw reference and
   // do a final sync so the transport buttons show the correct end state.
   pendingTw = null;
   activeTw = result.tw;
   syncTransportState();
 }
 
-// ---------------------------------------------------------------------------
-// Recipe picker
-// ---------------------------------------------------------------------------
 
 /**
  * @description
@@ -416,7 +384,6 @@ async function loadRecipe(id: string): Promise<void> {
     return;
   }
 
-  // Update editor content
   editorView.dispatch({
     changes: {
       from: 0,
@@ -425,18 +392,13 @@ async function loadRecipe(id: string): Promise<void> {
     },
   });
 
-  // Mark as active
   document.querySelectorAll(".recipe-item").forEach((el) => {
     el.classList.toggle("recipe-item--active", (el as HTMLElement).dataset.id === id);
   });
 
-  // Auto-run
   await runCode();
 }
 
-// ---------------------------------------------------------------------------
-// Category chips
-// ---------------------------------------------------------------------------
 
 /**
  * @description
@@ -456,9 +418,6 @@ function initCategoryChips(): void {
   });
 }
 
-// ---------------------------------------------------------------------------
-// Help dialog builder
-// ---------------------------------------------------------------------------
 
 /**
  * @description
@@ -664,19 +623,16 @@ const HELP_SECTIONS: readonly THelpSection[] = [
  * then wire the nav button click handlers to switch active sections.
  */
 function buildHelpDialog(): void {
-  // Build nav
   const nav = document.createElement("nav");
 
   nav.className = "help-dialog__nav";
   nav.setAttribute("aria-label", "Help sections");
 
-  // Build content pane
   const content = document.createElement("div");
 
   content.className = "help-dialog__content";
 
   HELP_SECTIONS.forEach((section, idx) => {
-    // Nav button
     const btn = document.createElement("button");
 
     btn.className = `help-nav-btn${idx === 0 ? " help-nav-btn--active" : ""}`;
@@ -684,7 +640,6 @@ function buildHelpDialog(): void {
     btn.textContent = section.label;
     nav.appendChild(btn);
 
-    // Section panel
     const panel = document.createElement("div");
 
     panel.className = `help-section${idx === 0 ? " help-section--active" : ""}`;
@@ -730,7 +685,6 @@ function buildHelpDialog(): void {
   elHelpDialogBody.appendChild(nav);
   elHelpDialogBody.appendChild(content);
 
-  // Wire nav clicks
   nav.addEventListener("click", (e) => {
     const btn = (e.target as HTMLElement).closest<HTMLButtonElement>(".help-nav-btn");
 
@@ -750,9 +704,6 @@ function buildHelpDialog(): void {
   });
 }
 
-// ---------------------------------------------------------------------------
-// Event wiring
-// ---------------------------------------------------------------------------
 
 /**
  * @description
@@ -768,24 +719,22 @@ function init(): void {
 
   elRepoLink.href = repoUrl;
 
-  // Initial renderer panel
   showRendererPanel(activeRendererKind);
   syncTransportState();
   syncAudioUI();
 
-  // Renderer selector — switch pane and re-run so the new renderer gets live output
+  // Renderer selector: switch pane and re-run so the new renderer gets live output
   elRendererSelect.addEventListener("change", () => {
     activeRendererKind = elRendererSelect.value as TRendererKind;
     showRendererPanel(activeRendererKind);
     void runCode();
   });
 
-  // Run button
   elRunBtn.addEventListener("click", () => {
     void runCode();
   });
 
-  // Keyboard shortcuts: Ctrl/Cmd+Enter or Ctrl/Cmd+S to run — only when editor has focus
+  // Keyboard shortcuts: Ctrl/Cmd+Enter or Ctrl/Cmd+S to run, only when editor has focus
   document.addEventListener("keydown", (e) => {
     if (!(e.ctrlKey || e.metaKey)) {
       return;
@@ -806,7 +755,6 @@ function init(): void {
     void runCode();
   });
 
-  // Show/hide shortcut hint based on editor focus
   editorView.dom.addEventListener("focusin", () => {
     elEditorShortcutHint.style.display = "";
   });
@@ -815,7 +763,6 @@ function init(): void {
     elEditorShortcutHint.style.display = "none";
   });
 
-  // Transport
   elPlayBtn.addEventListener("click", () => {
     if (activeTw === null) {
       return;
@@ -856,7 +803,6 @@ function init(): void {
     syncTransportState();
   });
 
-  // Rate slider
   elRateSlider.addEventListener("input", () => {
     const rate = Number(elRateSlider.value);
 
@@ -864,21 +810,18 @@ function init(): void {
     activeTw?.setRate(rate);
   });
 
-  // Audio mute toggle
   elAudioMuteBtn.addEventListener("click", () => {
     sandboxAudioEnabled = !sandboxAudioEnabled;
     activeTw?.setAudioEnabled(sandboxAudioEnabled);
     syncAudioUI();
   });
 
-  // Volume slider
   elVolumeSlider.addEventListener("input", () => {
     sandboxAudioVolume = Number(elVolumeSlider.value);
     elVolumeValue.textContent = `${Math.round(sandboxAudioVolume * 100)}%`;
     activeTw?.setAudioVolume(sandboxAudioVolume);
   });
 
-  // Copy button
   elCopyBtn.addEventListener("click", () => {
     void navigator.clipboard.writeText(getEditorCode()).then(() => {
       const orig = elCopyBtn.textContent;
@@ -890,10 +833,8 @@ function init(): void {
     });
   });
 
-  // Recipe search
   elSearchInput.addEventListener("input", () => renderRecipes());
 
-  // Build + wire help dialog
   buildHelpDialog();
 
   elApiHelpBtn.addEventListener("click", () => {
@@ -917,16 +858,11 @@ function init(): void {
     }
   });
 
-  // Category chips
   initCategoryChips();
 
-  // Initial recipe list + auto-run first recipe
   renderRecipes();
   void loadRecipe(initialRecipe.id);
 }
 
-// ---------------------------------------------------------------------------
-// Boot
-// ---------------------------------------------------------------------------
 
 document.addEventListener("DOMContentLoaded", init);

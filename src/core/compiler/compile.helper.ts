@@ -25,7 +25,7 @@ export type TCommand = TTypeCommand | TWaitCommand | TDeleteCommand | TMoveCurso
 /**
  * @description
  * Compile an ordered list of commands into a flat, time-sorted list of
- * scheduled playback events. Commands are placed sequentially — each command
+ * scheduled playback events. Commands are placed sequentially, each command
  * starts after the last event of the previous command.
  *
  * @param commands - The ordered command list from the timeline builder
@@ -62,7 +62,7 @@ export function compile(commands: TCommand[]): TTimelineEvent[] {
         const result = compileMoveCursor(command as TMoveCursorCommand, cursor);
 
         events.push(...result.events);
-        // endTime unchanged — moveCursor is instant
+        // endTime unchanged, moveCursor is instant
         break;
       }
 
@@ -70,7 +70,7 @@ export function compile(commands: TCommand[]): TTimelineEvent[] {
         const result = compileSelect(command as TSelectCommand, cursor);
 
         events.push(...result.events);
-        // endTime unchanged — select is instant
+        // endTime unchanged, select is instant
         break;
       }
 
@@ -78,12 +78,12 @@ export function compile(commands: TCommand[]): TTimelineEvent[] {
         const result = compileMark(command as TMarkCommand, cursor);
 
         events.push(...result.events);
-        // endTime unchanged — mark is instant
+        // endTime unchanged, mark is instant
         break;
       }
 
       case ECommandKind.CALL:
-        // call commands emit no timeline events — they are handled at runtime by the executor
+        // call commands emit no timeline events, they are handled at runtime by the executor
         break;
 
       default:

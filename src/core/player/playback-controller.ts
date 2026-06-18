@@ -306,7 +306,7 @@ export class PlaybackController {
       return this._resumeFromPause();
     }
 
-    // idle, stopped, or cancelled — mount renderer then start
+    // idle, stopped, or cancelled, mount renderer then start
     this._renderer.mount?.(this._state);
 
     return this._startExecution(this._initialState);
@@ -520,7 +520,7 @@ export class PlaybackController {
     }
 
     if (groupStart === 0) {
-      // The only applied group was the first one — return to index 0 / initial state
+      // The only applied group was the first one, return to index 0 / initial state
       this._state = this._initialState;
       this._currentEventIndex = 0;
       this._currentTime = 0;
@@ -774,7 +774,7 @@ export class PlaybackController {
         }
         /* v8 ignore start */
       }).catch(() => {
-        // executeCommands never rejects in practice — AbortErrors are caught internally
+        // executeCommands never rejects in practice, AbortErrors are caught internally
         resolve();
 
         if (this._resolvePlay === resolve) {

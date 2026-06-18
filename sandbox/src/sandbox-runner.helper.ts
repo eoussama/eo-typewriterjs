@@ -13,10 +13,6 @@ import {
 
 
 
-// ---------------------------------------------------------------------------
-// Renderer kind
-// ---------------------------------------------------------------------------
-
 /**
  * @description
  * Supported renderer identifiers in the sandbox
@@ -27,10 +23,6 @@ export const ERendererKind = {
 } as const;
 
 export type TRendererKind = (typeof ERendererKind)[keyof typeof ERendererKind];
-
-// ---------------------------------------------------------------------------
-// Renderer factory
-// ---------------------------------------------------------------------------
 
 /**
  * @description
@@ -93,10 +85,6 @@ export function createSandboxRenderer(
   return domRenderer(domTarget);
 }
 
-// ---------------------------------------------------------------------------
-// Run result
-// ---------------------------------------------------------------------------
-
 /**
  * @description
  * Result of a sandbox code run
@@ -108,10 +96,6 @@ export type TRunResult = {
   readonly ok: false;
   readonly error: string;
 };
-
-// ---------------------------------------------------------------------------
-// Runner
-// ---------------------------------------------------------------------------
 
 /**
  * @description
@@ -131,7 +115,7 @@ export async function runUserCode(
 ): Promise<TRunResult> {
   let capturedTw: TTypewriter | null = null;
 
-  // Intercepted createTypewriter — captures the tw instance and notifies the host immediately
+  // Intercepted createTypewriter that captures the tw instance and notifies the host immediately
   function sandboxCreateTypewriter(opts: { renderer: IRenderer }): TTypewriter {
     const tw = createTypewriter(opts);
 
@@ -178,7 +162,7 @@ export default async function __sandbox__(ctx) {
     const url = URL.createObjectURL(blob);
 
     try {
-      // @ts-expect-error — dynamic import from blob URL, intentional
+      // @ts-expect-error for dynamic import from blob URL, intentional
       const mod: { default: (ctx: typeof ctx) => Promise<void> } = await import(/* @vite-ignore */ url);
 
       await mod.default(ctx);

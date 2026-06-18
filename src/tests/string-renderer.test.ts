@@ -5,11 +5,7 @@ import { StringRenderer } from "../renderers/string/string-renderer";
 
 
 
-// ---------------------------------------------------------------------------
-// StringRenderer — basic lifecycle
-// ---------------------------------------------------------------------------
-
-describe("stringRenderer — lifecycle", () => {
+describe("stringRenderer, lifecycle", () => {
   it("factory returns a StringRenderer instance", () => {
     const sr = stringRenderer();
 
@@ -66,11 +62,8 @@ describe("stringRenderer — lifecycle", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// StringRenderer — cursor options do not affect text output
-// ---------------------------------------------------------------------------
 
-describe("stringRenderer — cursor options do not affect output", () => {
+describe("stringRenderer, cursor options do not affect output", () => {
   it("default cursor config does not leak into toString()", async () => {
     const sr = stringRenderer();
     const tw = createTypewriter({ renderer: sr });
@@ -171,11 +164,8 @@ describe("stringRenderer — cursor options do not affect output", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// StringRenderer — toAnsiString()
-// ---------------------------------------------------------------------------
 
-describe("stringRenderer — toAnsiString()", () => {
+describe("stringRenderer, toAnsiString()", () => {
   it("returns empty string when no state has been set", () => {
     const sr = new StringRenderer();
 
@@ -294,18 +284,15 @@ describe("stringRenderer — toAnsiString()", () => {
     const result = sr.toAnsiString();
 
     expect(result).toContain("\x1B[31m");
-    // Each letter wrapped individually — all three present
+    // Each letter wrapped individually, all three present
     expect(result).toContain("r");
     expect(result).toContain("e");
     expect(result).toContain("d");
   });
 });
 
-// ---------------------------------------------------------------------------
-// StringRenderer — multi-command playback snapshots
-// ---------------------------------------------------------------------------
 
-describe("stringRenderer — playback snapshots", () => {
+describe("stringRenderer, playback snapshots", () => {
   it("captures the correct text after delete command", async () => {
     const sr = stringRenderer();
     const tw = createTypewriter({ renderer: sr });
@@ -352,7 +339,7 @@ describe("stringRenderer — playback snapshots", () => {
     tw.cancel();
     await playing;
 
-    // Output may be partial — but should not be the full text
+    // Output may be partial, but should not be the full text
     const txt = sr.toString();
 
     expect(txt.length).toBeGreaterThanOrEqual(0);

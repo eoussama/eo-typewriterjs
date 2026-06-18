@@ -36,7 +36,7 @@ let _execEventCounter = 0;
 export type TExecuteCommandsOptions = {
   /**
    * @description
-   * AbortSignal — when aborted, execution stops after the current awaited step
+   * AbortSignal, when aborted, execution stops after the current awaited step
    */
   readonly signal: AbortSignal;
 
@@ -511,7 +511,7 @@ async function executeMark(
 
 /**
  * @description
- * Execute a call command — invoke the callback with the current state context.
+ * Execute a call command, invoke the callback with the current state context.
  * After the callback completes, if a getLiveState function is provided via options,
  * the live state is read back so that runtime mutations made inside the callback
  * (e.g. setCursorVisible, setCursorOptions) are reflected in subsequent commands.
@@ -519,7 +519,7 @@ async function executeMark(
  * @param command - The call command to execute
  * @param state - The current typewriter state
  * @param options - Executor control options
- * @returns The state after the call — updated with any runtime mutations if getLiveState is set
+ * @returns The state after the call, updated with any runtime mutations if getLiveState is set
  */
 async function executeCall(
   command: TCallCommand,
@@ -622,7 +622,7 @@ export async function executeCommands(
     }
   }
   catch (err) {
-    // Swallow AbortError — any other error is re-thrown
+    // Swallow AbortError, any other error is re-thrown
     const isAbort = err instanceof DOMException && err.name === "AbortError";
 
     /* v8 ignore next 3 */

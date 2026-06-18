@@ -9,10 +9,6 @@ import { createTypewriter, EPlaybackStatus, stringRenderer } from "../index";
 
 
 
-// ---------------------------------------------------------------------------
-// call() command
-// ---------------------------------------------------------------------------
-
 describe("timeline.call()", () => {
   it("invokes the callback when played", async () => {
     const renderer = stringRenderer();
@@ -121,11 +117,8 @@ describe("timeline.call()", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// before / after hooks — whole-command
-// ---------------------------------------------------------------------------
 
-describe("before/after hooks — whole-command", () => {
+describe("before/after hooks whole-command", () => {
   it("type: before fires before any chars are typed", async () => {
     const renderer = stringRenderer();
     const tw = createTypewriter({ renderer });
@@ -321,11 +314,8 @@ describe("before/after hooks — whole-command", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// before / after hooks — per-unit
-// ---------------------------------------------------------------------------
 
-describe("before/after hooks — per-unit", () => {
+describe("before/after hooks per-unit", () => {
   it("type: per-char before fires once per character", async () => {
     const renderer = stringRenderer();
     const tw = createTypewriter({ renderer });
@@ -454,9 +444,6 @@ describe("before/after hooks — per-unit", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// Abort / cancel
-// ---------------------------------------------------------------------------
 
 describe("cancel()", () => {
   it("stops playback mid-flight and status becomes CANCELLED", async () => {
@@ -495,7 +482,7 @@ describe("cancel()", () => {
     const tw = createTypewriter({ renderer: stringRenderer() });
 
     tw.timeline.type("Hi", { by: "char", interval: 1 });
-    tw.cancel(); // IDLE — no-op
+    tw.cancel(); // IDLE no-op
 
     expect(tw.getState().status).toBe(EPlaybackStatus.IDLE);
   });
@@ -532,7 +519,7 @@ describe("cancel()", () => {
     await playing;
 
     expect(tw.getState().status).toBe(EPlaybackStatus.CANCELLED);
-    // callback may or may not have completed — the important thing is no error thrown
+    // callback may or may not have completed the important thing is no error thrown
     expect(typeof callCompleted).toBe("boolean");
   });
 
@@ -555,11 +542,9 @@ describe("cancel()", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// call() — before/after hooks on call command itself
-// ---------------------------------------------------------------------------
+// call() before/after hooks on call command itself
 
-describe("call() command — own before/after hooks", () => {
+describe("call() command own before/after hooks", () => {
   it("before hook fires before the callback", async () => {
     const renderer = stringRenderer();
     const tw = createTypewriter({ renderer });
@@ -578,9 +563,6 @@ describe("call() command — own before/after hooks", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// executeWait — abort after before hook (line 369: `if (!signal.aborted)` false branch)
-// ---------------------------------------------------------------------------
 
 describe("executeWait abort coverage", () => {
   it("cancelling during a wait command skips the after hook", async () => {
@@ -606,9 +588,6 @@ describe("executeWait abort coverage", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// executeCommands loop — signal already aborted before next command (line 544)
-// ---------------------------------------------------------------------------
 
 describe("executeCommands signal-aborted-at-loop-start coverage", () => {
   it("aborting inside a call callback prevents the next command from running", async () => {
@@ -626,9 +605,6 @@ describe("executeCommands signal-aborted-at-loop-start coverage", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// Seek mid-timer-resume — covers _cancelTimer body + _tickTimer multi-tick
-// ---------------------------------------------------------------------------
 
 describe("seek mid-timer-resume coverage", () => {
   it("seek while timer-resume is active cancels the pending timer and seeks correctly", async () => {
@@ -641,7 +617,7 @@ describe("seek mid-timer-resume coverage", () => {
     // Start playing
     const playing = tw.play();
 
-    // Wait briefly, then seek to t=50 (mid-first-interval) — this starts a timer-resume
+    // Wait briefly, then seek to t=50 (mid-first-interval) this starts a timer-resume
     await new Promise(r => setTimeout(r, 10));
     tw.seek(50); // seek while executor is running → _startTimerResume, timer scheduled
 
@@ -666,7 +642,7 @@ describe("seek mid-timer-resume coverage", () => {
 
     const playing = tw.play();
 
-    // Seek to t=0 while playing — executor is cancelled, timer-resume starts at t=0
+    // Seek to t=0 while playing executor is cancelled, timer-resume starts at t=0
     // This forces _tickTimer to schedule at least one future tick
     await new Promise(r => setTimeout(r, 5));
     tw.seek(0);
@@ -675,14 +651,11 @@ describe("seek mid-timer-resume coverage", () => {
     await playing;
     await new Promise(r => setTimeout(r, 100));
 
-    // Timer completed — all events were applied via timer ticks
+    // Timer completed all events were applied via timer ticks
     expect(renderer.toString()).toBe("AB");
   });
 });
 
-// ---------------------------------------------------------------------------
-// abort inside per-unit before/after hooks of type/delete (covers break; branches)
-// ---------------------------------------------------------------------------
 
 describe("abort inside per-unit hooks of type/delete", () => {
   it("aborting inside type per-unit before hook stops typing mid-sequence", async () => {
@@ -706,7 +679,7 @@ describe("abort inside per-unit hooks of type/delete", () => {
     });
     await tw.play();
 
-    // First char typed, second aborted mid-before-hook — only "H" rendered
+    // First char typed, second aborted mid-before-hook only "H" rendered
     expect(renderer.toString()).toBe("H");
   });
 
@@ -758,7 +731,7 @@ describe("abort inside per-unit hooks of type/delete", () => {
       });
     await tw.play();
 
-    // First delete fires (removes 'o'), second abort in before hook — only "Hell" deleted by 1
+    // First delete fires (removes 'o'), second abort in before hook only "Hell" deleted by 1
     expect(renderer.toString()).toBe("Hell");
   });
 
@@ -785,14 +758,11 @@ describe("abort inside per-unit hooks of type/delete", () => {
       });
     await tw.play();
 
-    // Two deletes fire ("lo" removed), abort on second after hook — "Hel" remains
+    // Two deletes fire ("lo" removed), abort on second after hook "Hel" remains
     expect(renderer.toString()).toBe("Hel");
   });
 });
 
-// ---------------------------------------------------------------------------
-// abort inside before hook of instant commands (executeMoveCursor/Select/Mark lines 395,432,469)
-// ---------------------------------------------------------------------------
 
 describe("abort inside before hook of instant commands", () => {
   it("aborting inside moveCursor before hook skips the cursor move", async () => {
@@ -842,12 +812,9 @@ describe("abort inside before hook of instant commands", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// deleteTextAtCursor — line 85 (cursor inside deleted range, clamped)
 // and line 96 (sel === undefined in updatedSelections for another cursor)
-// ---------------------------------------------------------------------------
 
-describe("deleteTextAtCursor — additional branch coverage", () => {
+describe("deleteTextAtCursor additional branch coverage", () => {
   it("clamps a cursor inside the deleted range to removeStart (single-event large delete)", () => {
     // Build state with cursor "main" at 5 and cursor "b" at 3 (inside [1,5]).
     // A single delete event with count=4 removes range [1,5].
@@ -941,11 +908,8 @@ describe("deleteTextAtCursor — additional branch coverage", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// insertTextAtCursor — line 67 (sel === undefined for another cursor)
-// ---------------------------------------------------------------------------
 
-describe("insertTextAtCursor — additional branch coverage", () => {
+describe("insertTextAtCursor additional branch coverage", () => {
   it("sel === undefined entry in selections is preserved unchanged during insertion", () => {
     // Simulate a selections map that has an explicit undefined entry for cursor "b".
     const state = {
@@ -1006,9 +970,6 @@ describe("insertTextAtCursor — additional branch coverage", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// compile — call command emits no events
-// ---------------------------------------------------------------------------
 
 describe("compile (call command)", () => {
   it("call command emits no compiled timeline events", () => {
