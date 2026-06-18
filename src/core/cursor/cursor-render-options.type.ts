@@ -11,7 +11,7 @@ import type { TCursorKind } from "./cursor-kind.enum";
 export type TCursorAnimationOptions = {
   /**
    * @description
-   * The name of the CSS @keyframes animation to apply (e.g. "my-fade").
+   * The name of the CSS `@keyframes` animation to apply (e.g. "my-fade").
    */
   readonly name: string;
 
