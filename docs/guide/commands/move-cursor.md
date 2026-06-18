@@ -13,12 +13,18 @@ tw.timeline.moveCursor(index: number, options?: TMoveCursorOptions): TimelineBui
 ```ts
 type TMoveCursorOptions = {
   cursor?: TCursorSelector; // default: "main"
+  before?: TCallbackHook;
+  after?: TCallbackHook;
+  audio?: TAudioCommandOverride;
 };
 ```
 
 | Option | Type | Default | Description |
 |---|---|---|---|
 | `cursor` | `TCursorSelector` | `"main"` | Which cursor to reposition |
+| `before` | `TCallbackHook` | — | Hook fired before the cursor moves |
+| `after` | `TCallbackHook` | — | Hook fired after the cursor has moved |
+| `audio` | `TAudioCommandOverride` | — | Per-command audio override |
 
 ## Behavior
 
@@ -124,3 +130,5 @@ await tw.play();
 - [`TMoveCursorOptions`](/api/type-aliases/TMoveCursorOptions)
 - [`TMoveCursorCommand`](/api/type-aliases/TMoveCursorCommand)
 - [`TCursorSelector`](/api/type-aliases/TCursorSelector)
+- [`TCallbackHook`](/api/type-aliases/TCallbackHook)
+- [`TAudioCommandOverride`](/api/type-aliases/TAudioCommandOverride)

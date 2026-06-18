@@ -12,6 +12,19 @@ Commands are the building blocks of a typewriter animation. They are scheduled o
 | [Move Cursor](/guide/commands/move-cursor) | `.moveCursor(index, options?)` | ❌ instant | ❌ no |
 | [Select](/guide/commands/select) | `.select(count, options?)` | ❌ instant | ❌ no |
 | [Mark](/guide/commands/mark) | `.mark(style, range, options?)` | ❌ instant | ✅ yes — applies style |
+| [Call](/guide/commands/call) | `.call(fn, options?)` | ❌ instant | ❌ no |
+
+## Shared options
+
+All commands accept the following options in addition to their own:
+
+| Option | Type | Description |
+|---|---|---|
+| `before` | `TCallbackHook` | Hook invoked before the command (or before each step when `unit` is set) |
+| `after` | `TCallbackHook` | Hook invoked after the command (or after each step when `unit` is set) |
+| `audio` | `TAudioCommandOverride` | Per-command audio override — `false` to silence, or an object with voice/volume settings |
+
+See [Hooks & Context](#hooks-and-context) below for the full hook shape.
 
 ## Timed vs instant commands
 
@@ -30,6 +43,42 @@ tw.timeline.type("Hello", { cursor: ["a", "b"] });
 
 See [Multi-cursor](/guide/commands/type#multi-cursor) in the type command docs for details.
 
+## Hooks and context
+
+Every command accepts optional `before` and `after` lifecycle hooks. Omit `unit` for a whole-command hook; set `unit` for a per-step hook that fires once per character, word, or other advance unit:
+
+```ts
+// Whole-command — fires once before/after the entire type command
+tw.timeline.type("Hello", {
+  by: "char",
+  interval: 80,
+  before: { callback: ({ state }) => console.log("start") },
+  after:  { callback: ({ state }) => console.log("done") },
+});
+
+// Per-step — fires once per character
+tw.timeline.type("Hello", {
+  by: "char",
+  interval: 80,
+  after: {
+    unit: "char",
+    callback: ({ stepIndex, stepCount }) => {
+      console.log(`${stepIndex + 1} / ${stepCount}`);
+    },
+  },
+});
+```
+
+The `callback` function receives a `TCallbackContext`:
+
+| Field | Type | Description |
+|---|---|---|
+| `state` | `TTypewriterState` | Current document and cursor snapshot |
+| `stepIndex` | `number` | Zero-based index of the current step (per-unit hooks only) |
+| `stepCount` | `number` | Total step count for the command |
+| `unit` | `string \| null` | Advance unit string, or `null` for whole-command hooks |
+| `signal` | `AbortSignal` | Aborted when `tw.cancel()` is called |
+
 ## Command pages
 
 - [type](/guide/commands/type)
@@ -38,3 +87,4 @@ See [Multi-cursor](/guide/commands/type#multi-cursor) in the type command docs f
 - [moveCursor](/guide/commands/move-cursor)
 - [select](/guide/commands/select)
 - [mark](/guide/commands/mark)
+- [call](/guide/commands/call)

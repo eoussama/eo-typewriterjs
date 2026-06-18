@@ -180,3 +180,148 @@ class CanvasRenderer implements IRenderer {
 await tw.play();
 // ← this line runs only after the animation finishes
 doSomethingAfter();
+```
+
+---
+
+## Inline callback between commands
+
+Use `.call()` to run logic mid-animation without breaking the chain:
+
+```ts
+tw.timeline
+  .type("Step 1: connecting", { by: "char", interval: 60 })
+  .call(async () => {
+    await fetch("/api/ping");
+  })
+  .type("\nStep 2: authenticated", { by: "char", interval: 60 });
+
+await tw.play();
+```
+
+---
+
+## Per-step hook
+
+Use the `after` hook with `unit` to react after every individual character:
+
+```ts
+const chars: string[] = [];
+
+tw.timeline.type("Hello", {
+  by: "char",
+  interval: 80,
+  after: {
+    unit: "char",
+    callback: ({ state }) => {
+      chars.push(state.document.text.at(-1) ?? "");
+    },
+  },
+});
+
+await tw.play();
+console.log(chars); // ["H", "e", "l", "l", "o"]
+```
+
+---
+
+## Conditional branch
+
+Use `.call()` to branch based on state:
+
+```ts
+const tw = createTypewriter({ renderer: domRenderer(el) });
+let path = "";
+
+tw.timeline
+  .type("Loading", { by: "char", interval: 60 })
+  .call(async ({ state }) => {
+    const ok = await checkConnection();
+
+    path = ok ? "ok" : "err";
+  });
+
+await tw.play();
+
+const tw2 = createTypewriter({ renderer: domRenderer(el) });
+
+if (path === "ok") {
+  tw2.timeline.type(" — connected!", { by: "char", interval: 60 });
+}
+else {
+  tw2.timeline.type(" — failed.", { by: "char", interval: 60 });
+}
+
+await tw2.play();
+```
+
+---
+
+## Typing sounds
+
+Enable audio and use custom voices:
+
+```ts
+import { createTypewriter, domRenderer, EAudioStrategy } from "eo-typewriterjs";
+
+const tw = createTypewriter({
+  renderer: domRenderer(el),
+  audio: {
+    enabled: true,
+    volume: 0.6,
+    voices: [
+      { src: "/sounds/key1.mp3" },
+      { src: "/sounds/key2.mp3" },
+    ],
+    strategy: EAudioStrategy.SHUFFLE,
+  },
+});
+
+tw.timeline.type("Clicky keys", { by: "char", interval: 80 });
+await tw.play();
+```
+
+Silence a single command while keeping audio enabled globally:
+
+```ts
+tw.timeline
+  .type("Audible line", { interval: 80 })
+  .type("Silent line", { interval: 80, audio: false });
+```
+
+---
+
+## Custom cursor
+
+Set the cursor kind at creation time and swap it at runtime with `.call()`:
+
+```ts
+import { createTypewriter, domRenderer, ECursorKind } from "eo-typewriterjs";
+
+const tw = createTypewriter({
+  renderer: domRenderer(el),
+  cursor: { kind: ECursorKind.PIPE },
+});
+
+tw.timeline
+  .type("Pipe cursor", { by: "char", interval: 60 })
+  .call(() => tw.setCursorOptions({ kind: ECursorKind.BLOCK }))
+  .type("\nBlock cursor", { by: "char", interval: 60 });
+
+await tw.play();
+```
+
+Hide the cursor before typing and reveal it after:
+
+```ts
+const tw = createTypewriter({
+  renderer: domRenderer(el),
+  cursor: { visible: false },
+});
+
+tw.timeline
+  .type("Revealed after typing", { by: "char", interval: 60 })
+  .call(() => tw.setCursorVisible(true));
+
+await tw.play();
+```

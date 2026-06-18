@@ -12,8 +12,11 @@ tw.timeline.select(count: number, options?: TSelectOptions): TimelineBuilder
 
 ```ts
 type TSelectOptions = {
-  by?: TAdvanceModeInput; // default: "char"
+  by?: TAdvanceModeInput;   // default: "char"
   cursor?: TCursorSelector; // default: "main"
+  before?: TCallbackHook;
+  after?: TCallbackHook;
+  audio?: TAudioCommandOverride;
 };
 ```
 
@@ -21,6 +24,9 @@ type TSelectOptions = {
 |---|---|---|---|
 | `by` | `TAdvanceModeInput` | `"char"` | Unit used to measure the selection |
 | `cursor` | `TCursorSelector` | `"main"` | Which cursor creates the selection |
+| `before` | `TCallbackHook` | — | Hook fired before the selection is applied |
+| `after` | `TCallbackHook` | — | Hook fired after the selection is applied |
+| `audio` | `TAudioCommandOverride` | — | Per-command audio override |
 
 ## Behavior
 
@@ -174,3 +180,5 @@ In the **string renderer**, `toString()` returns plain text without selection ma
 - [`TSelectionState`](/api/type-aliases/TSelectionState)
 - [`TAdvanceModeInput`](/api/type-aliases/TAdvanceModeInput)
 - [`TCursorSelector`](/api/type-aliases/TCursorSelector)
+- [`TCallbackHook`](/api/type-aliases/TCallbackHook)
+- [`TAudioCommandOverride`](/api/type-aliases/TAudioCommandOverride)

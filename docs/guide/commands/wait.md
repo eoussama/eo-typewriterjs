@@ -8,11 +8,22 @@ tw.timeline.wait(duration: number): TimelineBuilder
 
 `.wait()` is a **timing-only command**. It does not produce any playback events and does not mutate the document. It advances the internal timeline clock by the given duration, so subsequent commands start later.
 
-## Parameters
+## Options
 
-| Parameter | Type | Description |
+```ts
+type TWaitOptions = {
+  before?: TCallbackHook;
+  after?: TCallbackHook;
+  audio?: TAudioCommandOverride;
+};
+```
+
+| Parameter / Option | Type | Description |
 |---|---|---|
-| `duration` | `number` | Pause length in milliseconds |
+| `duration` | `number` | Pause length in milliseconds (required, positional) |
+| `before` | `TCallbackHook` | Hook fired immediately before the wait begins |
+| `after` | `TCallbackHook` | Hook fired immediately after the wait ends |
+| `audio` | `TAudioCommandOverride` | Per-command audio override |
 
 ## Behavior
 
@@ -103,3 +114,6 @@ tw.timeline
 ## Type reference
 
 - [`TWaitCommand`](/api/type-aliases/TWaitCommand)
+- [`TWaitOptions`](/api/type-aliases/TWaitOptions)
+- [`TCallbackHook`](/api/type-aliases/TCallbackHook)
+- [`TAudioCommandOverride`](/api/type-aliases/TAudioCommandOverride)

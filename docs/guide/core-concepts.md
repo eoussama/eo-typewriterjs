@@ -28,13 +28,15 @@ You add **commands** to the timeline using the fluent builder methods:
 | `.moveCursor(index, options?)` | Teleport the cursor to an absolute index |
 | `.select(count, options?)` | Create a text selection relative to the cursor |
 | `.mark(style, range, options?)` | Apply a style mark to a document range |
+| `.call(fn, options?)` | Schedule an inline callback (sync or async) |
 
 At play time, `compile()` converts the ordered command list into a flat array of **timeline events** — one event per step — each stamped with an absolute timestamp.
 
-`wait`, `moveCursor`, and `mark` are special:
+`wait`, `moveCursor`, `mark`, and `call` are special:
 - `wait` generates no events but advances the internal clock
 - `moveCursor` generates a single instant event and does **not** advance the clock
 - `mark` generates one or more instant mark events (one per cursor when `range` is `"selection"`) and does **not** advance the clock
+- `call` executes the callback at the current clock position; if the callback returns a `Promise`, playback suspends until it settles
 
 ### 2. Events → State (reduce)
 
@@ -43,6 +45,25 @@ The **player** advances through events in timestamp order. For each event it cal
 ### 3. State → Output (render)
 
 After each state update, the **renderer** is called with the new state. The built-in DOM renderer reads both the document text and the active cursor index to paint the output correctly.
+
+### Lifecycle hooks
+
+Every command accepts optional `before` and `after` hooks. Omit `unit` for a whole-command hook; include `unit` for a per-step hook:
+
+```ts
+tw.timeline.type("Hello", {
+  by: "char",
+  interval: 80,
+  after: {
+    unit: "char",
+    callback: ({ stepIndex, stepCount }) => {
+      console.log(`step ${stepIndex + 1} / ${stepCount}`);
+    },
+  },
+});
+```
+
+Hooks receive the same `TCallbackContext` as `.call()`: `state`, `stepIndex`, `stepCount`, `unit`, and `signal`.
 
 ---
 
@@ -139,5 +160,78 @@ tw.timeline
 await tw.play(); // compiles fresh each time
 await tw.play(); // replays the same sequence
 ```
+
+---
+
+## Audio
+
+Typing sounds are **disabled by default**. Enable them by passing `audio: { enabled: true }` to `createTypewriter()`:
+
+```ts
+const tw = createTypewriter({
+  renderer: domRenderer(el),
+  audio: { enabled: true },
+});
+```
+
+You can also control audio at runtime without rebuilding the typewriter:
+
+```ts
+tw.setAudioEnabled(true);   // toggle on/off
+tw.setAudioVolume(0.5);     // master volume, clamped to [0, 1]
+tw.setAudioOptions(opts);   // replace full audio config
+tw.getAudioOptions();       // current audio config snapshot
+```
+
+Per-command overrides let you silence or customize sound for individual commands using the `audio` option:
+
+```ts
+tw.timeline
+  .type("Silent line", { audio: false })
+  .type("Loud line", { audio: { volume: 1 } });
+```
+
+See [`TAudioOptions`](/api/type-aliases/TAudioOptions) and [`EAudioStrategy`](/api/variables/EAudioStrategy) for the full configuration shape.
+
+---
+
+## Cursor
+
+The default cursor is named `"main"` and is visible. You can customize it at creation time:
+
+```ts
+const tw = createTypewriter({
+  renderer: domRenderer(el),
+  cursor: { kind: ECursorKind.BLOCK, animation: "blink" },
+});
+```
+
+At runtime, use the cursor methods to hide, show, or update cursor options without stopping playback:
+
+```ts
+tw.setCursorVisible(false);                           // hide all cursors
+tw.setCursorVisible(true, "main");                    // show a specific cursor
+tw.setCursorOptions({ kind: ECursorKind.UNDERSCORE }); // change kind
+```
+
+---
+
+## Runtime controls
+
+After calling `play()`, the returned `TTypewriter` exposes full playback controls:
+
+| Method | Description |
+|---|---|
+| `play()` | Start or resume — returns `Promise<void>` |
+| `pause()` | Pause at the current position |
+| `stop()` | Stop and reset to the initial blank state |
+| `cancel()` | Stop but preserve the current rendered output |
+| `replay()` | Restart from the beginning — returns `Promise<void>` |
+| `seek(ms)` | Jump to an absolute timeline position |
+| `stepForward()` | Apply the next event group and pause |
+| `stepBackward()` | Undo the last event group and pause |
+| `setRate(n)` | Set playback speed multiplier |
+| `getState()` | Current playback metadata (`status`, `currentTime`, `duration`, `rate`) |
+| `getLiveState()` | Current document, cursor positions, and selections |
 
 See [Timeline & Commands](/guide/timeline) for the full command reference.

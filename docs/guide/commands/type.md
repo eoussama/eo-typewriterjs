@@ -12,19 +12,25 @@ Each step produces an **insert event** that appends characters at the current cu
 
 ```ts
 type TTypeOptions = {
-  by?: TAdvanceModeInput; // default: "char"
-  interval?: number; // default: 100 (ms)
-  style?: TStyleRef; // default: undefined
-  cursor?: TCursorSelector; // default: "main"
+  by?: TAdvanceModeInput;      // default: "char"
+  interval?: number;           // default: 50 (ms)
+  style?: TStyleRef;
+  cursor?: TCursorSelector;    // default: "main"
+  before?: TCallbackHook;
+  after?: TCallbackHook;
+  audio?: TAudioCommandOverride;
 };
 ```
 
 | Option | Type | Default | Description |
 |---|---|---|---|
 | `by` | `TAdvanceModeInput` | `"char"` | How to segment the text into steps |
-| `interval` | `number` | `100` | Milliseconds between each step |
+| `interval` | `number` | `50` | Milliseconds between each step |
 | `style` | `TStyleRef` | — | Style applied to every character as it is inserted |
 | `cursor` | `TCursorSelector` | `"main"` | Which cursor(s) to use |
+| `before` | `TCallbackHook` | — | Hook fired before the command (or before each step when `unit` is set) |
+| `after` | `TCallbackHook` | — | Hook fired after the command (or after each step when `unit` is set) |
+| `audio` | `TAudioCommandOverride` | — | Per-command audio override — `false` to silence, or a voice/volume object |
 
 ## Advance modes (`by`)
 
@@ -175,3 +181,5 @@ tw.timeline
 - [`TStyleRef`](/api/type-aliases/TStyleRef)
 - [`TTypeCommand`](/api/type-aliases/TTypeCommand)
 - [`TCursorSelector`](/api/type-aliases/TCursorSelector)
+- [`TCallbackHook`](/api/type-aliases/TCallbackHook)
+- [`TAudioCommandOverride`](/api/type-aliases/TAudioCommandOverride)

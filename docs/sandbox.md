@@ -25,17 +25,19 @@ This opens the sandbox at **`http://localhost:5174`**.
 
 ## Globals available in the editor
 
-Every snippet has the following identifiers in scope:
+Every snippet has the following identifiers in scope — no imports needed:
 
 | Identifier | Description |
 |---|---|
 | `createTypewriter` | Factory — create a `TTypewriter` instance |
 | `renderer` | The currently selected sandbox renderer |
 | `domRenderer` | Create a DOM renderer for an `HTMLElement` |
-| `StringRenderer` | Headless plain-text renderer |
+| `StringRenderer` | Headless plain-text renderer class |
 | `TimelineBuilder` | Fluent timeline builder |
 | `ECommandKind` | Command kind enum-like object |
 | `EPlaybackStatus` | Playback status enum-like object |
+| `ECursorKind` | Cursor kind enum-like object (`PIPE`, `BLOCK`, `UNDERSCORE`, …) |
+| `EAudioStrategy` | Audio strategy enum-like object (`RANDOM`, `SHUFFLE`, `ROUND_ROBIN`) |
 
 ## Recipe categories
 
@@ -44,9 +46,10 @@ Every snippet has the following identifiers in scope:
 | **Basics** | Hello World, multiline, word-by-word typing |
 | **Timing** | Intervals, waits, dramatic pauses |
 | **Editing** | Delete, retype, typo correction, insert in middle |
-| **Cursor** | `moveCursor()`, `select()`, multi-cursor patterns |
+| **Cursor** | `moveCursor()`, `select()`, cursor kinds, animations, runtime swap |
 | **Styling** | `mark()`, highlights, layered marks, gradient banners |
 | **Callbacks** | `call()`, async callbacks, `before`/`after` hooks, `cancel()` |
+| **Audio** | Enabling sound, custom voices, strategies, per-command override |
 | **Advanced** | Rate control, looping, combined multi-feature demos |
 
 ## Callback features
@@ -130,6 +133,30 @@ tw.timeline
 
 await tw.play();
 ```
+
+## Runtime methods
+
+All runtime methods are available on the `TTypewriter` instance returned by `createTypewriter()`:
+
+| Method | Description |
+|---|---|
+| `tw.play()` | Start or resume playback — returns `Promise<void>` |
+| `tw.pause()` | Pause at the current position |
+| `tw.stop()` | Stop and reset to blank state |
+| `tw.replay()` | Restart from the beginning — returns `Promise<void>` |
+| `tw.cancel()` | Stop, preserving the current output — status → `CANCELLED` |
+| `tw.seek(ms)` | Jump to an absolute timeline position in milliseconds |
+| `tw.stepForward()` | Apply the next event group and pause |
+| `tw.stepBackward()` | Undo the last event group and pause |
+| `tw.setRate(n)` | Set playback speed multiplier (e.g. `2` = double speed) |
+| `tw.getState()` | Returns `{ status, currentTime, duration, rate }` |
+| `tw.getLiveState()` | Returns the current document, cursors, and selections |
+| `tw.setAudioEnabled(bool)` | Toggle typing sounds on/off at runtime |
+| `tw.setAudioVolume(n)` | Set master volume, clamped to `[0, 1]` |
+| `tw.setAudioOptions(opts)` | Replace the full audio config at runtime |
+| `tw.getAudioOptions()` | Current audio config snapshot, or `null` |
+| `tw.setCursorVisible(bool, cursor?)` | Show or hide one or all cursors |
+| `tw.setCursorOptions(opts, cursor?)` | Update render options for one or all cursors |
 
 ## Usage
 

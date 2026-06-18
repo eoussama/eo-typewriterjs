@@ -46,6 +46,7 @@ Commands are appended in the order they are called.
 | [Move Cursor](/guide/commands/move-cursor) | `.moveCursor(index, options?)` | ❌ instant |
 | [Select](/guide/commands/select) | `.select(count, options?)` | ❌ instant |
 | [Mark](/guide/commands/mark) | `.mark(style, range, options?)` | ❌ instant |
+| [Call](/guide/commands/call) | `.call(fn, options?)` | ❌ instant |
 
 See the [Commands overview](/guide/commands/) for the full reference.
 
@@ -54,9 +55,9 @@ See the [Commands overview](/guide/commands/) for the full reference.
 - The timeline has an internal **clock cursor** that starts at `0 ms`.
 - Commands that produce events (`type`, `delete`) advance the clock by `count × interval` ms.
 - `.wait(duration)` advances the clock by `duration` ms without producing any events.
-- Instant commands (`moveCursor`, `select`, `mark`) do **not** advance the clock — they are compiled to a single event at the current clock position.
+- Instant commands (`moveCursor`, `select`, `mark`, `call`) do **not** advance the clock — they execute at the current clock position.
 
-This means instant commands that follow a timed command fire at the exact same timestamp as the last step of that command.
+Instant commands placed after a timed command fire at the exact timestamp of that command's last step.
 
 ## Compilation
 
@@ -82,7 +83,12 @@ console.log(tw.timeline.commands);
 
 The `commands` property exposes the raw ordered command list for debugging or introspection.
 
+## Lifecycle hooks
+
+Every command accepts optional `before` and `after` hooks. These are useful for observing or reacting to each step without scheduling a separate `.call()` command. See [Hooks & Context](/guide/commands/#hooks-and-context) for the full reference.
+
 ## Type reference
 
 - [`TimelineBuilder`](/api/classes/TimelineBuilder)
 - [`TCommand`](/api/type-aliases/TCommand)
+- [`TCommandHookOptions`](/api/type-aliases/TCommandHookOptions)

@@ -25,10 +25,18 @@ tw.timeline.mark(
 ```ts
 type TMarkOptions = {
   cursor?: TCursorSelector; // default: "main"
+  before?: TCallbackHook;
+  after?: TCallbackHook;
+  audio?: TAudioCommandOverride;
 };
 ```
 
-The `cursor` option is only relevant when `range` is `"selection"` — it identifies whose selection to read.
+| Option | Type | Default | Description |
+|---|---|---|---|
+| `cursor` | `TCursorSelector` | `"main"` | Whose selection to read when `range` is `"selection"` |
+| `before` | `TCallbackHook` | — | Hook fired before the mark is applied |
+| `after` | `TCallbackHook` | — | Hook fired after the mark is applied |
+| `audio` | `TAudioCommandOverride` | — | Per-command audio override |
 
 ## Style reference (`TStyleRef`)
 
@@ -217,3 +225,5 @@ When the document text is mutated by `.delete()`:
 - [`TStyleObject`](/api/type-aliases/TStyleObject)
 - [`TTextMark`](/api/type-aliases/TTextMark)
 - [`TCursorSelector`](/api/type-aliases/TCursorSelector)
+- [`TCallbackHook`](/api/type-aliases/TCallbackHook)
+- [`TAudioCommandOverride`](/api/type-aliases/TAudioCommandOverride)

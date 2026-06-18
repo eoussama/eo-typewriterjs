@@ -12,17 +12,23 @@ Each step produces a **delete event** that removes one unit and moves the cursor
 
 ```ts
 type TDeleteOptions = {
-  by?: TAdvanceModeInput; // default: "char"
-  interval?: number; // default: 100 (ms)
-  cursor?: TCursorSelector; // default: "main"
+  by?: TAdvanceModeInput;      // default: "char"
+  interval?: number;           // default: 50 (ms)
+  cursor?: TCursorSelector;    // default: "main"
+  before?: TCallbackHook;
+  after?: TCallbackHook;
+  audio?: TAudioCommandOverride;
 };
 ```
 
 | Option | Type | Default | Description |
 |---|---|---|---|
 | `by` | `TAdvanceModeInput` | `"char"` | How to count units when deleting |
-| `interval` | `number` | `100` | Milliseconds between each deletion step |
-| `cursor` | `string` | `"main"` | Which cursor to delete from |
+| `interval` | `number` | `50` | Milliseconds between each deletion step |
+| `cursor` | `TCursorSelector` | `"main"` | Which cursor to delete from |
+| `before` | `TCallbackHook` | — | Hook fired before the command (or before each step when `unit` is set) |
+| `after` | `TCallbackHook` | — | Hook fired after the command (or after each step when `unit` is set) |
+| `audio` | `TAudioCommandOverride` | — | Per-command audio override — `false` to silence, or a voice/volume object |
 
 ## Behavior
 
@@ -155,3 +161,5 @@ await tw.play();
 - [`TDeleteCommand`](/api/type-aliases/TDeleteCommand)
 - [`TAdvanceModeInput`](/api/type-aliases/TAdvanceModeInput)
 - [`TCursorSelector`](/api/type-aliases/TCursorSelector)
+- [`TCallbackHook`](/api/type-aliases/TCallbackHook)
+- [`TAudioCommandOverride`](/api/type-aliases/TAudioCommandOverride)
