@@ -99,6 +99,31 @@ await tw.play();`,
   },
 
   {
+    id: "emoji-unicode",
+    title: "Emoji & Unicode",
+    description: "Type and delete emoji clusters, flags, ZWJ sequences, and accented text using by: \"grapheme\" for correct user-perceived character handling.",
+    category: "basics",
+    code: `const tw = createTypewriter({ renderer });
+
+// Each emoji spans a different number of codepoints but is one user-perceived character.
+//   🙂     = 1 codepoint
+//   👍🏽    = base + skin-tone modifier (2 codepoints)
+//   🇲🇦    = flag via two regional indicators (2 codepoints)
+//   👨‍👩‍👧‍👦 = ZWJ family sequence (7 codepoints joined by U+200D)
+// by: "grapheme" steps one perceived character at a time regardless of byte length.
+tw.timeline
+  .type("🙂  👍🏽  🇲🇦  👨‍👩‍👧‍👦", { by: "grapheme", interval: 250 })
+  .wait(600)
+  .type("\\ncafé  naïve  façade", { by: "grapheme", interval: 70 })
+  .wait(500)
+  .delete(6, { by: "grapheme", interval: 110 })
+  .type("résumé", { by: "grapheme", interval: 90 })
+  .wait(800);
+
+await tw.play();`,
+  },
+
+  {
     id: "multiple-commands",
     title: "Full Sequence",
     description: "A full demo combining type, wait, delete, and retype in one timeline.",
