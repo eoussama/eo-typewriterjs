@@ -88,4 +88,95 @@ export const CURSOR_SCENARIOS: readonly TScenario[] = [
       await tw.play();
     },
   },
+  {
+    id: "cursor-animation-none",
+    async run({ el }) {
+      const tw = createTypewriter({ renderer: domRenderer(el), cursor: { animation: "none" } });
+
+      tw.timeline.type("X", { by: "char", interval: 1 });
+      await tw.play();
+    },
+  },
+  {
+    id: "cursor-custom-animation",
+    async run({ el }) {
+      const tw = createTypewriter({
+        renderer: domRenderer(el),
+        cursor: {
+          animation: {
+            name: "my-blink",
+            duration: "1s",
+            iterationCount: "infinite",
+          },
+        },
+      });
+
+      tw.timeline.type("X", { by: "char", interval: 1 });
+      await tw.play();
+    },
+  },
+  {
+    id: "cursor-content-override",
+    async run({ el }) {
+      const tw = createTypewriter({
+        renderer: domRenderer(el),
+        cursor: { kind: ECursorKind.PIPE, content: "❯" },
+      });
+
+      tw.timeline.type("X", { by: "char", interval: 1 });
+      await tw.play();
+    },
+  },
+  {
+    id: "cursor-class-and-attrs",
+    async run({ el }) {
+      const tw = createTypewriter({
+        renderer: domRenderer(el),
+        cursor: {
+          className: "my-cursor",
+          attrs: { "data-role": "caret" },
+        },
+      });
+
+      tw.timeline.type("X", { by: "char", interval: 1 });
+      await tw.play();
+    },
+  },
+  {
+    id: "cursor-underscore",
+    async run({ el }) {
+      const tw = createTypewriter({
+        renderer: domRenderer(el),
+        cursor: { kind: ECursorKind.UNDERSCORE },
+      });
+
+      tw.timeline.type("X", { by: "char", interval: 1 });
+      await tw.play();
+    },
+  },
+  {
+    id: "cursor-runtime-toggle",
+    async run({ el }) {
+      const tw = createTypewriter({ renderer: domRenderer(el) });
+
+      tw.timeline
+        .type("Hello", { by: "char", interval: 1 })
+        .call(() => { tw.setCursorVisible(false); })
+        .type(" World", { by: "char", interval: 1 })
+        .call(() => { tw.setCursorVisible(true); });
+      await tw.play();
+    },
+  },
+  {
+    id: "cursor-runtime-options-update",
+    async run({ el }) {
+      const tw = createTypewriter({ renderer: domRenderer(el), cursor: { kind: ECursorKind.PIPE } });
+
+      tw.timeline
+        .type("Hello", { by: "char", interval: 1 })
+        .call(() => { tw.setCursorOptions({ kind: ECursorKind.UNDERSCORE }); })
+        .type(" World", { by: "char", interval: 1 });
+      await tw.play();
+    },
+  },
 ];

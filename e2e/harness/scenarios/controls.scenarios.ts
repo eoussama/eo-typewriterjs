@@ -105,4 +105,121 @@ export const CONTROLS_SCENARIOS: readonly TScenario[] = [
       await playing;
     },
   },
+  {
+    id: "cancel",
+    async run({ el, setStatus }) {
+      const tw = createTypewriter({ renderer: domRenderer(el) });
+
+      tw.timeline.type("Hello world", { by: "char", interval: 20 });
+
+      const playing = tw.play();
+
+      await new Promise<void>(resolve => setTimeout(resolve, 10));
+      tw.cancel();
+      await playing;
+      setStatus(tw.getState().status);
+    },
+  },
+  {
+    id: "cancel-then-replay",
+    async run({ el, setStatus }) {
+      const tw = createTypewriter({ renderer: domRenderer(el) });
+
+      tw.timeline.type("Hello", { by: "char", interval: 1 });
+
+      const playing = tw.play();
+
+      await new Promise<void>(resolve => setTimeout(resolve, 5));
+      tw.cancel();
+      await playing;
+      await tw.replay();
+      setStatus(tw.getState().status);
+    },
+  },
+  {
+    id: "seek-from-paused",
+    async run({ el, setStatus }) {
+      const tw = createTypewriter({ renderer: domRenderer(el) });
+
+      tw.timeline.type("Hello", { by: "char", interval: 100 });
+
+      const playing = tw.play();
+
+      await new Promise<void>(resolve => setTimeout(resolve, 10));
+      tw.pause();
+      await playing;
+
+      tw.seek(0);
+      setStatus(tw.getState().status);
+    },
+  },
+  {
+    id: "seek-from-cancelled",
+    async run({ el, setStatus }) {
+      const tw = createTypewriter({ renderer: domRenderer(el) });
+
+      tw.timeline.type("Hello", { by: "char", interval: 100 });
+
+      const playing = tw.play();
+
+      await new Promise<void>(resolve => setTimeout(resolve, 10));
+      tw.cancel();
+      await playing;
+
+      tw.seek(100);
+      setStatus(tw.getState().status);
+    },
+  },
+  {
+    id: "step-forward-to-end",
+    async run({ el, setStatus }) {
+      const tw = createTypewriter({ renderer: domRenderer(el) });
+
+      tw.timeline.type("AB", { by: "char", interval: 100 });
+      tw.seek(0);
+
+      while (tw.getState().status !== EPlaybackStatus.COMPLETED) {
+        tw.stepForward();
+      }
+
+      setStatus(tw.getState().status);
+    },
+  },
+  {
+    id: "step-backward-at-start",
+    async run({ el, setStatus }) {
+      const tw = createTypewriter({ renderer: domRenderer(el) });
+
+      tw.timeline.type("Hello", { by: "char", interval: 100 });
+      tw.seek(0);
+      tw.stepBackward();
+      setStatus(tw.getState().status);
+    },
+  },
+  {
+    id: "play-after-completed",
+    async run({ el, setStatus }) {
+      const tw = createTypewriter({ renderer: domRenderer(el) });
+
+      tw.timeline.type("Hello", { by: "char", interval: 1 });
+      await tw.play();
+
+      const afterFirst = tw.getState().status;
+
+      await tw.play();
+      setStatus(`first:${afterFirst},second:${tw.getState().status}`);
+    },
+  },
+  {
+    id: "stop-then-play",
+    async run({ el, setStatus }) {
+      const tw = createTypewriter({ renderer: domRenderer(el) });
+
+      tw.timeline.type("Hello", { by: "char", interval: 1 });
+      await tw.play();
+      tw.stop();
+      await tw.play();
+      setStatus(tw.getState().status);
+    },
+  },
 ];

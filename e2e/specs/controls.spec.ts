@@ -61,4 +61,57 @@ test.describe("controls", () => {
 
     await expect(getOutputLocator(page)).toBeVisible();
   });
+
+  test("cancel stops playback and sets cancelled status", async ({ page }) => {
+    await gotoScenario(page, "cancel");
+
+    expect(await getStatus(page)).toBe("cancelled");
+  });
+
+  test("cancel then replay restarts and completes", async ({ page }) => {
+    await gotoScenario(page, "cancel-then-replay");
+
+    expect(await getOutputText(page)).toBe("Hello");
+    expect(await getStatus(page)).toBe("completed");
+  });
+
+  test("seek from paused stays paused", async ({ page }) => {
+    await gotoScenario(page, "seek-from-paused");
+
+    expect(await getStatus(page)).toBe("paused");
+  });
+
+  test("seek from cancelled transitions to paused", async ({ page }) => {
+    await gotoScenario(page, "seek-from-cancelled");
+
+    expect(await getStatus(page)).toBe("paused");
+  });
+
+  test("stepForward repeated to end sets completed status", async ({ page }) => {
+    await gotoScenario(page, "step-forward-to-end");
+
+    expect(await getOutputText(page)).toBe("AB");
+    expect(await getStatus(page)).toBe("completed");
+  });
+
+  test("stepBackward at position 0 stays paused with no change", async ({ page }) => {
+    await gotoScenario(page, "step-backward-at-start");
+
+    expect(await getOutputText(page)).toBe("");
+    expect(await getStatus(page)).toBe("paused");
+  });
+
+  test("play after completed triggers replay and completes again", async ({ page }) => {
+    await gotoScenario(page, "play-after-completed");
+
+    expect(await getOutputText(page)).toBe("Hello");
+    expect(await getStatus(page)).toContain("second:completed");
+  });
+
+  test("stop then play restarts from beginning and completes", async ({ page }) => {
+    await gotoScenario(page, "stop-then-play");
+
+    expect(await getOutputText(page)).toBe("Hello");
+    expect(await getStatus(page)).toBe("completed");
+  });
 });
