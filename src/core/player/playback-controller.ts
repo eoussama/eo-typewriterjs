@@ -186,7 +186,11 @@ export class PlaybackController {
    * @param initialState - The typewriter state to start from (defaults to blank state)
    * @param audioManager - Optional audio manager instance for typing/delete sounds
    */
-  constructor(renderer: IRenderer, initialState?: TTypewriterState, audioManager?: AudioManagerHelper | null) {
+  constructor(
+    renderer: IRenderer,
+    initialState?: TTypewriterState,
+    audioManager?: AudioManagerHelper | null,
+  ) {
     this._renderer = renderer;
     /* v8 ignore next */
     this._initialState = initialState ?? createInitialState();

@@ -12,9 +12,9 @@ Each step produces an **insert event** that appends characters at the current cu
 
 ```ts
 type TTypeOptions = {
-  by?: TAdvanceModeInput;   // default: "char"
-  interval?: number;        // default: 100 (ms)
-  style?: TStyleRef;        // default: undefined
+  by?: TAdvanceModeInput; // default: "char"
+  interval?: number; // default: 100 (ms)
+  style?: TStyleRef; // default: undefined
   cursor?: TCursorSelector; // default: "main"
 };
 ```
@@ -41,11 +41,11 @@ The `by` option controls how the input text is split into steps.
 | `"custom"` | Entire text as a single step |
 
 ```ts
-tw.timeline.type("Hello", { by: "char" });            // one code unit per step
-tw.timeline.type("Hello", { by: "grapheme" });        // one grapheme cluster per step
-tw.timeline.type("Hello world", { by: "word" });      // one word per step
-tw.timeline.type("Line 1\nLine 2", { by: "line" });   // one line per step
-tw.timeline.type("All at once", { by: "custom" });    // one step total
+tw.timeline.type("Hello", { by: "char" }); // one code unit per step
+tw.timeline.type("Hello", { by: "grapheme" }); // one grapheme cluster per step
+tw.timeline.type("Hello world", { by: "word" }); // one word per step
+tw.timeline.type("Line 1\nLine 2", { by: "line" }); // one line per step
+tw.timeline.type("All at once", { by: "custom" }); // one step total
 ```
 
 ### Object form — custom chunk size
@@ -121,8 +121,8 @@ If the targeted cursor has an active selection when `.type()` fires, the selecte
 tw.timeline
   .type("Hello World")
   .moveCursor(6)
-  .select(5)            // selects "World"
-  .type("there");       // replaces selection with "there"
+  .select(5) // selects "World"
+  .type("there"); // replaces selection with "there"
 
 await tw.play();
 // result: "Hello there"

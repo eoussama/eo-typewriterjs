@@ -1,3 +1,4 @@
+import type { TAudioCommandOverride } from "../audio/audio-command-override.type";
 import type { TCallbackHook } from "./callback-hook.type";
 import type { TCommandKind } from "./command-kind.enum";
 
@@ -22,4 +23,14 @@ export type TBaseCommand = {
    * Optional hook invoked after the command (or after each step when `unit` is provided)
    */
   readonly after?: TCallbackHook;
+
+  /**
+   * @description
+   * Per-command audio override.
+   * Set to `false` to silence sounds for this command.
+   * Set to an object to use a specific voice, voices subset, or volume.
+   * When omitted, the typewriter-level audio defaults apply.
+   */
+  readonly audio?: TAudioCommandOverride;
+
 };

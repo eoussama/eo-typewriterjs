@@ -20,6 +20,8 @@ yarn add eo-typewriterjs
 ```ts
 import { createTypewriter, domRenderer } from "eo-typewriterjs";
 
+
+
 const el = document.getElementById("output")!;
 
 const tw = createTypewriter({
@@ -36,10 +38,12 @@ await tw.play();
 ```ts
 import { createTypewriter, stringRenderer } from "eo-typewriterjs";
 
+
+
 let result = "";
 
 const tw = createTypewriter({
-  renderer: stringRenderer(text => {
+  renderer: stringRenderer((text) => {
     result = text;
   }),
 });

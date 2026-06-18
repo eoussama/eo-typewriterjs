@@ -260,7 +260,10 @@ export class DomRenderer implements IRenderer {
     const openSelections = new Set<string>();
 
     for (const segment of richSegments) {
-      // Find all boundaries within this segment's range
+      // Find all boundaries within this segment's range.
+      // Cursor boundaries at segment ends are handled specially below so they
+      // render once, while selection boundaries may still open/close exactly
+      // at style edges.
       const segBoundaries = boundaries.filter(b => b.index >= segment.from && b.index <= segment.to);
 
       let pos = segment.from;
@@ -276,7 +279,15 @@ export class DomRenderer implements IRenderer {
           }
         }
 
+        const isTrailingCursorBoundary = boundary.kind === "cursor"
+          && boundary.index === segment.to
+          && segment !== richSegments[richSegments.length - 1];
+
         pos = boundary.index;
+
+        if (isTrailingCursorBoundary) {
+          continue;
+        }
 
         if (boundary.kind === "selStart") {
           openSelections.add(boundary.cursorId);

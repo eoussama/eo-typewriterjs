@@ -5,13 +5,14 @@ import type { TMarkRange } from "../commands/mark-command.type";
 import type { TAdvanceModeInput, TCursorSelector } from "../commands/type-command.type";
 import type { TStyleRef } from "../state/rich-text-document.type";
 
+
 import { ECommandKind } from "../commands/command-kind.enum";
 
 
 
 /**
  * @description
- * Shared lifecycle hook options available on all builder methods that support them
+ * Shared lifecycle hook and runtime override options available on all builder methods
  */
 export type TCommandHookOptions = {
   /**
@@ -25,6 +26,15 @@ export type TCommandHookOptions = {
    * Hook invoked after the command (or after each step when `unit` is set)
    */
   readonly after?: TCallbackHook;
+
+  /**
+   * @description
+   * Per-command audio override.
+   * Set to `false` to silence sounds for this command.
+   * Set to an object to use a specific voice, voices subset, or volume.
+   * When omitted, the typewriter-level audio defaults apply.
+   */
+  readonly audio?: TAudioCommandOverride;
 };
 
 /**
@@ -44,13 +54,6 @@ export type TDeleteOptions = TCommandHookOptions & {
   readonly by?: TAdvanceModeInput;
   readonly interval?: number;
   readonly cursor?: TCursorSelector;
-
-  /**
-   * @description
-   * Per-command audio override.
-   * Set to `false` to silence delete sounds for this command.
-   */
-  readonly audio?: TAudioCommandOverride;
 };
 
 /**
@@ -70,13 +73,6 @@ export type TTypeOptions = TCommandHookOptions & {
   readonly interval?: number;
   readonly style?: TStyleRef;
   readonly cursor?: TCursorSelector;
-
-  /**
-   * @description
-   * Per-command audio override.
-   * Set to `false` to silence typing sounds for this command.
-   */
-  readonly audio?: TAudioCommandOverride;
 };
 
 /**
@@ -143,6 +139,7 @@ export class TimelineBuilder {
       id: `cmd_${++commandCounter}`,
       kind: ECommandKind.WAIT,
       duration,
+      audio: options?.audio,
       before: options?.before,
       after: options?.after,
     });
@@ -169,6 +166,7 @@ export class TimelineBuilder {
       cursor: options?.cursor ?? "main",
       count,
       by: options?.by,
+      audio: options?.audio,
       before: options?.before,
       after: options?.after,
     });
@@ -193,6 +191,7 @@ export class TimelineBuilder {
       kind: ECommandKind.MOVE_CURSOR,
       cursor: options?.cursor ?? "main",
       index,
+      audio: options?.audio,
       before: options?.before,
       after: options?.after,
     });
@@ -274,6 +273,7 @@ export class TimelineBuilder {
       cursor: options?.cursor ?? "main",
       style,
       range,
+      audio: options?.audio,
       before: options?.before,
       after: options?.after,
     });
@@ -298,6 +298,7 @@ export class TimelineBuilder {
       id: `cmd_${++commandCounter}`,
       kind: ECommandKind.CALL,
       callback,
+      audio: options?.audio,
       before: options?.before,
       after: options?.after,
     });

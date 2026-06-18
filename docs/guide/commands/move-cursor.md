@@ -63,8 +63,8 @@ await tw.play();
 tw.timeline
   .type("Hello World", { by: "char", interval: 80 })
   .wait(600)
-  .moveCursor(6)                              // position before "World"
-  .delete(5, { by: "char", interval: 60 })   // remove "World"
+  .moveCursor(6) // position before "World"
+  .delete(5, { by: "char", interval: 60 }) // remove "World"
   .type("TypewriterJS", { by: "char", interval: 80 });
 
 await tw.play();
@@ -76,8 +76,8 @@ await tw.play();
 ```ts
 tw.timeline
   .type("Hello", { cursor: ["a", "b"] })
-  .moveCursor(0, { cursor: "a" })   // move only cursor "a"
-  .type(">> ", { cursor: "a" });    // cursor "a" prepends
+  .moveCursor(0, { cursor: "a" }) // move only cursor "a"
+  .type(">> ", { cursor: "a" }); // cursor "a" prepends
 
 await tw.play();
 ```
@@ -90,9 +90,9 @@ await tw.play();
 tw.timeline
   .type("Hello World")
   .moveCursor(6)
-  .select(5)                          // selects "World"
-  .mark("highlight", "selection")     // style the selection
-  .moveCursor(11);                    // deselect — cursor goes to end
+  .select(5) // selects "World"
+  .mark("highlight", "selection") // style the selection
+  .moveCursor(11); // deselect — cursor goes to end
 
 await tw.play();
 ```
@@ -103,9 +103,9 @@ Because `.moveCursor()` does not advance the clock, any timed command that follo
 
 ```ts
 tw.timeline
-  .type("Hello", { interval: 80 })   // ends at 5 × 80 = 400 ms
-  .moveCursor(0)                     // no clock change — still at 400 ms
-  .type(">> ", { interval: 80 });    // starts at 400 ms
+  .type("Hello", { interval: 80 }) // ends at 5 × 80 = 400 ms
+  .moveCursor(0) // no clock change — still at 400 ms
+  .type(">> ", { interval: 80 }); // starts at 400 ms
 
 await tw.play();
 ```

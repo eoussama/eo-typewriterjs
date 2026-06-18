@@ -84,8 +84,8 @@ When `range` is `"selection"`, the mark is applied to the targeted cursor's **cu
 tw.timeline
   .type("Hello World")
   .moveCursor(6)
-  .select(5)                         // selects "World" (indices 6–11)
-  .mark("highlight", "selection");   // marks exactly that range
+  .select(5) // selects "World" (indices 6–11)
+  .mark("highlight", "selection"); // marks exactly that range
 ```
 
 The mark is applied using the selection's `from`/`to` values — it is equivalent to calling `.mark(style, { from: selection.from, to: selection.to })`. The selection itself is not affected by `.mark()`; use `.moveCursor()` or `.type()` to clear it afterward.
@@ -120,8 +120,8 @@ await tw.play();
 ```ts
 tw.timeline
   .type("Error: file not found", { by: "char", interval: 60 })
-  .mark("error",  { from: 0, to: 5  })   // "Error"
-  .mark("muted",  { from: 7, to: 21 });  // "file not found"
+  .mark("error", { from: 0, to: 5 }) // "Error"
+  .mark("muted", { from: 7, to: 21 }); // "file not found"
 
 await tw.play();
 ```
@@ -148,8 +148,8 @@ tw.timeline
   .wait(600)
   .moveCursor(6)
   .select(5)
-  .mark("highlight", "selection")   // marks the selection
-  .moveCursor(11);                  // clears the selection UI
+  .mark("highlight", "selection") // marks the selection
+  .moveCursor(11); // clears the selection UI
 
 await tw.play();
 // "World" permanently carries the "highlight" class
@@ -165,6 +165,7 @@ tw.timeline
 await tw.play();
 
 const renderer = stringRenderer();
+
 // ...
 renderer.toAnsiString(); // "\x1B[31;1mError\x1B[0m: file not found"
 ```
@@ -175,7 +176,7 @@ renderer.toAnsiString(); // "\x1B[31;1mError\x1B[0m: file not found"
 tw.timeline
   .type("Critical error occurred", { by: "char", interval: 60 })
   .mark(
-    { className: "alert", attrs: { role: "alert", "aria-live": "assertive" } },
+    { className: "alert", attrs: { "role": "alert", "aria-live": "assertive" } },
     { from: 0, to: 8 }
   );
 

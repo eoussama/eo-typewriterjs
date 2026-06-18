@@ -11,6 +11,8 @@ The most common renderer for web applications. It writes the current document te
 ```ts
 import { createTypewriter, domRenderer } from "eo-typewriterjs";
 
+
+
 const el = document.getElementById("output")!;
 
 const tw = createTypewriter({
@@ -100,6 +102,8 @@ For server-side rendering, testing, or any context without a DOM. Stores the lat
 ```ts
 import { createTypewriter, stringRenderer } from "eo-typewriterjs";
 
+
+
 const renderer = stringRenderer();
 const tw = createTypewriter({ renderer });
 
@@ -160,6 +164,7 @@ class ConsoleRenderer implements IRenderer {
 }
 
 const tw = createTypewriter({ renderer: new ConsoleRenderer() });
+
 tw.timeline.type("Hello, terminal!");
 await tw.play();
 ```

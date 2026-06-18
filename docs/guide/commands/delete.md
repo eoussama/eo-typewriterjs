@@ -12,8 +12,8 @@ Each step produces a **delete event** that removes one unit and moves the cursor
 
 ```ts
 type TDeleteOptions = {
-  by?: TAdvanceModeInput;   // default: "char"
-  interval?: number;        // default: 100 (ms)
+  by?: TAdvanceModeInput; // default: "char"
+  interval?: number; // default: 100 (ms)
   cursor?: TCursorSelector; // default: "main"
 };
 ```
@@ -37,10 +37,10 @@ type TDeleteOptions = {
 The `by` option controls how text is chunked when counting deletion units.
 
 ```ts
-tw.timeline.delete(5, { by: "char" });       // delete 5 characters
-tw.timeline.delete(2, { by: "word" });       // delete 2 words
-tw.timeline.delete(1, { by: "line" });       // delete 1 line
-tw.timeline.delete(3, { by: "grapheme" });   // delete 3 grapheme clusters
+tw.timeline.delete(5, { by: "char" }); // delete 5 characters
+tw.timeline.delete(2, { by: "word" }); // delete 2 words
+tw.timeline.delete(1, { by: "line" }); // delete 1 line
+tw.timeline.delete(3, { by: "grapheme" }); // delete 3 grapheme clusters
 ```
 
 Use the object form for multi-unit steps:
@@ -82,7 +82,7 @@ await tw.play();
 tw.timeline
   .type("Helo world", { by: "char", interval: 80 })
   .wait(300)
-  .delete(9, { by: "char", interval: 50 })   // erase back to "H"
+  .delete(9, { by: "char", interval: 50 }) // erase back to "H"
   .type("ello world", { by: "char", interval: 80 });
 
 await tw.play();
@@ -95,7 +95,7 @@ await tw.play();
 tw.timeline
   .type("Loading...", { by: "char", interval: 80 })
   .wait(600)
-  .delete(3, { by: "char", interval: 100 });   // remove "..."
+  .delete(3, { by: "char", interval: 100 }); // remove "..."
 
 await tw.play();
 // "Loading..." → "Loading"
@@ -120,8 +120,8 @@ await tw.play();
 ```ts
 tw.timeline
   .type("Hello World")
-  .moveCursor(5)           // cursor is now at index 5 (between "Hello" and " ")
-  .delete(5, { by: "char", interval: 60 });  // removes "Hello"
+  .moveCursor(5) // cursor is now at index 5 (between "Hello" and " ")
+  .delete(5, { by: "char", interval: 60 }); // removes "Hello"
 
 await tw.play();
 // result: " World"
@@ -135,8 +135,8 @@ If the targeted cursor has an active selection when `.delete()` fires, the entir
 tw.timeline
   .type("Hello World")
   .moveCursor(6)
-  .select(5)       // selects "World"
-  .delete(1);      // deletes the selection in one step
+  .select(5) // selects "World"
+  .delete(1); // deletes the selection in one step
 
 await tw.play();
 // result: "Hello "

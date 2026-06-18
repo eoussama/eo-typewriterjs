@@ -59,7 +59,7 @@ export type TExecuteCommandsOptions = {
   /**
    * @description
    * Optional audio manager instance.
-   * When provided, typing and delete sounds are played on each step.
+   * When provided, sounds are played on each step and on instant commands.
    */
   readonly getAudioManager?: () => AudioManagerHelper | null;
 };
@@ -240,6 +240,8 @@ async function executeType(
       }
     }
 
+    options.getAudioManager?.()?.playTyping(command.audio);
+
     for (const cursorId of cursorIds) {
       const event: TInsertEvent = {
         id: `exec_ins_${++_execEventCounter}`,
@@ -253,8 +255,6 @@ async function executeType(
 
       state = reduce(state, event);
     }
-
-    options.getAudioManager?.()?.playTyping(command.audio);
 
     renderer.render(state);
 
@@ -329,6 +329,8 @@ async function executeDelete(
       }
     }
 
+    options.getAudioManager?.()?.playDelete(command.audio);
+
     for (const cursorId of cursorIds) {
       const event: TDeleteEvent = {
         id: `exec_del_${++_execEventCounter}`,
@@ -342,8 +344,6 @@ async function executeDelete(
 
       state = reduce(state, event);
     }
-
-    options.getAudioManager?.()?.playDelete(command.audio);
 
     renderer.render(state);
 
@@ -384,6 +384,7 @@ async function executeWait(
   await invokeHook(command.before, makeContext(state, 0, 1, null, options.signal));
 
   if (!options.signal.aborted) {
+    options.getAudioManager?.()?.playTyping(command.audio);
     await awaitDelay(command.duration, options);
   }
 
@@ -422,6 +423,7 @@ async function executeMoveCursor(
     state = reduce(state, event);
   }
 
+  options.getAudioManager?.()?.playTyping(command.audio);
   renderer.render(state);
 
   if (!options.signal.aborted) {
@@ -459,6 +461,7 @@ async function executeSelect(
     state = reduce(state, event);
   }
 
+  options.getAudioManager?.()?.playTyping(command.audio);
   renderer.render(state);
 
   if (!options.signal.aborted) {
@@ -496,6 +499,7 @@ async function executeMark(
     state = reduce(state, event);
   }
 
+  options.getAudioManager?.()?.playTyping(command.audio);
   renderer.render(state);
 
   if (!options.signal.aborted) {
@@ -525,6 +529,7 @@ async function executeCall(
   await invokeHook(command.before, makeContext(state, 0, 1, null, options.signal));
 
   if (!options.signal.aborted) {
+    options.getAudioManager?.()?.playTyping(command.audio);
     await command.callback(makeContext(state, 0, 1, null, options.signal));
   }
 

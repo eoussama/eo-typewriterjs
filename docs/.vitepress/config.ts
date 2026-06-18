@@ -1,5 +1,7 @@
 import { defineConfig } from "vitepress";
 
+
+
 /**
  * @description
  * VitePress site configuration for eo-typewriterjs documentation

@@ -1,4 +1,3 @@
-import type { TAudioCommandOverride } from "../audio/audio-command-override.type";
 import type { TStyleRef } from "../state/rich-text-document.type";
 
 import type { TBaseCommand } from "./base-command.type";
@@ -47,13 +46,4 @@ export type TTypeCommand = TBaseCommand & {
   readonly by?: TAdvanceModeInput;
   readonly interval?: number;
   readonly style?: TStyleRef;
-
-  /**
-   * @description
-   * Per-command audio override.
-   * Set to `false` to silence this command's typing sounds.
-   * Set to an object to use a specific voice, voices subset, or volume.
-   * When omitted, the typewriter-level audio defaults apply.
-   */
-  readonly audio?: TAudioCommandOverride;
 };

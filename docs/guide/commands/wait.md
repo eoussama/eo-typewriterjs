@@ -40,7 +40,12 @@ await tw.play();
 ```ts
 tw.timeline
   .type("Loading", { by: "char", interval: 80 })
-  .wait(400).type(".").wait(400).type(".").wait(400).type(".")
+  .wait(400)
+  .type(".")
+  .wait(400)
+  .type(".")
+  .wait(400)
+  .type(".")
   .wait(600)
   .type(" Done!", { by: "char", interval: 80 });
 
@@ -80,9 +85,9 @@ Instant commands (`moveCursor`, `select`, `mark`) placed immediately after `.wai
 tw.timeline
   .type("Hello World")
   .wait(500)
-  .moveCursor(6)   // fires 500 ms after "Hello World" is typed
-  .select(5)       // fires at the same instant as moveCursor
-  .type("there");  // starts immediately after the instant commands
+  .moveCursor(6) // fires 500 ms after "Hello World" is typed
+  .select(5) // fires at the same instant as moveCursor
+  .type("there"); // starts immediately after the instant commands
 ```
 
 ## Edge cases

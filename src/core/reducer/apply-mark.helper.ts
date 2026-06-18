@@ -1,6 +1,8 @@
 import type { TMarkEvent } from "../events/mark-event.type";
 import type { TTypewriterState } from "../state/typewriter-state.type";
 
+import { withSelectionCleared } from "../state/typewriter-state.type";
+
 
 
 /**
@@ -19,6 +21,8 @@ export function applyMark(state: TTypewriterState, event: TMarkEvent): TTypewrit
   let to = event.to;
 
   // Selection-based mark: resolve range from cursor selection
+  let clearedSelection = false;
+
   if (from === -1 && to === -1) {
     const cursorId = event.cursorId;
 
@@ -34,13 +38,14 @@ export function applyMark(state: TTypewriterState, event: TMarkEvent): TTypewrit
 
     from = selection.from;
     to = selection.to;
+    clearedSelection = true;
   }
 
   if (from >= to) {
     return state;
   }
 
-  return {
+  const withMark: TTypewriterState = {
     ...state,
     document: {
       ...state.document,
@@ -50,4 +55,10 @@ export function applyMark(state: TTypewriterState, event: TMarkEvent): TTypewrit
       ],
     },
   };
+
+  if (clearedSelection && event.cursorId !== undefined) {
+    return withSelectionCleared(withMark, event.cursorId);
+  }
+
+  return withMark;
 }

@@ -12,7 +12,7 @@ tw.timeline.select(count: number, options?: TSelectOptions): TimelineBuilder
 
 ```ts
 type TSelectOptions = {
-  by?: TAdvanceModeInput;   // default: "char"
+  by?: TAdvanceModeInput; // default: "char"
   cursor?: TCursorSelector; // default: "main"
 };
 ```
@@ -36,11 +36,11 @@ type TSelectOptions = {
 The `by` option controls how selection units are measured.
 
 ```ts
-tw.timeline.select(5);                           // select 5 characters forward
-tw.timeline.select(-3);                          // select 3 characters backward
-tw.timeline.select(2, { by: "word" });           // select 2 words forward
-tw.timeline.select(-1, { by: "line" });          // select 1 line backward
-tw.timeline.select(3, { by: "grapheme" });       // select 3 grapheme clusters
+tw.timeline.select(5); // select 5 characters forward
+tw.timeline.select(-3); // select 3 characters backward
+tw.timeline.select(2, { by: "word" }); // select 2 words forward
+tw.timeline.select(-1, { by: "line" }); // select 1 line backward
+tw.timeline.select(3, { by: "grapheme" }); // select 3 grapheme clusters
 ```
 
 ## Selection lifecycle
@@ -61,7 +61,7 @@ tw.timeline
   .type("Hello World", { by: "char", interval: 80 })
   .wait(600)
   .moveCursor(6)
-  .select(5);               // selects "World"
+  .select(5); // selects "World"
 
 await tw.play();
 // "World" appears highlighted in the DOM renderer
@@ -73,7 +73,7 @@ await tw.play();
 tw.timeline
   .type("Hello World", { by: "char", interval: 80 })
   .wait(400)
-  .select(-5);              // selects "World" backward from the end
+  .select(-5); // selects "World" backward from the end
 
 await tw.play();
 // "World" appears highlighted
@@ -85,9 +85,9 @@ await tw.play();
 tw.timeline
   .type("Hello World", { by: "char", interval: 80 })
   .moveCursor(6)
-  .select(5)                           // selects "World"
-  .mark("highlight", "selection")      // applies style to selection range
-  .moveCursor(11);                     // clear selection, move to end
+  .select(5) // selects "World"
+  .mark("highlight", "selection") // applies style to selection range
+  .moveCursor(11); // clear selection, move to end
 
 await tw.play();
 // "World" permanently carries the "highlight" class
@@ -100,7 +100,7 @@ tw.timeline
   .type("one two three", { by: "word", interval: 150 })
   .wait(400)
   .moveCursor(4)
-  .select(2, { by: "word" });  // selects "two three"
+  .select(2, { by: "word" }); // selects "two three"
 
 await tw.play();
 ```
@@ -111,8 +111,8 @@ await tw.play();
 tw.timeline
   .type("Hello World", { by: "char", interval: 80 })
   .moveCursor(6)
-  .select(5)                    // selects "World"
-  .type("TypewriterJS");        // replaces selection
+  .select(5) // selects "World"
+  .type("TypewriterJS"); // replaces selection
 
 await tw.play();
 // result: "Hello TypewriterJS"
@@ -124,8 +124,8 @@ await tw.play();
 tw.timeline
   .type("Hello World", { by: "char", interval: 80 })
   .moveCursor(6)
-  .select(5)                    // selects "World"
-  .delete(1);                   // deletes the selection in one step
+  .select(5) // selects "World"
+  .delete(1); // deletes the selection in one step
 
 await tw.play();
 // result: "Hello "
@@ -138,7 +138,7 @@ Use the `cursor` option to create selections on specific cursors:
 ```ts
 tw.timeline
   .type("ABCDE", { cursor: ["a", "b"] })
-  .select(3, { cursor: "a" })   // only cursor "a" creates a selection
+  .select(3, { cursor: "a" }) // only cursor "a" creates a selection
   .mark("highlight", "selection", { cursor: "a" });
 
 await tw.play();

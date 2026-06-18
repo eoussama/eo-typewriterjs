@@ -11,6 +11,8 @@ Replay the same animation indefinitely by calling `play()` in a loop:
 ```ts
 import { createTypewriter, domRenderer } from "eo-typewriterjs";
 
+
+
 const el = document.getElementById("output")!;
 const tw = createTypewriter({ renderer: domRenderer(el) });
 
@@ -40,6 +42,7 @@ let index = 0;
 async function typePhrases() {
   while (true) {
     const tw = createTypewriter({ renderer: domRenderer(el) });
+
     tw.timeline.type(phrases[index % phrases.length], { by: "char", interval: 80 });
     index++;
 
@@ -74,6 +77,8 @@ Use a custom renderer to capture every intermediate state:
 ```ts
 import type { IRenderer, TTypewriterState } from "eo-typewriterjs";
 import { createTypewriter } from "eo-typewriterjs";
+
+
 
 class FrameCapture implements IRenderer {
   readonly frames: string[] = [];
@@ -118,6 +123,8 @@ await tw.play();
 ```ts
 import { createTypewriter, stringRenderer } from "eo-typewriterjs";
 
+
+
 async function renderFinal(text: string): Promise<string> {
   const renderer = stringRenderer();
 
@@ -138,6 +145,8 @@ Setting `by: "custom"` and `interval: 0` makes the animation complete in a singl
 
 ```ts
 import type { IRenderer, TTypewriterState } from "eo-typewriterjs";
+
+
 
 class CanvasRenderer implements IRenderer {
   private ctx: CanvasRenderingContext2D;

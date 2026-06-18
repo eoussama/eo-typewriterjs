@@ -9,6 +9,8 @@ Every typewriter instance exposes a `timeline` property:
 ```ts
 import { createTypewriter, domRenderer } from "eo-typewriterjs";
 
+
+
 const tw = createTypewriter({ renderer: domRenderer(el) });
 
 tw.timeline
@@ -67,8 +69,8 @@ The compiled events are cached and reused as long as the command list has not ch
 Because commands are stored in the builder, the same animation can be replayed without rebuilding the timeline:
 
 ```ts
-await tw.play();    // first run
-await tw.replay();  // replays the same sequence
+await tw.play(); // first run
+await tw.replay(); // replays the same sequence
 ```
 
 ## Inspecting commands

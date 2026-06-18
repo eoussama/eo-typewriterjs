@@ -128,6 +128,24 @@ describe("domRenderer", () => {
     expect(el.querySelector(".typewriter-selection")).not.toBeNull();
   });
 
+  it("does not duplicate the cursor after mark(\"selection\") clears the active selection", async () => {
+    const el = document.createElement("div");
+    const renderer = new DomRenderer(el);
+    const tw = createTypewriter({ renderer });
+
+    tw.timeline
+      .type("Make this word pop.", { by: "char", interval: 1 })
+      .moveCursor(14)
+      .select(-4, { by: "char" })
+      .mark("tw-accent", "selection");
+
+    await tw.play();
+
+    expect(el.querySelectorAll(".typewriter-cursor")).toHaveLength(1);
+    expect(el.querySelectorAll(".typewriter-selection")).toHaveLength(0);
+    expect(el.textContent).toBe("Make this word| pop.");
+  });
+
   it("does not render when target element is not found (null selector)", async () => {
     const renderer = domRenderer("#nonexistent-element");
     const tw = createTypewriter({ renderer });
@@ -647,5 +665,33 @@ describe("domRenderer — cursor animation", () => {
     expect(cursor?.style.animationName).toBe("tw-fade");
     expect(cursor?.style.animationDuration).toBe("600ms");
     expect(cursor?.style.animationTimingFunction).toBe("ease-in-out");
+  });
+
+  it("animation object with delay, fillMode, and playState sets those properties", async () => {
+    const el = document.createElement("div");
+    const tw = createTypewriter({
+      renderer: new DomRenderer(el),
+      cursor: {
+        animation: {
+          name: "tw-pulse",
+          duration: "500ms",
+          delay: "100ms",
+          fillMode: "both",
+          playState: "running",
+          direction: "alternate",
+        },
+      },
+    });
+
+    tw.timeline.type("X", { by: "char", interval: 1 });
+    await tw.play();
+
+    const cursor = el.querySelector<HTMLElement>(".typewriter-cursor");
+
+    expect(cursor?.getAttribute("data-cursor-animation")).toBe("custom");
+    expect(cursor?.style.animationDelay).toBe("100ms");
+    expect(cursor?.style.animationFillMode).toBe("both");
+    expect(cursor?.style.animationPlayState).toBe("running");
+    expect(cursor?.style.animationDirection).toBe("alternate");
   });
 });

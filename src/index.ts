@@ -3,6 +3,7 @@ import type { TCursorSelector } from "./core/commands/type-command.type";
 import type { TCursorRenderOptions } from "./core/cursor/index";
 import type { TPlaybackControllerState } from "./core/player/index";
 import type { IRenderer } from "./core/renderer/index";
+import type { TTypewriterState } from "./core/state/index";
 
 import { AudioManagerHelper } from "./core/audio/index";
 import { normalizeCursors } from "./core/commands/index";
@@ -97,6 +98,16 @@ export type TTypewriter = {
 
   /**
    * @description
+   * Return the current live typewriter state (document, cursors, selections).
+   * Unlike getState() which returns playback metadata, this returns the full
+   * document content and cursor positions at the current point in playback.
+   *
+   * @returns The live TTypewriterState
+   */
+  getLiveState: () => TTypewriterState;
+
+  /**
+   * @description
    * Enable or disable typing/delete audio at runtime.
    *
    * @param enabled - Whether audio should be active
@@ -161,7 +172,11 @@ export type TTypewriter = {
  * @returns A TTypewriter instance with a timeline builder and full playback controls
  */
 export function createTypewriter(options: TTypewriterOptions): TTypewriter {
-  const { renderer, cursor: cursorDefaults, audio: audioOptions } = options;
+  const {
+    renderer,
+    cursor: cursorDefaults,
+    audio: audioOptions,
+  } = options;
   const timeline = new TimelineBuilder();
 
   // Build the initial state using any cursor defaults provided
@@ -244,6 +259,10 @@ export function createTypewriter(options: TTypewriterOptions): TTypewriter {
       return controller.getState();
     },
 
+    getLiveState() {
+      return controller.getLiveState();
+    },
+
     setAudioEnabled(enabled: boolean): void {
       audioManager.setEnabled(enabled);
     },
@@ -262,8 +281,6 @@ export function createTypewriter(options: TTypewriterOptions): TTypewriter {
     },
 
     setCursorVisible(visible: boolean, cursor?: TCursorSelector): void {
-      // Apply onto the controller's live state (which has typed text etc.)
-      // so that the re-render is visually correct.
       const liveState = controller.getLiveState();
       const ids = resolveCursorIds(cursor, liveState);
       let updatedLive = liveState;
@@ -285,7 +302,6 @@ export function createTypewriter(options: TTypewriterOptions): TTypewriter {
           },
         };
 
-        // Keep the cursor-config baseline (initial state) in sync too
         const baseExisting = currentState.cursors[id];
 
         if (baseExisting !== undefined) {

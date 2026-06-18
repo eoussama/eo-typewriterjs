@@ -80,7 +80,8 @@ type TRichTextDocument = {
 Marks can overlap freely. The `segmentRichText()` helper (exported from `eo-typewriterjs`) slices the document into non-overlapping `TRichTextSegment` values, each carrying the ordered stack of active styles for that slice.
 
 ```ts
-import { segmentRichText, mergeStyles } from "eo-typewriterjs";
+import { mergeStyles, segmentRichText } from "eo-typewriterjs";
+
 
 const segments = segmentRichText(state.document);
 // [{ text: "Hello", from: 0, to: 5, styles: ["greeting"] }, ...]
@@ -112,9 +113,9 @@ A renderer implements `IRenderer`:
 
 ```ts
 interface IRenderer {
-  mount(state: TTypewriterState): void;   // called once before playback
-  render(state: TTypewriterState): void;  // called after each event
-  unmount(): void;                         // called once after playback ends
+  mount: (state: TTypewriterState) => void; // called once before playback
+  render: (state: TTypewriterState) => void; // called after each event
+  unmount: () => void; // called once after playback ends
 }
 ```
 

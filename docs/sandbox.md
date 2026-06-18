@@ -91,7 +91,7 @@ tw.timeline.type("Hi", {
   by: "char",
   interval: 80,
   before: { callback: ({ state }) => console.log("start") },
-  after:  { callback: ({ state }) => console.log("done") },
+  after: { callback: ({ state }) => console.log("done") },
 });
 
 // Per-unit — fires once per character
