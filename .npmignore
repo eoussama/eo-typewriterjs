@@ -1,0 +1,7 @@
+node_modules/
+src/
+sandbox/
+docs/
+
+.gitattributes
+.gitignore

@@ -1,10 +1,13 @@
 # Security Policy
 
-## Supported Versions
+## Reporting a Vulnerability
 
-As of now, versions bellow 6.0.0 are outdated and are no longer maintaned.
+Vulnerabilities can be reported on the [Issues](https://github.com/eoussama/eo-typewriterjs/issues) tab.
 
-| Version | Supported          |
-| ------- | ------------------ |
-| 6.x.x   | :white_check_mark: |
-| < 6.0.0   | :x:                |
+Please follow these steps to report a security vulnerability:
+
+1. Go to the [Issues](https://github.com/eoussama/eo-typewriterjs/issues) tab.
+
+2. Click on the "New Issue" button.
+
+3. Fill out the form with as much detail as possible, including a clear description of the vulnerability and any steps to reproduce it.

@@ -1,9 +1,9 @@
 <p align="center">
-    <a href="http://eoussama.github.io/typewriter.js">
-      <img src="assets/typewriter.svg" alt="Logo" width="200px">
-      <h1 align="center">Typewriter.js</h1>
+    <a href="http://eoussama.github.io/eo-typewriterjs">
+      <img src="https://raw.githubusercontent.com/eoussama/eo-typewriterjs/6630a1df285bf367f1cda1716ff5ed1a59c6b0fd/assets/logo.svg" alt="Logo" width="200px">
+      <h1 align="center">eo-typewriterjs</h1>
     </a>
-    <p align="center">Typewriting utility for JavaScript</p>
+    <p align="center">Advanced typewriter-style text animation utility for JavaScript, with timeline playback, cursor movement, selection, deletion, and renderer-agnostic text styling.</p>
     <p align="center">
         <img src="https://img.shields.io/github/release/EOussama/typewriterjs.svg">
         <img src="https://img.shields.io/github/downloads/EOussama/typewriterjs/latest/total.svg">
@@ -12,59 +12,62 @@
     </p>
 </p>
 
-<hr>
+---
 
-## Navigation
-
-- [Description](#description)
-- [Installation](#installation)
-- [Building](#building)
-- [Usage](#usage)
-
-## Description
-
-Typewriter.js is your on-the-go, virtual typewriter that offers an easy and hackable way of producing and maintaining typewriter-like animations on text.
-
-## Installation
-
-#### npm
+## Install
 
 ```bash
-npm install eo-typewriterjs
+pnpm add eo-typewriterjs
 ```
 
-#### yarn
+## Quick start
+
+```ts
+import { createTypewriter, domRenderer } from "eo-typewriterjs";
+
+
+
+const element = document.getElementById("output");
+
+if (element === null) {
+  throw new Error("Missing #output element");
+}
+
+const typewriter = createTypewriter({
+  renderer: domRenderer(element),
+});
+
+typewriter.timeline
+  .type("Hello ")
+  .type("world!", { style: "accent" })
+  .mark("highlight", { from: 6, to: 12 });
+
+await typewriter.play();
+```
+
+## Common commands
 
 ```bash
-yarn add eo-typewriterjs
+pnpm dev
+pnpm build
+pnpm test
+pnpm lint
+pnpm sandbox
+pnpm docs:dev
+pnpm docs:build
 ```
 
-#### cdn
+## Documentation
 
-```bash
-https://cdn.jsdelivr.net/npm/eo-typewriterjs@latest/dist/typewriter.js
-```
+Full documentation is available at the [docs site](https://eoussama.github.io/eo-typewriterjs/).
 
-## Building
+- [Getting Started](https://eoussama.github.io/eo-typewriterjs/guide/getting-started)
+- [Core Concepts](https://eoussama.github.io/eo-typewriterjs/guide/core-concepts)
+- [Timeline & Commands](https://eoussama.github.io/eo-typewriterjs/guide/timeline)
+- [Renderers](https://eoussama.github.io/eo-typewriterjs/guide/renderers)
+- [Recipes](https://eoussama.github.io/eo-typewriterjs/guide/recipes)
+- [API Reference](https://eoussama.github.io/eo-typewriterjs/api/)
 
-1. Clone the GitHub repository `https://github.com/EOussama/typewriterjs.git`.
-2. Run `npm install` to install all the dependencies.
-3. Run `npm run build` to build the package.
-4. The production script will be placed in the `dist` folder.
+## License
 
-## Usage
-
-The following example types the string “Hello, world!”:
-
-`index.html`
-
-```html
-<div id="target"></div>
-```
-
-`script.js`
-
-```js
-var tw = new Typewriter("#target");
-tw.type("Hello, world!").start();
-```
+MIT

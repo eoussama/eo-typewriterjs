@@ -1,284 +1,385 @@
-import IActions from './types/actions.type';
-import IConfig from './types/config.type.js';
-import { IActionConfig, IActionConfigType } from './types/action-config.type.js';
+import type { TAudioOptions } from "./core/audio/index";
+import type { TCursorSelector } from "./core/commands/type-command.type";
+import type { TCursorRenderOptions } from "./core/cursor/index";
+import type { TPlaybackControllerState } from "./core/player/index";
+import type { IRenderer } from "./core/renderer/index";
+import type { TTypewriterState } from "./core/state/index";
 
-import Context from "./utils/context.js";
-import Renderer from './utils/renderer.js';
+import { AudioManagerHelper } from "./core/audio/index";
+import { normalizeCursors } from "./core/commands/index";
+import { compile } from "./core/compiler/index";
+import { mergeCursorOptions } from "./core/cursor/index";
+import { PlaybackController } from "./core/player/index";
+import { createInitialState } from "./core/state/index";
+import { TimelineBuilder } from "./core/timeline/index";
 
-import Audio from './utils/audio.js';
-import { Func } from './types/function.type.js';
-import ActionInvoker from './utils/action-manager.js';
+
+
+export { AudioManagerHelper } from "./core/audio/index";
+export { EAudioStrategy } from "./core/audio/index";
+export { DEFAULT_VOICE_PACK } from "./core/audio/index";
+
+export type { TAudioChannelOptions, TAudioCommandOverride, TAudioOptions, TAudioStrategy, TAudioVoice, TAudioVoicePack } from "./core/audio/index";
+
+export { ECommandKind } from "./core/commands/index";
+export type { TBaseCommand } from "./core/commands/index";
+
+export { normalizeCursors } from "./core/commands/index";
+export type { TCallbackContext, TCallbackFn, TCallbackHook } from "./core/commands/index";
+export type { TCallCommand } from "./core/commands/index";
+export type { TClearSelectionCommand } from "./core/commands/index";
+export type { TAdvanceMode, TAdvanceModeInput, TAdvanceUnit, TCommandKind, TCursorSelector, TDeleteCommand, TMarkCommand, TMarkRange, TMoveCursorCommand, TSelectCommand, TTypeCommand, TUnmarkCommand, TWaitCommand } from "./core/commands/index";
+export type { TCommand } from "./core/compiler/index";
+export { ECursorKind } from "./core/cursor/index";
+
+export type { TCursorAnimation, TCursorAnimationOptions, TCursorKind, TCursorRenderOptions, TResolvedCursorRenderOptions } from "./core/cursor/index";
+
+export { EEventKind } from "./core/events/index";
+export type { TBaseEvent } from "./core/events/index";
+export type { TClearSelectionEvent, TDeleteEvent, TEventKind, TInsertEvent, TMarkEvent, TMoveCursorEvent, TSelectEvent, TTimelineEvent, TUnmarkEvent } from "./core/events/index";
+
+export { EPlaybackStatus } from "./core/player/index";
+export type { TCheckpoint, TPlaybackControllerState, TPlaybackStatus } from "./core/player/index";
+
+export type { IRenderer } from "./core/renderer/index";
+
+export type { TCursorState } from "./core/state/index";
+export type { TRichTextDocument, TStyleObject, TStyleRef, TTextMark } from "./core/state/index";
+export { mergeStyles, resolveStyleRef, segmentRichText } from "./core/state/index";
+export type { TRichTextSegment } from "./core/state/index";
+export type { TSelectionState, TTypewriterState } from "./core/state/index";
+export { getSelection, withCursor, withSelection, withSelectionCleared } from "./core/state/index";
+
+export { TimelineBuilder } from "./core/timeline/index";
+export type { TClearSelectionOptions, TCommandHookOptions, TDeleteOptions, TMarkOptions, TMoveCursorOptions, TSelectOptions, TTypeOptions, TUnmarkOptions, TWaitOptions } from "./core/timeline/index";
+
+export { DomRenderer, domRenderer } from "./renderers/index";
+export { StringRenderer, stringRenderer } from "./renderers/index";
 
 /**
  * @description
- * Typewriter
+ * Options for creating a typewriter instance
  */
-export default class Typewriter implements IActions {
+export type TTypewriterOptions = {
+  readonly renderer: IRenderer;
 
-	/**
-	 * @description
-	 * The renderer responsible on rendering
-	 * the typewriter's output
-	 */
-	private renderer!: Renderer;
+  /**
+   * @description
+   * Default render options applied to all cursors.
+   * Individual cursors inherit these at creation time.
+   */
+  readonly cursor?: TCursorRenderOptions;
 
-	/**
-	 * @description
-	 * Action manager
-	 */
-	public actionManager!: ActionInvoker;
+  /**
+   * @description
+   * Audio configuration for typing and delete sounds.
+   * Audio is **disabled by default** when this field is omitted.
+   * Pass `{ enabled: true }` (or any options object) to turn on typing sounds.
+   */
+  readonly audio?: TAudioOptions;
+};
 
-	/**
-	 * @description
-	 * Event list
-	 */
-	public events!: Array<{ event: string, func: Func<any> }>;
+/**
+ * @description
+ * A typewriter instance returned by createTypewriter.
+ * Provides a fluent timeline builder and full playback controls.
+ */
+export type TTypewriter = {
+  readonly timeline: TimelineBuilder;
+  play: () => Promise<void>;
+  pause: () => void;
+  stop: () => void;
+  cancel: () => void;
+  replay: () => Promise<void>;
+  seek: (time: number) => void;
+  stepForward: () => void;
+  stepBackward: () => void;
+  setRate: (rate: number) => void;
+  getState: () => TPlaybackControllerState;
 
-	/**
-	 * @description
-	 * The audio utility responsible
-	 * for playing SFX
-	 */
-	public readonly audio!: Audio;
+  /**
+   * @description
+   * Return the current live typewriter state (document, cursors, selections).
+   * Unlike getState() which returns playback metadata, this returns the full
+   * document content and cursor positions at the current point in playback.
+   *
+   * @returns The live TTypewriterState
+   */
+  getLiveState: () => TTypewriterState;
 
-	/**
-	 * @description
-	 * The typewriter's context
-	 */
-	public readonly context!: Context;
+  /**
+   * @description
+   * Enable or disable typing/delete audio at runtime.
+   *
+   * @param enabled - Whether audio should be active
+   */
+  setAudioEnabled: (enabled: boolean) => void;
 
-	/**
-	 * @description
-	 * Global configuration
-	 */
-	public config!: IConfig;
+  /**
+   * @description
+   * Set the master audio volume at runtime. Clamped to [0, 1].
+   *
+   * @param volume - New master volume
+   */
+  setAudioVolume: (volume: number) => void;
 
-	/**
-	 * @description
-	 * Returns raw text content
-	 */
-	get getText() {
-		return this.renderer.parseContent(false);
-	}
+  /**
+   * @description
+   * Replace the full audio configuration at runtime.
+   * Channel selection state (shuffle-bag, round-robin) is reset so new
+   * voices and strategies take effect immediately on the next keystroke.
+   *
+   * @param options - The new audio options to apply
+   */
+  setAudioOptions: (options: TAudioOptions) => void;
 
-	/**
-	 * @description
-	 * Returns HTML text content
-	 */
-	get getHtml() {
-		return this.renderer.parseContent(true);
-	}
+  /**
+   * @description
+   * Return a snapshot of the current audio options
+   *
+   * @returns The current TAudioOptions, or null if audio was never configured
+   */
+  getAudioOptions: () => TAudioOptions | null;
 
-	/**
-	 * @description
-	 * Returns the highlighted content
-	 */
-	get getHighlight() {
-		const start = this.context.highlight[0] ?? 0;
-		const end = (this.context.highlight[1] ?? 0) + 1;
+  /**
+   * @description
+   * Show or hide one or all cursors at runtime.
+   * Changes take effect immediately on the next render.
+   *
+   * @param visible - Whether the cursor(s) should be visible
+   * @param cursor - Optional cursor selector; defaults to all cursors when omitted
+   */
+  setCursorVisible: (visible: boolean, cursor?: TCursorSelector) => void;
 
-		return this.context.content.slice(start, end)?.map(e => e.char)?.join('') ?? '';
-	}
+  /**
+   * @description
+   * Update the render options of one or all cursors at runtime.
+   * Only the provided fields are changed; others keep their current values.
+   * Changes take effect immediately on the next render.
+   *
+   * @param options - Partial render options to apply
+   * @param cursor - Optional cursor selector; defaults to all cursors when omitted
+   */
+  setCursorOptions: (options: TCursorRenderOptions, cursor?: TCursorSelector) => void;
+};
 
-	/**
-	 * @description
-	 * Returns the event handler
-	 */
-	get errorHandler() {
-		const handler = this.events.find(e => e.event === 'error')?.func ?? (() => { })
-		return handler;
-	}
+/**
+ * @description
+ * Create a new typewriter instance with the given renderer.
+ * Use `tw.timeline.type(...)` to schedule commands, then call `tw.play()` to execute them.
+ * All playback controls (pause, stop, cancel, seek, step, rate) are available on the returned object.
+ *
+ * @param options - Configuration options including the renderer to use
+ * @returns A TTypewriter instance with a timeline builder and full playback controls
+ */
+export function createTypewriter(options: TTypewriterOptions): TTypewriter {
+  const {
+    renderer,
+    cursor: cursorDefaults,
+    audio: audioOptions,
+  } = options;
+  const timeline = new TimelineBuilder();
 
-	/**
-	 * @description
-	 * Instantiates the typewriter
-	 *
-	 * @param element The target element or selector
-	 * @param config The global configuration object
-	 */
-	constructor(element: string | HTMLElement, config?: IConfig) {
+  // Build the initial state using any cursor defaults provided
+  let currentState = createInitialState(cursorDefaults);
 
-		// Initializing global configurations
-		this.config = {
-			caret: config?.caret,
-			audio: config?.audio,
-			step: config?.step ?? 1,
-			delay: config?.delay ?? 0,
-			speed: config?.speed ?? 300,
-			repeat: config?.repeat ?? 1,
-			done: config?.done ?? (() => { }),
-			parseHTML: config?.parseHTML ?? true,
-			targetAttribute: config?.targetAttribute ?? 'innerHTML'
-		};
+  // Audio is disabled by default when no audio config is provided.
+  // Passing audio: { enabled: true } (or any options) opts into sound.
+  const audioManager: AudioManagerHelper | null
+    = audioOptions === undefined
+      ? new AudioManagerHelper({ enabled: false })
+      : new AudioManagerHelper(audioOptions);
 
-		// Initializing the events
-		this.events = [];
+  const controller = new PlaybackController(renderer, currentState, audioManager);
 
-		// Initializing the context
-		this.context = new Context(this.config?.targetAttribute);
+  let cachedVersion = -1;
 
-		// Initializing the content
-		const target = typeof element === 'string' ? <HTMLElement>document.querySelector(element) : element;
-		this.context.initializeContent(target);
+  /**
+   * @description
+   * Recompile the timeline if the version has changed since last load.
+   * Also syncs the current state into the controller so runtime cursor
+   * mutations (setCursorVisible / setCursorOptions) are preserved across
+   * a load() call.
+   */
+  function ensureLoaded(): void {
+    if (timeline.version !== cachedVersion) {
+      const commands = [...timeline.commands];
 
-		// Initializing the renderer
-		this.renderer = new Renderer(target, this.config?.targetAttribute, this.config?.parseHTML, this.context, this.config.caret);
+      controller.load(compile(commands), commands);
+      cachedVersion = timeline.version;
+    }
+  }
 
-		// Initializing the audio utility
-		this.audio = new Audio(this.config.audio);
+  return {
+    timeline,
 
-		// Initializing the action manager
-		this.actionManager = new ActionInvoker(this);
-	}
+    play(): Promise<void> {
+      ensureLoaded();
 
-	/**
-	 * @description
-	 * Starts the actions queue
-	 */
-	public async start(): Promise<void> {
-		for await (let action of this.actionManager.next()) {
-			await action?.start();
-		}
-	}
+      return controller.play();
+    },
 
-	/**
-	 * @description
-	 * Initiates a sleep action
-	 *
-	 * @param time The timeout time in milliseconds
-	 */
-	public sleep(time: number): Typewriter {
-		return this.actionManager.sleep(time);
-	}
+    pause(): void {
+      controller.pause();
+    },
 
-	/**
-	 * @description
-	 * Initiates anb exec action
-	 *
-	 * @param func The user-defined action
-	 */
-	public exec(func: Promise<void>): Typewriter {
-		return this.actionManager.exec(func);
-	}
+    stop(): void {
+      controller.stop();
+    },
 
-	/**
-	 * @description
-	 * Initiates a type action
-	 *
-	 * @param input The target input
-	 * @param config The action configuration
-	 */
-	public type(input: string, config?: IActionConfigType): Typewriter {
-		return this.actionManager.type(input, config);
-	}
+    cancel(): void {
+      controller.cancel();
+    },
 
-	/**
-	 * @description
-	 * Initiates a delete action
-	 *
-	 * @param times Number of deletions
-	 * @param config The action configuration
-	 */
-	public delete(times: number, config?: IActionConfig): Typewriter {
-		return this.actionManager.delete(times, config);
-	}
+    replay(): Promise<void> {
+      ensureLoaded();
 
-	/**
-	 * @description
-	 * Initiates a move action
-	 *
-	 * @param index The target index
-	 * @param config The action configuration
-	 */
-	public move(index: number, config?: IActionConfig): Typewriter {
-		return this.actionManager.move(index, config);
-	}
+      return controller.replay();
+    },
 
-	/**
-	 * @description
-	 * Highlights content
-	 *
-	 * @param index The target index
-	 * @param config The action configuration
-	 */
-	public highlight(index: number, config?: IActionConfig): Typewriter {
-		return this.actionManager.highlight(index);
-	}
+    seek(time: number): void {
+      ensureLoaded();
+      controller.seek(time);
+    },
 
-	/**
-	 * @description
-	 * Inserts tabulation
-	 *
-	 * @param spaces Number of spaces that make the tabulation
-	 * @param config The action configuration
-	 */
-	public tab(index: number = 4, config?: IActionConfig): Typewriter {
-		return this.actionManager.tab(index, config);
-	}
+    stepForward(): void {
+      ensureLoaded();
+      controller.stepForward();
+    },
 
-	/**
-	 * @description
-	 * Inserts carriage return
-	 *
-	 * @param config The action configuration
-	 */
-	public return(config?: IActionConfig): Typewriter {
-		return this.actionManager.return(config);
-	}
+    stepBackward(): void {
+      ensureLoaded();
+      controller.stepBackward();
+    },
 
-	/**
-	 * @description
-	 * Resets the entire typewriter
-	 */
-	public reset(): void {
-		this.context.reset();
-		this.renderer.reset();
-		this.actionManager.reset();
-	}
+    setRate(rate: number): void {
+      controller.setRate(rate);
+    },
 
-	/**
-	 * @description
-	 * Subscribes to events
-	 *
-	 * @param event The event name
-	 * @param func Callback
-	 */
-	public before<T>(event: string, func: Func<T>): void {
-		this.events.push({ event: `before:${event}`, func });
-	}
+    getState() {
+      return controller.getState();
+    },
 
-	/**
-	 * @description
-	 * Subscribes to events
-	 *
-	 * @param event The event name
-	 * @param func Callback
-	 */
-	public after<T>(event: string, func: Func<T>): void {
-		this.events.push({ event: `after:${event}`, func });
-	}
+    getLiveState() {
+      return controller.getLiveState();
+    },
 
-	/**
-	 * @description
-	 * The update callback, called from inside every action
-	 */
-	public update(): void {
-		this.renderer.render(this.config.caret);
-	}
+    setAudioEnabled(enabled: boolean): void {
+      audioManager.setEnabled(enabled);
+    },
 
-	/**
-	 * @description
-	 * Hooks the event handler
-	 *
-	 * @param handler The event handler
-	 */
-	public catch<T>(handler: Func<T>): void {
-		const handlerIndex = this.events.findIndex(e => e.event === 'error');
+    setAudioVolume(volume: number): void {
+      audioManager.setVolume(volume);
+    },
 
-		if (handlerIndex === -1) {
-			this.events.push({ event: `error`, func: handler });
-		} else {
-			this.events[handlerIndex].func = handler;
-		}
-	}
+    setAudioOptions(opts: TAudioOptions): void {
+      audioManager.setOptions(opts);
+      controller.setAudioManager(audioManager);
+    },
+
+    getAudioOptions(): TAudioOptions | null {
+      return audioManager.getOptions();
+    },
+
+    setCursorVisible(visible: boolean, cursor?: TCursorSelector): void {
+      const liveState = controller.getLiveState();
+      const ids = resolveCursorIds(cursor, liveState);
+      let updatedLive = liveState;
+
+      for (const id of ids) {
+        const existing = updatedLive.cursors[id];
+
+        if (existing === undefined) {
+          continue;
+        }
+
+        const updated = mergeCursorOptions(existing.renderOptions, { visible });
+
+        updatedLive = {
+          ...updatedLive,
+          cursors: {
+            ...updatedLive.cursors,
+            [id]: { ...existing, visible, renderOptions: updated },
+          },
+        };
+
+        const baseExisting = currentState.cursors[id];
+
+        if (baseExisting !== undefined) {
+          currentState = {
+            ...currentState,
+            cursors: {
+              ...currentState.cursors,
+              [id]: { ...baseExisting, visible, renderOptions: updated },
+            },
+          };
+        }
+      }
+
+      controller.setInitialState(currentState);
+      controller.setLiveState(updatedLive);
+      renderer.render(updatedLive);
+    },
+
+    setCursorOptions(opts: TCursorRenderOptions, cursor?: TCursorSelector): void {
+      const liveState = controller.getLiveState();
+      const ids = resolveCursorIds(cursor, liveState);
+      let updatedLive = liveState;
+
+      for (const id of ids) {
+        const existing = updatedLive.cursors[id];
+
+        if (existing === undefined) {
+          continue;
+        }
+
+        const updated = mergeCursorOptions(existing.renderOptions, opts);
+        const newVisible = opts.visible ?? existing.visible;
+
+        updatedLive = {
+          ...updatedLive,
+          cursors: {
+            ...updatedLive.cursors,
+            [id]: { ...existing, visible: newVisible, renderOptions: updated },
+          },
+        };
+
+        const baseExisting = currentState.cursors[id];
+
+        if (baseExisting !== undefined) {
+          currentState = {
+            ...currentState,
+            cursors: {
+              ...currentState.cursors,
+              [id]: { ...baseExisting, visible: newVisible, renderOptions: updated },
+            },
+          };
+        }
+      }
+
+      controller.setInitialState(currentState);
+      controller.setLiveState(updatedLive);
+      renderer.render(updatedLive);
+    },
+  };
+}
+
+/**
+ * @description
+ * Resolve a TCursorSelector to an array of cursor IDs present in state.
+ * When no selector is provided all cursor IDs are returned.
+ *
+ * @param cursor - Optional cursor selector
+ * @param state - Current typewriter state
+ * @returns Array of matching cursor IDs
+ */
+function resolveCursorIds(
+  cursor: TCursorSelector | undefined,
+  state: ReturnType<typeof createInitialState>,
+): string[] {
+  if (cursor === undefined) {
+    return Object.keys(state.cursors);
+  }
+
+  return normalizeCursors(cursor).filter(id => id in state.cursors);
 }
