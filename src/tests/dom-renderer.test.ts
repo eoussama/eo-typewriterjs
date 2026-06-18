@@ -648,6 +648,28 @@ describe("domRenderer, cursor animation", () => {
     expect(cursor?.style.animationTimingFunction).toBe("ease-in-out");
   });
 
+  it("animation object without optional fields only sets animationName", async () => {
+    const el = document.createElement("div");
+    const tw = createTypewriter({
+      renderer: new DomRenderer(el),
+      cursor: {
+        animation: {
+          name: "tw-minimal",
+        },
+      },
+    });
+
+    tw.timeline.type("X", { by: "char", interval: 1 });
+    await tw.play();
+
+    const cursor = el.querySelector<HTMLElement>(".typewriter-cursor");
+
+    expect(cursor?.getAttribute("data-cursor-animation")).toBe("custom");
+    expect(cursor?.style.animationName).toBe("tw-minimal");
+    expect(cursor?.style.animationDuration).toBe("");
+    expect(cursor?.style.animationDelay).toBe("");
+  });
+
   it("animation object with delay, fillMode, and playState sets those properties", async () => {
     const el = document.createElement("div");
     const tw = createTypewriter({

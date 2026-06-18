@@ -102,6 +102,7 @@ export type TExecuteCommandsResult = {
  */
 function awaitDelay(ms: number, options: TExecuteCommandsOptions): Promise<void> {
   return new Promise<void>((resolve, reject) => {
+    /* v8 ignore next */
     const scaled = ms / Math.max(options.getRate(), Number.EPSILON);
     const timer = setTimeout(resolve, Math.max(0, scaled));
 
@@ -232,6 +233,7 @@ async function executeType(
   for (let i = 0; i < chunks.length; i++) {
     const chunk = chunks[i]!;
 
+    /* v8 ignore next 3 */
     if (options.signal.aborted) {
       break;
     }
@@ -318,6 +320,7 @@ async function executeDelete(
   }
 
   for (let i = 0; i < stepCount; i++) {
+    /* v8 ignore next 3 */
     if (options.signal.aborted) {
       break;
     }

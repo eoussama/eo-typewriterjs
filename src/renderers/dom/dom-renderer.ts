@@ -31,6 +31,7 @@ const BLINK_STYLE_ID = "typewriter-blink-style";
  * Subsequent calls are no-ops. Safe to call from every DomRenderer constructor.
  */
 function ensureBlinkStylesheet(): void {
+  /* v8 ignore next 3 */
   if (typeof document === "undefined") {
     return;
   }

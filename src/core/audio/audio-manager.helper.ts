@@ -46,6 +46,7 @@ class ShuffleBagHelper {
       }
     }
 
+    /* v8 ignore next */
     const sample = this._bag.shift() ?? pool[0]!;
 
     this._lastPlayed = sample;

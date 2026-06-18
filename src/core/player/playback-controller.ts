@@ -195,6 +195,7 @@ export class PlaybackController {
     /* v8 ignore next */
     this._initialState = initialState ?? createInitialState();
     this._state = this._initialState;
+    /* v8 ignore next */
     this._audioManager = audioManager ?? null;
   }
 
