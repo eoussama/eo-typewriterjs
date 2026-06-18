@@ -3,6 +3,7 @@ import type { IRenderer, TTypewriter, TTypewriterState } from "@eo-typewriterjs"
 import {
   createTypewriter,
   domRenderer,
+  EAudioStrategy,
   ECommandKind,
   ECursorKind,
   EPlaybackStatus,
@@ -150,6 +151,7 @@ export async function runUserCode(
     ECommandKind,
     ECursorKind,
     EPlaybackStatus,
+    EAudioStrategy,
   };
 
   // Wrap user code as an ES module default export
@@ -164,6 +166,7 @@ export default async function __sandbox__(ctx) {
     ECommandKind,
     ECursorKind,
     EPlaybackStatus,
+    EAudioStrategy,
   } = ctx;
 
   ${code}

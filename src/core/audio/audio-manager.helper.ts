@@ -150,10 +150,6 @@ function pickRandom(
   lastPlayed: string | null,
   avoidImmediateRepeat: boolean,
 ): string {
-  if (pool.length === 1) {
-    return pool[0]!;
-  }
-
   if (!avoidImmediateRepeat || lastPlayed === null) {
     return pool[Math.floor(Math.random() * pool.length)]!;
   }
@@ -304,6 +300,8 @@ export class AudioManagerHelper {
     const channelOpts = this._resolveChannelOpts(channel);
     const state = channel === "typing" ? this._typing : this._delete;
     const sample = this._pickSample(pool, channelOpts, state);
+
+    state.lastPlayed = sample;
 
     const masterVolume = this._options.volume ?? 1;
     const commandVolume = override !== undefined ? (override as Exclude<TAudioCommandOverride, false>).volume : undefined;

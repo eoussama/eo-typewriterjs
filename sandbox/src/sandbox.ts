@@ -57,7 +57,7 @@ let activeRendererKind: TRendererKind = ERendererKind.DOM;
 let activeTw: TTypewriter | null = null;
 let activeCategory: TSandboxCategory = "all";
 let rafId: number | null = null;
-let sandboxAudioEnabled = true;
+let sandboxAudioEnabled = false;
 let sandboxAudioVolume = 1;
 
 /**
@@ -307,9 +307,16 @@ async function runCode(): Promise<void> {
     pendingTw = tw;
     activeTw = tw;
 
-    // Apply current sandbox audio settings to the new typewriter
-    tw.setAudioEnabled(sandboxAudioEnabled);
+    // Sync sandbox toolbar state FROM the new typewriter's actual config
+    // so recipe-level audio options are respected and the UI reflects them.
+    const opts = tw.getAudioOptions();
+
+    sandboxAudioEnabled = opts?.enabled !== false;
+    sandboxAudioVolume = opts?.volume ?? sandboxAudioVolume;
+
+    // Apply current sandbox volume (but preserve the recipe's enabled state)
     tw.setAudioVolume(sandboxAudioVolume);
+    syncAudioUI();
 
     elRunBtn.removeAttribute("disabled");
     syncTransportState();

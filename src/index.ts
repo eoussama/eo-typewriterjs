@@ -71,8 +71,8 @@ export type TTypewriterOptions = {
   /**
    * @description
    * Audio configuration for typing and delete sounds.
-   * Omit to use the built-in default voice pack with shuffle-bag variance.
-   * Set `enabled: false` to disable audio entirely.
+   * Audio is **disabled by default** when this field is omitted.
+   * Pass `{ enabled: true }` (or any options object) to turn on typing sounds.
    */
   readonly audio?: TAudioOptions;
 };
@@ -167,12 +167,11 @@ export function createTypewriter(options: TTypewriterOptions): TTypewriter {
   // Build the initial state using any cursor defaults provided
   let currentState = createInitialState(cursorDefaults);
 
-  // Create the audio manager only when audio is explicitly provided or when no
-  // config is passed (default-on). When `audio.enabled === false` is the only
-  // field set, we still create the manager so it can be toggled at runtime.
+  // Audio is disabled by default when no audio config is provided.
+  // Passing audio: { enabled: true } (or any options) opts into sound.
   const audioManager: AudioManagerHelper | null
     = audioOptions === undefined
-      ? new AudioManagerHelper()
+      ? new AudioManagerHelper({ enabled: false })
       : new AudioManagerHelper(audioOptions);
 
   const controller = new PlaybackController(renderer, currentState, audioManager);

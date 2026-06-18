@@ -44,6 +44,7 @@
   --color-cat-cursor:     #4dd0e1;
   --color-cat-styling:    #56c798;
   --color-cat-callbacks:  #f472b6;
+  --color-cat-audio:      #34d399;
   --color-cat-advanced:   #f56565;
 
   --radius:     10px;
@@ -616,6 +617,7 @@ body {
 .cat-chip[data-cat="cursor"].cat-chip--active      { border-color: var(--color-cat-cursor);     color: var(--color-cat-cursor);     background: color-mix(in srgb, var(--color-cat-cursor)     15%, transparent); }
 .cat-chip[data-cat="styling"].cat-chip--active     { border-color: var(--color-cat-styling);    color: var(--color-cat-styling);    background: color-mix(in srgb, var(--color-cat-styling)    15%, transparent); }
 .cat-chip[data-cat="callbacks"].cat-chip--active   { border-color: var(--color-cat-callbacks);  color: var(--color-cat-callbacks);  background: color-mix(in srgb, var(--color-cat-callbacks)  15%, transparent); }
+.cat-chip[data-cat="audio"].cat-chip--active       { border-color: var(--color-cat-audio);      color: var(--color-cat-audio);      background: color-mix(in srgb, var(--color-cat-audio)      15%, transparent); }
 .cat-chip[data-cat="advanced"].cat-chip--active    { border-color: var(--color-cat-advanced);   color: var(--color-cat-advanced);   background: color-mix(in srgb, var(--color-cat-advanced)   15%, transparent); }
 
 .recipe-list {
@@ -697,6 +699,7 @@ body {
 .recipe-item__cat--cursor     { color: var(--color-cat-cursor);     background: color-mix(in srgb, var(--color-cat-cursor)     12%, transparent); }
 .recipe-item__cat--styling    { color: var(--color-cat-styling);    background: color-mix(in srgb, var(--color-cat-styling)    12%, transparent); }
 .recipe-item__cat--callbacks  { color: var(--color-cat-callbacks);  background: color-mix(in srgb, var(--color-cat-callbacks)  12%, transparent); }
+.recipe-item__cat--audio      { color: var(--color-cat-audio);      background: color-mix(in srgb, var(--color-cat-audio)      12%, transparent); }
 .recipe-item__cat--advanced   { color: var(--color-cat-advanced);   background: color-mix(in srgb, var(--color-cat-advanced)   12%, transparent); }
 
 /* ─── Editor panel ──────────────────────────────────────────────────────── */

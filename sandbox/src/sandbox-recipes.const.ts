@@ -23,6 +23,7 @@ export type TSandboxCategory
     | "cursor"
     | "styling"
     | "callbacks"
+    | "audio"
     | "advanced";
 
 /**
@@ -995,6 +996,216 @@ await tw.play();
 
 const { status } = tw.getState();
 console.log("Final status:", status);`,
+  },
+
+  // ── Audio ────────────────────────────────────────────────────────────────
+
+  {
+    id: "audio-default",
+    title: "Enable Typing Sounds",
+    description: "Audio is off by default. Pass audio: { enabled: true } to opt in. Each keystroke plays a keyboard click from the built-in voice pack.",
+    category: "audio",
+    difficulty: "beginner",
+    code: `// Audio is OFF by default. Pass audio: { enabled: true } to opt in.
+// The built-in voice pack has three keyboard-click samples played in
+// shuffle-bag order so the same sound never plays twice in a row.
+// Use the speaker button in the sandbox toolbar to mute at any time.
+const tw = createTypewriter({ renderer, audio: { enabled: true } });
+
+tw.timeline
+  .type("Typing sounds are enabled!", { by: "char", interval: 80 })
+  .wait(400)
+  .type("\\nEvery keystroke plays a click.", { by: "char", interval: 70 });
+
+await tw.play();`,
+  },
+
+  {
+    id: "audio-disabled",
+    title: "Audio Off (Default)",
+    description: "Audio is disabled by default. Omitting the audio field is the same as passing audio: { enabled: false }.",
+    category: "audio",
+    difficulty: "beginner",
+    code: `// No audio field → no sounds. This is the default behaviour.
+// Both lines below create a silent typewriter:
+//   createTypewriter({ renderer })
+//   createTypewriter({ renderer, audio: { enabled: false } })
+const tw = createTypewriter({ renderer });
+
+tw.timeline
+  .type("Silent mode — no sounds.", { by: "char", interval: 70 })
+  .wait(400)
+  .type("\\nCall tw.setAudioEnabled(true) to turn on.", { by: "char", interval: 60 });
+
+await tw.play();`,
+  },
+
+  {
+    id: "audio-mute-command",
+    title: "Silence a Specific Command",
+    description: "Enable audio globally, then set audio: false on individual .type() or .delete() commands to silence just those steps.",
+    category: "audio",
+    difficulty: "beginner",
+    code: `// Audio is enabled globally. The second .type() and the .delete() are silenced.
+// The first and last .type() commands still play sounds.
+const tw = createTypewriter({ renderer, audio: { enabled: true } });
+
+tw.timeline
+  .type("Loud ", { by: "char", interval: 70 })
+  .type("silent ", { by: "char", interval: 70, audio: false })
+  .type("loud again!", { by: "char", interval: 70 })
+  .wait(500)
+  .delete(11, { by: "char", interval: 50, audio: false })
+  .type("done.", { by: "char", interval: 70 });
+
+await tw.play();`,
+  },
+
+  {
+    id: "audio-volume-command",
+    title: "Per-Command Volume",
+    description: "Pass audio: { volume } on individual commands to control loudness per keystroke.",
+    category: "audio",
+    difficulty: "intermediate",
+    code: `// Master volume is 1.0, audio is explicitly enabled.
+// The second block types at 20% of the master volume — noticeably softer.
+// The third block restores full volume.
+const tw = createTypewriter({ renderer, audio: { enabled: true, volume: 1 } });
+
+tw.timeline
+  .type("Full volume: ", { by: "char", interval: 70 })
+  .type("LOUD!", { by: "char", interval: 80 })
+  .wait(400)
+  .type("\\nSoft: ", { by: "char", interval: 70 })
+  .type("quiet...", { by: "char", interval: 80, audio: { volume: 0.2 } })
+  .wait(400)
+  .type("\\nBack to normal!", { by: "char", interval: 70 });
+
+await tw.play();`,
+  },
+
+  {
+    id: "audio-strategy",
+    title: "Sample Selection Strategy",
+    description: "Configure the strategy that picks which sound sample plays next: shuffle-bag (default), round-robin, or random.",
+    category: "audio",
+    difficulty: "intermediate",
+    code: `// round-robin cycles through samples in order.
+// shuffle-bag (default) shuffles then drains the pool before reshuffling.
+// random picks freely on every keystroke.
+//
+// All three behave identically in this demo since the default pack has 3 samples.
+// Swap EAudioStrategy.ROUND_ROBIN for SHUFFLE_BAG or RANDOM to compare.
+const tw = createTypewriter({
+  renderer,
+  audio: {
+    typing: {
+      strategy: EAudioStrategy.ROUND_ROBIN,
+      avoidImmediateRepeat: true,
+    },
+  },
+});
+
+tw.timeline
+  .type("Round-robin sampling — 1, 2, 3, 1, 2, 3…", { by: "char", interval: 75 });
+
+await tw.play();`,
+  },
+
+  {
+    id: "audio-jitter",
+    title: "Pitch & Volume Jitter",
+    description: "Add playbackRateJitter and volumeJitter to each channel for natural, human-feeling variation.",
+    category: "audio",
+    difficulty: "intermediate",
+    code: `// playbackRateJitter varies the pitch of each click between 85% and 115%.
+// volumeJitter varies the loudness between 80% and 100% of the master volume.
+// Together they prevent the mechanical feel of a single repeated click.
+const tw = createTypewriter({
+  renderer,
+  audio: {
+    volume: 0.9,
+    typing: {
+      strategy: EAudioStrategy.SHUFFLE_BAG,
+      playbackRateJitter: { min: 0.85, max: 1.15 },
+      volumeJitter: { min: 0.8, max: 1.0 },
+    },
+    delete: {
+      playbackRateJitter: { min: 0.75, max: 0.95 },
+    },
+  },
+});
+
+tw.timeline
+  .type("Natural-feeling keystrokes with jitter.", { by: "char", interval: 75 })
+  .wait(400)
+  .delete(7, { by: "char", interval: 60 })
+  .type("variance!", { by: "char", interval: 75 });
+
+await tw.play();`,
+  },
+
+  {
+    id: "audio-custom-voices",
+    title: "Custom Voice Pack",
+    description: "Supply your own voice pack with named voices, then target a specific voice per command.",
+    category: "audio",
+    difficulty: "advanced",
+    code: `// Replace the URLs below with real audio file URLs or base64 data URLs.
+// Each voice can have multiple samples — the strategy picks between them.
+const tw = createTypewriter({
+  renderer,
+  audio: {
+    voices: {
+      // Two named voices — swap the URLs for your own sounds
+      mechanical: { samples: ["https://assets.mixkit.co/active_storage/sfx/2533/2533-preview.mp3", "https://assets.mixkit.co/active_storage/sfx/2542/2542-preview.mp3"] },
+      soft:       { samples: ["https://assets.mixkit.co/active_storage/sfx/2841/2841-preview.mp3"] },
+    },
+    typing: { voice: "mechanical", strategy: EAudioStrategy.ROUND_ROBIN },
+    delete: { voice: "soft",       strategy: EAudioStrategy.ROUND_ROBIN },
+  },
+});
+
+tw.timeline
+  .type("Mechanical keys: ", { by: "char", interval: 80 })
+  .type("clack clack!", { by: "char", interval: 90 })
+  .wait(400)
+  .delete(12, { by: "char", interval: 60 })
+  .type("soft delete.", { by: "char", interval: 80 });
+
+await tw.play();`,
+  },
+
+  {
+    id: "audio-runtime-control",
+    title: "Runtime Audio Control",
+    description: "Change volume, enable/disable, and replace the full audio config at runtime during playback.",
+    category: "audio",
+    difficulty: "intermediate",
+    code: `const tw = createTypewriter({ renderer, audio: { enabled: true } });
+
+// Ramp volume down mid-animation using call() hooks
+tw.timeline
+  .type("Full volume...", { by: "char", interval: 70 })
+  .call(() => {
+    // halve the volume mid-flight
+    tw.setAudioVolume(0.3);
+  })
+  .type("\\nSoft now...", { by: "char", interval: 80 })
+  .call(() => {
+    // mute entirely
+    tw.setAudioEnabled(false);
+  })
+  .type("\\nSilent.", { by: "char", interval: 80 })
+  .call(() => {
+    // restore
+    tw.setAudioEnabled(true);
+    tw.setAudioVolume(1);
+  })
+  .wait(300)
+  .type("\\nBack!", { by: "char", interval: 70 });
+
+await tw.play();`,
   },
 
   {

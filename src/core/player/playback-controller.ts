@@ -752,9 +752,11 @@ export class PlaybackController {
           this._execAbortController = null;
           this._state = result.state;
 
-          /* v8 ignore next 3 */
+          /* v8 ignore next 5 */
           if (!ac.signal.aborted) {
             this._status = EPlaybackStatus.COMPLETED;
+            this._currentEventIndex = this._events.length;
+            this._currentTime = this._duration;
           }
         }
 
