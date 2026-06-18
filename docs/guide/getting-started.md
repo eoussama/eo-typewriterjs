@@ -119,4 +119,4 @@ const tw = createTypewriter({
 - See the available [Renderers](./renderers) for DOM, string, and custom output targets.
 - Explore the [Timeline & Commands](./timeline) page for all commands and advance modes.
 - Browse the [Commands overview](./commands/) for per-command option references, including [call](./commands/call), hooks, and audio overrides.
-- Try the interactive **[Sandbox](/sandbox)** to experiment in real time.
+- Try the interactive **[Sandbox](https://eoussama.github.io/eo-typewriterjs/sandbox/)** to experiment in real time.
