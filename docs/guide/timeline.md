@@ -45,7 +45,9 @@ Commands are appended in the order they are called.
 | [Delete](/guide/commands/delete) | `.delete(count, options?)` | ✅ yes |
 | [Move Cursor](/guide/commands/move-cursor) | `.moveCursor(index, options?)` | ❌ instant |
 | [Select](/guide/commands/select) | `.select(count, options?)` | ❌ instant |
+| [Clear Selection](/guide/commands/clear-selection) | `.clearSelection(options?)` | ❌ instant |
 | [Mark](/guide/commands/mark) | `.mark(style, range, options?)` | ❌ instant |
+| [Unmark](/guide/commands/unmark) | `.unmark(range, options?)` | ❌ instant |
 | [Call](/guide/commands/call) | `.call(fn, options?)` | ❌ instant |
 
 See the [Commands overview](/guide/commands/) for the full reference.
@@ -55,7 +57,7 @@ See the [Commands overview](/guide/commands/) for the full reference.
 - The timeline has an internal **clock cursor** that starts at `0 ms`.
 - Commands that produce events (`type`, `delete`) advance the clock by `count × interval` ms.
 - `.wait(duration)` advances the clock by `duration` ms without producing any events.
-- Instant commands (`moveCursor`, `select`, `mark`, `call`) do **not** advance the clock — they execute at the current clock position.
+- Instant commands (`moveCursor`, `select`, `clearSelection`, `mark`, `unmark`, `call`) do **not** advance the clock — they execute at the current clock position.
 
 Instant commands placed after a timed command fire at the exact timestamp of that command's last step.
 

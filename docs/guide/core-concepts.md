@@ -27,15 +27,20 @@ You add **commands** to the timeline using the fluent builder methods:
 | `.delete(count, options?)` | Remove text backward from the cursor |
 | `.moveCursor(index, options?)` | Teleport the cursor to an absolute index |
 | `.select(count, options?)` | Create a text selection relative to the cursor |
+| `.clearSelection(options?)` | Remove the active selection from a cursor |
 | `.mark(style, range, options?)` | Apply a style mark to a document range |
+| `.unmark(range, options?)` | Remove style marks that overlap a range |
 | `.call(fn, options?)` | Schedule an inline callback (sync or async) |
 
 At play time, `compile()` converts the ordered command list into a flat array of **timeline events** — one event per step — each stamped with an absolute timestamp.
 
-`wait`, `moveCursor`, `mark`, and `call` are special:
+`wait`, `moveCursor`, `select`, `clearSelection`, `mark`, `unmark`, and `call` are special:
 - `wait` generates no events but advances the internal clock
 - `moveCursor` generates a single instant event and does **not** advance the clock
+- `select` generates a single instant event and does **not** advance the clock
+- `clearSelection` generates a single instant event and does **not** advance the clock
 - `mark` generates one or more instant mark events (one per cursor when `range` is `"selection"`) and does **not** advance the clock
+- `unmark` generates a single instant event and does **not** advance the clock
 - `call` executes the callback at the current clock position; if the callback returns a `Promise`, playback suspends until it settles
 
 ### 2. Events → State (reduce)

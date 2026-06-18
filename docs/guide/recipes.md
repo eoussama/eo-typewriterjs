@@ -6,7 +6,7 @@ Common patterns and real-world usage examples.
 
 ## Looping animation
 
-Replay the same animation indefinitely by calling `play()` in a loop:
+Replay the same animation indefinitely using `replay()`:
 
 ```ts
 import { createTypewriter, domRenderer } from "eo-typewriterjs";
@@ -16,17 +16,15 @@ import { createTypewriter, domRenderer } from "eo-typewriterjs";
 const el = document.getElementById("output")!;
 const tw = createTypewriter({ renderer: domRenderer(el) });
 
-tw.timeline.type("Hello, World!", { by: "char", interval: 80 });
+tw.timeline
+  .type("Hello, World!", { by: "char", interval: 80 })
+  .wait(1500);
 
-async function loop() {
-  while (true) {
-    el.textContent = "";
-    await tw.play();
-    await new Promise(r => setTimeout(r, 1500)); // pause before repeat
-  }
+await tw.play();
+
+while (true) {
+  await tw.replay();
 }
-
-loop();
 ```
 
 ---
@@ -259,7 +257,7 @@ await tw2.play();
 
 ## Typing sounds
 
-Enable audio and use custom voices:
+Enable audio and optionally supply a custom voice pack:
 
 ```ts
 import { createTypewriter, domRenderer, EAudioStrategy } from "eo-typewriterjs";
@@ -269,11 +267,10 @@ const tw = createTypewriter({
   audio: {
     enabled: true,
     volume: 0.6,
-    voices: [
-      { src: "/sounds/key1.mp3" },
-      { src: "/sounds/key2.mp3" },
-    ],
-    strategy: EAudioStrategy.SHUFFLE,
+    voices: {
+      key: { samples: ["/sounds/key1.mp3", "/sounds/key2.mp3"] },
+    },
+    typing: { voice: "key", strategy: EAudioStrategy.SHUFFLE_BAG },
   },
 });
 
