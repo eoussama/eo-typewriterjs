@@ -9,7 +9,7 @@ import type { TCursorSelector } from "./type-command.type";
  * A command that clears the active text selection for one or more cursors.
  * If the targeted cursor has no active selection the state is left unchanged.
  */
-export type TClearSelectionCommand = TBaseCommand & {
-  readonly kind: typeof ECommandKind.CLEAR_SELECTION;
+export type TUnselectCommand = TBaseCommand & {
+  readonly kind: typeof ECommandKind.UNSELECT;
   readonly cursor: TCursorSelector;
 };

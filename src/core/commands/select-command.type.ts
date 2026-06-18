@@ -9,7 +9,7 @@ import type { TAdvanceModeInput, TCursorSelector } from "./type-command.type";
  * A command that selects a range of text relative to the cursor's current position.
  * A positive `count` selects forward; a negative `count` selects backward.
  * Selection is computed at reduce time using the runtime document state.
- * Any subsequent type, delete, or moveCursor command clears the selection.
+ * Any subsequent type, delete, or move command clears the selection.
  */
 export type TSelectCommand = TBaseCommand & {
   readonly kind: typeof ECommandKind.SELECT;

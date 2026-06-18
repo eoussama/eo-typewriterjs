@@ -65,13 +65,13 @@ export const CURSOR_SCENARIOS: readonly TScenario[] = [
     },
   },
   {
-    id: "move-cursor-type",
+    id: "move-type",
     async run({ el }) {
       const tw = createTypewriter({ renderer: domRenderer(el) });
 
       tw.timeline
         .type("Hello World", { by: "char", interval: 1 })
-        .moveCursor(5)
+        .move(5)
         .type(",", { by: "char", interval: 1 });
       await tw.play();
     },
@@ -83,7 +83,7 @@ export const CURSOR_SCENARIOS: readonly TScenario[] = [
 
       tw.timeline
         .type("Name: \nRole: ", { by: "char", interval: 1 })
-        .moveCursor(6, { cursor: "b" })
+        .move(6, { cursor: "b" })
         .type("Alice", { cursor: ["main", "b"], by: "char", interval: 1 });
       await tw.play();
     },

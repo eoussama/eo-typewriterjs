@@ -9,11 +9,11 @@ Commands are the building blocks of a typewriter animation. They are scheduled o
 | [Type](/guide/commands/type) | `.type(text, options?)` | ✅ yes | ✅ yes — inserts text |
 | [Wait](/guide/commands/wait) | `.wait(duration)` | ✅ yes | ❌ no |
 | [Delete](/guide/commands/delete) | `.delete(count, options?)` | ✅ yes | ✅ yes — removes text |
-| [Move Cursor](/guide/commands/move-cursor) | `.moveCursor(index, options?)` | ❌ instant | ❌ no |
+| [Move](/guide/commands/move) | `.move(index, options?)` | ❌ instant | ❌ no |
 | [Select](/guide/commands/select) | `.select(count, options?)` | ❌ instant | ❌ no |
-| [Clear Selection](/guide/commands/clear-selection) | `.clearSelection(options?)` | ❌ instant | ❌ no |
-| [Mark](/guide/commands/mark) | `.mark(style, range, options?)` | ❌ instant | ✅ yes — applies style |
-| [Unmark](/guide/commands/unmark) | `.unmark(range, options?)` | ❌ instant | ✅ yes — removes style |
+| [Unselect](/guide/commands/unselect) | `.unselect(options?)` | ❌ instant | ❌ no |
+| [Style](/guide/commands/style) | `.style(style, range, options?)` | ❌ instant | ✅ yes — applies style |
+| [Unstyle](/guide/commands/unstyle) | `.unstyle(range, options?)` | ❌ instant | ✅ yes — removes style |
 | [Call](/guide/commands/call) | `.call(fn, options?)` | ❌ instant | ❌ no |
 
 ## Shared options
@@ -86,9 +86,9 @@ The `callback` function receives a `TCallbackContext`:
 - [type](/guide/commands/type)
 - [wait](/guide/commands/wait)
 - [delete](/guide/commands/delete)
-- [moveCursor](/guide/commands/move-cursor)
+- [move](/guide/commands/move)
 - [select](/guide/commands/select)
-- [clearSelection](/guide/commands/clear-selection)
-- [mark](/guide/commands/mark)
-- [unmark](/guide/commands/unmark)
+- [unselect](/guide/commands/unselect)
+- [style](/guide/commands/style)
+- [unstyle](/guide/commands/unstyle)
 - [call](/guide/commands/call)

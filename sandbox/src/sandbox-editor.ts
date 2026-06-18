@@ -101,11 +101,11 @@ const TIMELINE_METHODS: Completion[] = [
   snip("type", "type(\"${1:text}\", { by: \"${2:char}\", interval: ${3:50} })", "method", "(text, opts?) => TimelineBuilder", "Type text step by step."),
   snip("delete", "delete(${1:1}, { by: \"${2:char}\", interval: ${3:50} })", "method", "(count, opts?) => TimelineBuilder", "Delete units from the cursor."),
   snip("wait", "wait(${1:500})", "method", "(ms, opts?) => TimelineBuilder", "Pause without changing the document."),
-  snip("moveCursor", "moveCursor(${1:0})", "method", "(index, opts?) => TimelineBuilder", "Move cursor to an absolute index."),
+  snip("move", "move(${1:0})", "method", "(index, opts?) => TimelineBuilder", "Move cursor to an absolute index."),
   snip("select", "select(${1:5})", "method", "(delta, opts?) => TimelineBuilder", "Extend selection. Negative = backward."),
-  snip("clearSelection", "clearSelection()", "method", "(opts?) => TimelineBuilder", "Remove the active selection from the cursor. Instant — no clock advance."),
-  snip("mark", "mark(\"${1:tw-accent}\", { from: ${2:0}, to: ${3:5} })", "method", "(cls, range, opts?) => TimelineBuilder", "Apply a CSS class to a text range."),
-  snip("unmark", "unmark({ from: ${1:0}, to: ${2:5} })", "method", "(range, opts?) => TimelineBuilder", "Remove marks overlapping the given range. Partial overlaps are clipped."),
+  snip("unselect", "unselect()", "method", "(opts?) => TimelineBuilder", "Remove the active selection from the cursor. Instant — no clock advance."),
+  snip("style", "style(\"${1:tw-accent}\", { from: ${2:0}, to: ${3:5} })", "method", "(cls, range, opts?) => TimelineBuilder", "Apply a CSS class to a text range."),
+  snip("unstyle", "unstyle({ from: ${1:0}, to: ${2:5} })", "method", "(range, opts?) => TimelineBuilder", "Remove styles overlapping the given range. Partial overlaps are clipped."),
   snip("call", "call(async ({ signal }) => {\n  ${1:// your code here}\n})", "method", "(fn, opts?) => TimelineBuilder", "Schedule an inline async callback."),
   snip("build", "build()", "method", "() => TTimeline", "Finalise and return the compiled timeline."),
 ];
@@ -157,7 +157,7 @@ const WAIT_OPTS: Completion[] = [
 
 /**
  * @description
- * Options for moveCursor()
+ * Options for move()
  */
 const MOVE_CURSOR_OPTS: Completion[] = [
   { label: "cursor", type: "property", detail: "\"main\" | string[]", info: "Target cursor ID(s). Defaults to \"main\"." },
@@ -176,7 +176,7 @@ const SELECT_OPTS: Completion[] = [
 
 /**
  * @description
- * Options for mark()
+ * Options for style()
  */
 const MARK_OPTS: Completion[] = [
   { label: "cursor", type: "property", detail: "\"main\" | string[]", info: "Required when range is \"selection\" — which cursor's selection to use." },
@@ -239,11 +239,11 @@ const COMMAND_KIND_MEMBERS: Completion[] = [
   { label: "TYPE", type: "constant", detail: "\"type\"" },
   { label: "DELETE", type: "constant", detail: "\"delete\"" },
   { label: "WAIT", type: "constant", detail: "\"wait\"" },
-  { label: "MOVE_CURSOR", type: "constant", detail: "\"moveCursor\"" },
+  { label: "MOVE", type: "constant", detail: "\"move\"" },
   { label: "SELECT", type: "constant", detail: "\"select\"" },
-  { label: "CLEAR_SELECTION", type: "constant", detail: "\"clearSelection\"" },
-  { label: "MARK", type: "constant", detail: "\"mark\"" },
-  { label: "UNMARK", type: "constant", detail: "\"unmark\"" },
+  { label: "UNSELECT", type: "constant", detail: "\"unselect\"" },
+  { label: "STYLE", type: "constant", detail: "\"style\"" },
+  { label: "UNSTYLE", type: "constant", detail: "\"unstyle\"" },
   { label: "CALL", type: "constant", detail: "\"call\"" },
 ];
 
@@ -291,11 +291,11 @@ function detectCommandOptsContext(textBefore: string): Completion[] | null {
 
     case "wait": return WAIT_OPTS;
 
-    case "movecursor": return MOVE_CURSOR_OPTS;
+    case "move": return MOVE_CURSOR_OPTS;
 
     case "select": return SELECT_OPTS;
 
-    case "mark": return MARK_OPTS;
+    case "style": return MARK_OPTS;
 
     case "call": return CALL_OPTS;
 

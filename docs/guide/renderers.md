@@ -30,7 +30,7 @@ await tw.play();
 On every render call, `DomRenderer` segments the document by its style marks and then further splits each segment at every cursor and selection boundary. The result is a mix of plain text nodes, styled `<span>` elements, and cursor markers — all appended to a `DocumentFragment` before replacing the target's `innerHTML`.
 
 ```html
-<!-- example: text = "Hello world", mark on "world" (class "highlight"), cursor at 5 -->
+<!-- example: text = "Hello world", style on "world" (class "highlight"), cursor at 5 -->
 Hello
 <span class="typewriter-cursor" aria-hidden="true" data-cursor-id="main"></span>
 <span class="highlight"> world</span>
@@ -125,7 +125,7 @@ const tw = createTypewriter({ renderer });
 
 tw.timeline
   .type("ERROR: disk full", { by: "char", interval: 20 })
-  .mark({ ansi: { fg: "31", bold: "1" } }, { from: 0, to: 5 });
+  .style({ ansi: { fg: "31", bold: "1" } }, { from: 0, to: 5 });
 
 await tw.play();
 

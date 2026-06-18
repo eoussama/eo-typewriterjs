@@ -61,7 +61,7 @@ export function compileDelete(
       const stepCount = Math.min(amount, remaining);
 
       events.push({
-        id: `del_event_${++deleteEventCounter}`,
+        id: `delete_event_${++deleteEventCounter}`,
         kind: EEventKind.DELETE,
         time: startTime + i * interval,
         cursorId,

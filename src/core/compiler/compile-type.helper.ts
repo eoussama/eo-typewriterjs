@@ -9,7 +9,7 @@ import { segmentText } from "../stepping/segment-text.helper";
 
 
 const DEFAULT_INTERVAL = 50;
-let eventCounter = 0;
+let insertEventCounter = 0;
 
 /**
  * @description
@@ -57,7 +57,7 @@ export function compileType(
   for (const cursorId of cursorIds) {
     for (const [index, chunk] of chunks.entries()) {
       events.push({
-        id: `event_${++eventCounter}`,
+        id: `insert_event_${++insertEventCounter}`,
         kind: EEventKind.INSERT,
         time: startTime + index * interval,
         cursorId,

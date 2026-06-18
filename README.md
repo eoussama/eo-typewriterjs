@@ -22,13 +22,13 @@ pnpm add eo-typewriterjs
 
 ## Why eo-typewriterjs
 
-- **Composable timeline**: chain type, delete, wait, move, select, and call commands in any order
-- **Flexible advance modes**: type by character, word, line, grapheme, or custom chunk size
-- **Rich text support**: apply styles and marks to ranges during playback
-- **Full Unicode**: handles emoji, accented characters, and complex grapheme clusters correctly
-- **Renderer-agnostic**: built-in DOM and string renderers; implement `IRenderer` to target anything
-- **TypeScript-first**: fully typed public API with no `any`
-- **Playback controls**: play, pause, stop, replay, and cancel from any point
+- **Composable timeline**: chain type, delete, wait, move, select, unselect, style, unstyle, and call commands in any order.
+- **Flexible advance modes**: type by character, word, line, grapheme, or custom chunk size.
+- **Rich text support**: apply styles to ranges during playback.
+- **Full Unicode**: handles emoji, accented characters, and complex grapheme clusters correctly.
+- **Renderer-agnostic**: built-in DOM and string renderers; implement `IRenderer` to target anything.
+- **TypeScript-first**: fully typed public API with no `any`.
+- **Playback controls**: play, pause, stop, replay, and cancel from any point.
 
 ## Quick start
 
@@ -47,8 +47,8 @@ tw.timeline
   .type("Hello, ")
   .type("world!", { by: "word", interval: 120 })
   .wait(400)
-  .delete({ amount: 6 })
-  .type("eo-typewriterjs.", { interval: 80 });
+  .delete(6)
+  .type("EO TypewriterJS.");
 
 await tw.play();
 ```

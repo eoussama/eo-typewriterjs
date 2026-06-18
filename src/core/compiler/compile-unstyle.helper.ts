@@ -1,37 +1,37 @@
-import type { TUnmarkCommand } from "../commands/unmark-command.type";
-import type { TUnmarkEvent } from "../events/unmark-event.type";
+import type { TUnstyleCommand } from "../commands/unstyle-command.type";
+import type { TUnstyleEvent } from "../events/unstyle-event.type";
 
 import { normalizeCursors } from "../commands/normalize-cursors.helper";
 import { EEventKind } from "../events/event-kind.enum";
 
 
 
-let unmarkEventCounter = 0;
+let unstyleEventCounter = 0;
 
 /**
  * @description
- * Compile a single TUnmarkCommand into TUnmarkEvents scheduled at the given start time.
+ * Compile a single TUnstyleCommand into TUnstyleEvents scheduled at the given start time.
  * When the range is `"selection"`, one event per cursor is emitted using a placeholder
  * range of `{ from: -1, to: -1 }` — the reducer resolves the actual selection at play time.
- * When the range is a fixed `TMarkRange`, a single event is emitted regardless of cursors.
+ * When the range is a fixed `TStyleRange`, a single event is emitted regardless of cursors.
  *
- * @param command - The unmark command to compile
+ * @param command - The unstyle command to compile
  * @param startTime - The absolute time offset at which this command is scheduled
  * @returns An object containing the produced events and the end time (always equal to startTime)
  */
-export function compileUnmark(
-  command: TUnmarkCommand,
+export function compileUnstyle(
+  command: TUnstyleCommand,
   startTime: number,
-): { events: TUnmarkEvent[]; endTime: number } {
-  const events: TUnmarkEvent[] = [];
+): { events: TUnstyleEvent[]; endTime: number } {
+  const events: TUnstyleEvent[] = [];
 
   if (command.range === "selection") {
     const cursorIds = normalizeCursors(command.cursor);
 
     for (const cursorId of cursorIds) {
       events.push({
-        id: `unmark_event_${++unmarkEventCounter}`,
-        kind: EEventKind.UNMARK,
+        id: `unstyle_event_${++unstyleEventCounter}`,
+        kind: EEventKind.UNSTYLE,
         time: startTime,
         from: -1,
         to: -1,
@@ -42,8 +42,8 @@ export function compileUnmark(
   }
   else {
     events.push({
-      id: `unmark_event_${++unmarkEventCounter}`,
-      kind: EEventKind.UNMARK,
+      id: `unstyle_event_${++unstyleEventCounter}`,
+      kind: EEventKind.UNSTYLE,
       time: startTime,
       from: command.range.from,
       to: command.range.to,

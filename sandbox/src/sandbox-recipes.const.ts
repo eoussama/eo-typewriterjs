@@ -297,7 +297,7 @@ await tw.play();`,
   {
     id: "insert-in-middle",
     title: "Insert in the Middle",
-    description: "Move the cursor mid-sentence with moveCursor() and insert a missing word.",
+    description: "Move the cursor mid-sentence with move() and insert a missing word.",
     category: "editing",
     code: `const tw = createTypewriter({ renderer });
 
@@ -305,7 +305,7 @@ await tw.play();`,
 tw.timeline
   .type("I love TypewriterJS", { by: "char", interval: 70 })
   .wait(600)
-  .moveCursor(7)
+  .move(7)
   .wait(300)
   .type("using ", { by: "char", interval: 80 });
 
@@ -315,7 +315,7 @@ await tw.play();`,
   {
     id: "narrated-refactor",
     title: "Narrated Refactor",
-    description: "Type rough copy, correct a typo in-place, then mark the polished result.",
+    description: "Type rough copy, correct a typo in-place, then style the polished result.",
     category: "editing",
     code: `const tw = createTypewriter({ renderer });
 
@@ -327,13 +327,13 @@ await tw.play();`,
 tw.timeline
   .type("A usefull library.", { by: "char", interval: 70 })
   .wait(600)
-  .moveCursor(9)
+  .move(9)
   .wait(200)
   .delete(7, { by: "char", interval: 55 })
   .type("useful", { by: "char", interval: 70 })
   .wait(400)
-  .mark("tw-success", { from: 2, to: 8 })
-  .mark("tw-accent",  { from: 9, to: 16 })
+  .style("tw-success", { from: 2, to: 8 })
+  .style("tw-accent",  { from: 9, to: 16 })
   .wait(800);
 
 await tw.play();`,
@@ -360,13 +360,13 @@ tw.timeline
   .type("DB     PENDING\\n", { by: "char", interval: 40 })
   .type("CACHE  PENDING\\n", { by: "char", interval: 40 })
   .wait(600)
-  .moveCursor(14)
+  .move(14)
   .delete(1, { by: "word", interval: 50 })
   .type("OK", { by: "word", interval: 60 })
-  .moveCursor(24)
+  .move(24)
   .delete(1, { by: "word", interval: 50 })
   .type("OK", { by: "word", interval: 60 })
-  .moveCursor(34)
+  .move(34)
   .delete(1, { by: "word", interval: 50 })
   .type("MISSING", { by: "word", interval: 60 })
   .wait(600);
@@ -508,7 +508,7 @@ await tw.play();`,
   },
 
   {
-    id: "move-cursor",
+    id: "move",
     title: "Move Cursor",
     description: "Move the cursor to a specific position in the text.",
     category: "cursor",
@@ -517,10 +517,10 @@ await tw.play();`,
 tw.timeline
   .type("Hello World", { by: "char", interval: 70 })
   .wait(400)
-  .moveCursor(5)
+  .move(5)
   .wait(300)
   .type(",", { by: "char", interval: 80 })
-  .moveCursor(13)
+  .move(13)
   .type("!", { by: "char", interval: 80 });
 
 await tw.play();`,
@@ -555,7 +555,7 @@ await tw.play();`,
 tw.timeline
   .type("Name: \\nRole: ", { by: "char", interval: 70 })
   .wait(400)
-  .moveCursor(6, { cursor: "b" })
+  .move(6, { cursor: "b" })
   .wait(200)
   .type("Alice", { cursor: ["main", "b"], by: "char", interval: 90 })
   .wait(600);
@@ -581,7 +581,7 @@ tw.timeline
   })
   .wait(600)
   // Park cursor "b" after "qick" (index 8)
-  .moveCursor(8, { cursor: "b" })
+  .move(8, { cursor: "b" })
   .wait(200)
   // Fix typo 1 with cursor "b"
   .delete(4, { cursor: "b", by: "char", interval: 60 })
@@ -590,7 +590,7 @@ tw.timeline
   // Fix typo 2 with main — position after "jumpd".
   // After fixing "qick"(4 chars) -> "quick"(5 chars), main has shifted by 1 to 44.
   // "jumpd" now ends at index 25. Move main there.
-  .moveCursor(25)
+  .move(25)
   .wait(200)
   .delete(5, { cursor: "main", by: "char", interval: 60 })
   .type("jumped", { cursor: "main", by: "char", interval: 70 })
@@ -604,13 +604,13 @@ await tw.play();`,
   {
     id: "style-while-typing",
     title: "Style While Typing",
-    description: "Pass style on type() so each character appears styled as it is typed — no separate mark step needed.",
+    description: "Pass style on type() so each character appears styled as it is typed — no separate style step needed.",
     category: "styling",
     code: `const tw = createTypewriter({ renderer });
 
 // style: "tw-accent" is applied per-character during insertion.
 // Characters appear in the accent colour as they are typed,
-// not as a mark applied after the fact.
+// not as a style applied after the fact.
 tw.timeline
   .type("Plain text, then ", { by: "char", interval: 60 })
   .type("styled as typed", { by: "char", interval: 70, style: "tw-accent" })
@@ -622,7 +622,7 @@ await tw.play();`,
   {
     id: "multi-style-inline",
     title: "Multiple Inline Styles",
-    description: "Type separate segments each with a different inline style — no mark() calls required.",
+    description: "Type separate segments each with a different inline style — no style() calls required.",
     category: "styling",
     code: `const tw = createTypewriter({ renderer });
 
@@ -640,18 +640,18 @@ await tw.play();`,
   },
 
   {
-    id: "mark-highlight",
+    id: "style-highlight",
     title: "Highlight After Typing",
-    description: "Type plain text, then apply a highlight mark to a range once typing is complete.",
+    description: "Type plain text, then apply a highlight style to a range once typing is complete.",
     category: "styling",
     code: `const tw = createTypewriter({ renderer });
 
-// Text is typed plain first. mark() applies the style after the fact.
+// Text is typed plain first. style() applies the style after the fact.
 // "Highlight this text!" = 20 chars. Mark covers the full range 0-20.
 tw.timeline
   .type("Highlight this text!", { by: "char", interval: 70 })
   .wait(400)
-  .mark("tw-highlight", { from: 0, to: 20 })
+  .style("tw-highlight", { from: 0, to: 20 })
   .wait(800);
 
 await tw.play();`,
@@ -665,7 +665,7 @@ await tw.play();`,
     code: `const tw = createTypewriter({ renderer });
 
 // style: "tw-accent" on each type() means styled characters appear live,
-// not as a post-hoc mark. delete() erases the old word, then the new one
+// not as a post-hoc style. delete() erases the old word, then the new one
 // types in with its style applied character by character.
 tw.timeline
   .type("Code in ", { by: "char", interval: 80 })
@@ -687,15 +687,15 @@ await tw.play();`,
   {
     id: "gradient-banner",
     title: "Gradient Banner (Mark After)",
-    description: "Type a headline word by word, then apply a gradient mark to the full text once typing finishes.",
+    description: "Type a headline word by word, then apply a gradient style to the full text once typing finishes.",
     category: "styling",
     code: `const tw = createTypewriter({ renderer });
 
-// Text is typed plain. The gradient is applied via mark() after completion.
+// Text is typed plain. The gradient is applied via style() after completion.
 tw.timeline
   .type("Ship faster. Build better.", { by: "word", interval: 200 })
   .wait(400)
-  .mark("tw-gradient", { from: 0, to: 26 })
+  .style("tw-gradient", { from: 0, to: 26 })
   .wait(800);
 
 await tw.play();`,
@@ -704,19 +704,19 @@ await tw.play();`,
   {
     id: "layered-marks",
     title: "Layered Marks (Mark After)",
-    description: "Type plain text, then apply distinct mark styles to different regions simultaneously.",
+    description: "Type plain text, then apply distinct styles to different regions simultaneously.",
     category: "styling",
     code: `const tw = createTypewriter({ renderer });
 
-// All marks are applied after typing — mark() stamps a style onto an existing range.
+// All marks are applied after typing — style() stamps a style onto an existing range.
 // "Deleted text | Added text | Keyword"
 //   danger: 0-12   success:15-25   pill:28-35
 tw.timeline
   .type("Deleted text | Added text | Keyword", { by: "char", interval: 55 })
   .wait(500)
-  .mark("tw-danger",  { from: 0,  to: 12 })
-  .mark("tw-success", { from: 15, to: 25 })
-  .mark("tw-pill",    { from: 28, to: 35 })
+  .style("tw-danger",  { from: 0,  to: 12 })
+  .style("tw-success", { from: 15, to: 25 })
+  .style("tw-pill",    { from: 28, to: 35 })
   .wait(1000);
 
 await tw.play();`,
@@ -725,20 +725,20 @@ await tw.play();`,
   {
     id: "code-annotation",
     title: "Code Annotation (Mark After)",
-    description: "Type a function call plain, then progressively mark the function name and arguments.",
+    description: "Type a function call plain, then progressively style the function name and arguments.",
     category: "styling",
     code: `const tw = createTypewriter({ renderer });
 
-// Characters are typed without styling. mark() highlights each token in sequence.
+// Characters are typed without styling. style() highlights each token in sequence.
 // "render(scene, camera)" — fn: 0-5, arg1: 7-11, arg2: 14-19
 tw.timeline
   .type("render(scene, camera)", { by: "char", interval: 70 })
   .wait(400)
-  .mark("tw-accent", { from: 0,  to: 6  })
+  .style("tw-accent", { from: 0,  to: 6  })
   .wait(300)
-  .mark("tw-code",   { from: 7,  to: 12 })
+  .style("tw-code",   { from: 7,  to: 12 })
   .wait(300)
-  .mark("tw-code",   { from: 14, to: 20 })
+  .style("tw-code",   { from: 14, to: 20 })
   .wait(800);
 
 await tw.play();`,
@@ -747,130 +747,130 @@ await tw.play();`,
   {
     id: "select-and-restyle",
     title: "Select & Restyle (Mark After)",
-    description: "Type plain text, select a word backward, then apply a style mark to the selection.",
+    description: "Type plain text, select a word backward, then apply a style to the selection.",
     category: "styling",
     code: `const tw = createTypewriter({ renderer });
 
-// Text is typed plain. The selection is made and the mark applied after the fact.
+// Text is typed plain. The selection is made and the style applied after the fact.
 // "Make this word pop." — "word" starts at index 10 (4 chars).
 tw.timeline
   .type("Make this word pop.", { by: "char", interval: 70 })
   .wait(500)
-  .moveCursor(14)
+  .move(14)
   .wait(200)
   .select(-4, { by: "char" })
   .wait(300)
-  .mark("tw-accent", "selection")
+  .style("tw-accent", "selection")
   .wait(800);
 
 await tw.play();`,
   },
 
   {
-    id: "clear-selection",
+    id: "unselect",
     title: "Clear Selection",
-    description: "Create a selection, keep it visible for a moment, then dismiss it with clearSelection() without moving the cursor.",
+    description: "Create a selection, keep it visible for a moment, then dismiss it with unselect() without moving the cursor.",
     category: "styling",
     code: `const tw = createTypewriter({ renderer });
 
-// select() creates the selection; clearSelection() removes it.
+// select() creates the selection; unselect() removes it.
 // The cursor stays at index 6 — only the highlight disappears.
 tw.timeline
   .type("Hello World", { by: "char", interval: 70 })
   .wait(400)
-  .moveCursor(6)
+  .move(6)
   .select(5)
   .wait(800)
-  .clearSelection()
+  .unselect()
   .wait(600);
 
 await tw.play();`,
   },
 
   {
-    id: "unmark-range",
-    title: "Unmark by Range",
-    description: "Mark the full text, then unmark a specific range — the unmarked region loses its style while the rest keeps it.",
+    id: "unstyle-range",
+    title: "Unstyle by Range",
+    description: "Style the full text, then unstyle a specific range — the unstyled region loses its style while the rest keeps it.",
     category: "styling",
     code: `const tw = createTypewriter({ renderer });
 
-// Mark everything, then unmark "World" (indices 6-11).
+// Style everything, then unstyle "World" (indices 6-11).
 // Marks that partially overlap are clipped — "Hello " keeps its style.
 tw.timeline
   .type("Hello World", { by: "char", interval: 70 })
   .wait(400)
-  .mark("tw-highlight", { from: 0, to: 11 })
+  .style("tw-highlight", { from: 0, to: 11 })
   .wait(800)
-  .unmark({ from: 6, to: 11 })
+  .unstyle({ from: 6, to: 11 })
   .wait(600);
 
 await tw.play();`,
   },
 
   {
-    id: "unmark-selection",
-    title: "Unmark by Selection",
-    description: "Select a range, then pass \"selection\" to unmark() to remove marks in that region using the cursor selection as the target.",
+    id: "unstyle-selection",
+    title: "Unstyle by Selection",
+    description: "Select a range, then pass \"selection\" to unstyle() to remove marks in that region using the cursor selection as the target.",
     category: "styling",
     code: `const tw = createTypewriter({ renderer });
 
 // "selection" resolves to the cursor's active selection at play time.
-// The selection is also cleared after the unmark fires.
+// The selection is also cleared after the unstyle fires.
 tw.timeline
   .type("Hello World", { by: "char", interval: 70 })
   .wait(400)
-  .mark("tw-highlight", { from: 0, to: 11 })
+  .style("tw-highlight", { from: 0, to: 11 })
   .wait(400)
-  .moveCursor(6)
+  .move(6)
   .select(5)
   .wait(600)
-  .unmark("selection")
+  .unstyle("selection")
   .wait(600);
 
 await tw.play();`,
   },
 
   {
-    id: "unmark-split",
-    title: "Unmark Split",
-    description: "Unmark the middle of a marked range — the mark is split into two fragments covering the regions outside the unmark range.",
+    id: "unstyle-split",
+    title: "Unstyle Split",
+    description: "Unstyle the middle of a styled range — the style is split into two fragments covering the regions outside the unstyle range.",
     category: "styling",
     code: `const tw = createTypewriter({ renderer });
 
-// Mark all 11 chars, then unmark indices 3-8 (the middle portion).
+// Style all 11 chars, then unstyle indices 3-8 (the middle portion).
 // Result: two fragments: [0,3] and [8,11] both keep tw-highlight.
-// Characters 3-7 carry no mark.
+// Characters 3-7 carry no style.
 tw.timeline
   .type("Hello World", { by: "char", interval: 70 })
   .wait(400)
-  .mark("tw-highlight", { from: 0, to: 11 })
+  .style("tw-highlight", { from: 0, to: 11 })
   .wait(800)
-  .unmark({ from: 3, to: 8 })
+  .unstyle({ from: 3, to: 8 })
   .wait(600);
 
 await tw.play();`,
   },
 
   {
-    id: "mark-unmark-cycle",
-    title: "Mark/Unmark Cycle",
+    id: "style-unstyle-cycle",
+    title: "Style/Unstyle Cycle",
     description: "Apply and remove a style in a loop to create a pulsing highlight effect.",
     category: "styling",
     code: `const tw = createTypewriter({ renderer });
 
-// Each loop applies a mark then removes it to create a visual blink.
+// Each loop applies a style then removes it to create a visual blink.
 tw.timeline
   .type("Blinking highlight", { by: "char", interval: 70 })
   .wait(300)
-  .mark("tw-highlight", { from: 0, to: 18 })
+  .style("tw-highlight", { from: 0, to: 18 })
   .wait(400)
-  .unmark({ from: 0, to: 18 })
+  .unstyle({ from: 0, to: 18 })
   .wait(400)
-  .mark("tw-highlight", { from: 0, to: 18 })
+  .style("tw-highlight", { from: 0, to: 18 })
   .wait(400)
-  .unmark({ from: 0, to: 18 })
+  .unstyle({ from: 0, to: 18 })
   .wait(400)
-  .mark("tw-highlight", { from: 0, to: 18 })
+  .style("tw-highlight", { from: 0, to: 18 })
   .wait(600);
 
 await tw.play();`,

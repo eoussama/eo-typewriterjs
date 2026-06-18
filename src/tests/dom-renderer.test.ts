@@ -52,7 +52,7 @@ describe("domRenderer", () => {
     const renderer = new DomRenderer(el);
     const tw = createTypewriter({ renderer, cursor: { content: "" } });
 
-    tw.timeline.type("Hi", { by: "char", interval: 1 }).mark("tw-bold", { from: 0, to: 2 });
+    tw.timeline.type("Hi", { by: "char", interval: 1 }).style("tw-bold", { from: 0, to: 2 });
     await tw.play();
 
     expect(el.textContent).toBe("Hi");
@@ -89,7 +89,7 @@ describe("domRenderer", () => {
     const renderer = new DomRenderer(el);
     const tw = createTypewriter({ renderer, cursor: { content: "" } });
 
-    tw.timeline.type("AB", { by: "char", interval: 1 }).mark({ css: { color: "red" } }, { from: 0, to: 2 });
+    tw.timeline.type("AB", { by: "char", interval: 1 }).style({ css: { color: "red" } }, { from: 0, to: 2 });
     await tw.play();
 
     expect(el.textContent).toBe("AB");
@@ -103,7 +103,7 @@ describe("domRenderer", () => {
     const renderer = new DomRenderer(el);
     const tw = createTypewriter({ renderer });
 
-    tw.timeline.type("AB", { by: "char", interval: 1 }).mark({ attrs: { "data-x": "1" } }, { from: 0, to: 2 });
+    tw.timeline.type("AB", { by: "char", interval: 1 }).style({ attrs: { "data-x": "1" } }, { from: 0, to: 2 });
     await tw.play();
 
     expect(el.querySelector("[data-x]")).not.toBeNull();
@@ -117,23 +117,23 @@ describe("domRenderer", () => {
     // Type text, move cursor back, and select forward to create an active selection
     tw.timeline
       .type("Hello", { by: "char", interval: 1 })
-      .moveCursor(0)
+      .move(0)
       .select(3);
     await tw.play();
 
     expect(el.querySelector(".typewriter-selection")).not.toBeNull();
   });
 
-  it("does not duplicate the cursor after mark(\"selection\") clears the active selection", async () => {
+  it("does not duplicate the cursor after style(\"selection\") clears the active selection", async () => {
     const el = document.createElement("div");
     const renderer = new DomRenderer(el);
     const tw = createTypewriter({ renderer });
 
     tw.timeline
       .type("Make this word pop.", { by: "char", interval: 1 })
-      .moveCursor(14)
+      .move(14)
       .select(-4, { by: "char" })
-      .mark("tw-accent", "selection");
+      .style("tw-accent", "selection");
 
     await tw.play();
 

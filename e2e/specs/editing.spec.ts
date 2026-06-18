@@ -41,7 +41,7 @@ test.describe("editing", () => {
     expect(await getOutputText(page)).toBe("He");
   });
 
-  test("select then clearSelection removes selection highlight from DOM", async ({ page }) => {
+  test("select then unselect removes selection highlight from DOM", async ({ page }) => {
     await gotoScenario(page, "select-and-clear");
 
     await expect(
@@ -51,8 +51,8 @@ test.describe("editing", () => {
     expect(await getOutputText(page)).toBe("Hello");
   });
 
-  test("mark then unmark removes styled span from DOM", async ({ page }) => {
-    await gotoScenario(page, "select-mark-and-unmark");
+  test("style then unstyle removes styled span from DOM", async ({ page }) => {
+    await gotoScenario(page, "select-style-and-unstyle");
 
     await expect(
       page.locator(".tw-bold"),
@@ -67,7 +67,7 @@ test.describe("editing", () => {
     expect(await getOutputText(page)).toBe("");
   });
 
-  test("selection-based mark then type inserts at cursor position after mark", async ({ page }) => {
+  test("selection-based style then type inserts at cursor position after style", async ({ page }) => {
     await gotoScenario(page, "type-then-select-and-retype");
 
     expect(await getOutputText(page)).toBe("HelloHi World");

@@ -1,29 +1,29 @@
-# `.mark()` — apply a style to typed text
+# `.style()` — apply a style to typed text
 
-Applies a style mark to a range of already-typed document text.
+Applies a style style to a range of already-typed document text.
 
 ```ts
-tw.timeline.mark(
+tw.timeline.style(
   style: TStyleRef,
-  range: TMarkRange | "selection",
-  options?: TMarkOptions
+  range: TStyleRange | "selection",
+  options?: TStyleOptions
 ): TimelineBuilder
 ```
 
-`.mark()` is an **instant command**. It produces a single event at the current timeline clock position and does **not** advance the clock. The applied mark is permanent — it persists in the document until the marked text is deleted.
+`.style()` is an **instant command**. It produces a single event at the current timeline clock position and does **not** advance the clock. The applied style is permanent — it persists in the document until the marked text is deleted.
 
 ## Parameters
 
 | Parameter | Type | Description |
 |---|---|---|
 | `style` | `TStyleRef` | The style to apply — a CSS class name or a `TStyleObject` |
-| `range` | `TMarkRange \| "selection"` | Where to apply the style — absolute indices or the current selection |
-| `options` | `TMarkOptions` | Optional cursor targeting |
+| `range` | `TStyleRange \| "selection"` | Where to apply the style — absolute indices or the current selection |
+| `options` | `TStyleOptions` | Optional cursor targeting |
 
 ## Options
 
 ```ts
-type TMarkOptions = {
+type TStyleOptions = {
   cursor?: TCursorSelector; // default: "main"
   before?: TCallbackHook;
   after?: TCallbackHook;
@@ -34,8 +34,8 @@ type TMarkOptions = {
 | Option | Type | Default | Description |
 |---|---|---|---|
 | `cursor` | `TCursorSelector` | `"main"` | Whose selection to read when `range` is `"selection"` |
-| `before` | `TCallbackHook` | — | Hook fired before the mark is applied |
-| `after` | `TCallbackHook` | — | Hook fired after the mark is applied |
+| `before` | `TCallbackHook` | — | Hook fired before the style is applied |
+| `after` | `TCallbackHook` | — | Hook fired after the style is applied |
 | `audio` | `TAudioCommandOverride` | — | Per-command audio override |
 
 ## Style reference (`TStyleRef`)
@@ -44,10 +44,10 @@ A style reference is either a plain class name string or a `TStyleObject`:
 
 ```ts
 // plain class name
-tw.timeline.mark("highlight", { from: 0, to: 5 });
+tw.timeline.style("highlight", { from: 0, to: 5 });
 
 // full style object
-tw.timeline.mark(
+tw.timeline.style(
   {
     className: "error",
     css: { color: "#ef4444", fontWeight: "bold" },
@@ -70,10 +70,10 @@ tw.timeline.mark(
 
 All fields are optional. A `TStyleObject` with no fields is valid but has no visible effect.
 
-## Range (`TMarkRange`)
+## Range (`TStyleRange`)
 
 ```ts
-type TMarkRange = { from: number; to: number };
+type TStyleRange = { from: number; to: number };
 ```
 
 - `from` — inclusive start index (0-based character position in the document text)
@@ -81,22 +81,22 @@ type TMarkRange = { from: number; to: number };
 
 ```ts
 // marks characters at indices 6, 7, 8, 9, 10 ("World" in "Hello World")
-tw.timeline.mark("highlight", { from: 6, to: 11 });
+tw.timeline.style("highlight", { from: 6, to: 11 });
 ```
 
 ### Using `"selection"`
 
-When `range` is `"selection"`, the mark is applied to the targeted cursor's **current selection range** at the moment the event fires:
+When `range` is `"selection"`, the style is applied to the targeted cursor's **current selection range** at the moment the event fires:
 
 ```ts
 tw.timeline
   .type("Hello World")
-  .moveCursor(6)
+  .move(6)
   .select(5) // selects "World" (indices 6–11)
-  .mark("highlight", "selection"); // marks exactly that range
+  .style("highlight", "selection"); // marks exactly that range
 ```
 
-The mark is applied using the selection's `from`/`to` values — it is equivalent to calling `.mark(style, { from: selection.from, to: selection.to })`. The selection itself is not affected by `.mark()`; use `.moveCursor()` or `.type()` to clear it afterward.
+The style is applied using the selection's `from`/`to` values — it is equivalent to calling `.style(style, { from: selection.from, to: selection.to })`. The selection itself is not affected by `.style()`; use `.move()` or `.type()` to clear it afterward.
 
 ## Styling text as it is typed
 
@@ -108,7 +108,7 @@ tw.timeline
   .type("World!", { style: "accent", interval: 80 });
 ```
 
-This is functionally equivalent to calling `.mark()` immediately after each inserted character. See [`.type()`](/guide/commands/type#styling-text-while-typing) for details.
+This is functionally equivalent to calling `.style()` immediately after each inserted character. See [`.type()`](/guide/commands/type#styling-text-while-typing) for details.
 
 ## Examples
 
@@ -117,7 +117,7 @@ This is functionally equivalent to calling `.mark()` immediately after each inse
 ```ts
 tw.timeline
   .type("Hello World", { by: "char", interval: 80 })
-  .mark("highlight", { from: 6, to: 11 });
+  .style("highlight", { from: 6, to: 11 });
 
 await tw.play();
 // "World" is wrapped in a <span class="highlight"> in the DOM renderer
@@ -128,18 +128,18 @@ await tw.play();
 ```ts
 tw.timeline
   .type("Error: file not found", { by: "char", interval: 60 })
-  .mark("error", { from: 0, to: 5 }) // "Error"
-  .mark("muted", { from: 7, to: 21 }); // "file not found"
+  .style("error", { from: 0, to: 5 }) // "Error"
+  .style("muted", { from: 7, to: 21 }); // "file not found"
 
 await tw.play();
 ```
 
-### Inline CSS mark
+### Inline CSS style
 
 ```ts
 tw.timeline
   .type("Danger zone", { by: "char", interval: 80 })
-  .mark(
+  .style(
     { css: { color: "#ef4444", fontWeight: "bold" } },
     { from: 0, to: 6 }
   );
@@ -148,27 +148,27 @@ await tw.play();
 // "Danger" renders with red bold text
 ```
 
-### Selection-based mark
+### Selection-based style
 
 ```ts
 tw.timeline
   .type("Hello World", { by: "char", interval: 80 })
   .wait(600)
-  .moveCursor(6)
+  .move(6)
   .select(5)
-  .mark("highlight", "selection") // marks the selection
-  .moveCursor(11); // clears the selection UI
+  .style("highlight", "selection") // marks the selection
+  .move(11); // clears the selection UI
 
 await tw.play();
 // "World" permanently carries the "highlight" class
 ```
 
-### ANSI mark for terminal output
+### ANSI style for terminal output
 
 ```ts
 tw.timeline
   .type("Error: file not found", { by: "char", interval: 20 })
-  .mark({ ansi: { fg: "31", bold: "1" } }, { from: 0, to: 5 });
+  .style({ ansi: { fg: "31", bold: "1" } }, { from: 0, to: 5 });
 
 await tw.play();
 
@@ -183,7 +183,7 @@ renderer.toAnsiString(); // "\x1B[31;1mError\x1B[0m: file not found"
 ```ts
 tw.timeline
   .type("Critical error occurred", { by: "char", interval: 60 })
-  .mark(
+  .style(
     { className: "alert", attrs: { "role": "alert", "aria-live": "assertive" } },
     { from: 0, to: 8 }
   );
@@ -193,9 +193,9 @@ await tw.play();
 
 ## Interaction with renderers
 
-**DOM renderer** — each mark produces a `<span>` wrapping the marked characters. If `className` is set, it is applied as a CSS class. If `css` is set, it is applied as inline styles. If `attrs` is set, the attributes are added to the span element. Overlapping marks produce nested spans.
+**DOM renderer** — each style produces a `<span>` wrapping the marked characters. If `className` is set, it is applied as a CSS class. If `css` is set, it is applied as inline styles. If `attrs` is set, the attributes are added to the span element. Overlapping marks produce nested spans.
 
-**String renderer** — `toString()` ignores marks and returns plain text. `toAnsiString()` reads the `ansi` field of each mark and wraps the marked range with ANSI escape codes.
+**String renderer** — `toString()` ignores marks and returns plain text. `toAnsiString()` reads the `ansi` field of each style and wraps the marked range with ANSI escape codes.
 
 **Custom renderers** — marks are available on `state.document.marks` as a `TTextMark[]` array. Use `segmentRichText(document)` to get pre-segmented character ranges with merged style information.
 
@@ -209,18 +209,18 @@ When the document text is mutated by `.delete()`:
 
 ## Edge cases
 
-- **`from === to`** — an empty mark; applies to no characters. Valid but has no visible effect.
+- **`from === to`** — an empty style; applies to no characters. Valid but has no visible effect.
 - **`from > to`** — undefined behavior. Always use `from < to`.
-- **`range` out of document bounds** — the mark is applied with the given indices even if they exceed the current document length. The renderer clips marks to the visible text.
-- **`"selection"` with no active selection** — applies a zero-width mark at the cursor position. Effectively a no-op.
+- **`range` out of document bounds** — the style is applied with the given indices even if they exceed the current document length. The renderer clips marks to the visible text.
+- **`"selection"` with no active selection** — applies a zero-width style at the cursor position. Effectively a no-op.
 - **Multiple marks on the same range** — all marks accumulate. The DOM renderer produces nested spans; `mergeStyles()` can merge them if needed.
 - **Mark survives replay** — marks applied in a previous `play()` are part of the document state. On `replay()`, the document is reset before compilation runs again, so marks are re-applied cleanly.
 
 ## Type reference
 
-- [`TMarkOptions`](/api/type-aliases/TMarkOptions)
-- [`TMarkCommand`](/api/type-aliases/TMarkCommand)
-- [`TMarkRange`](/api/type-aliases/TMarkRange)
+- [`TStyleOptions`](/api/type-aliases/TStyleOptions)
+- [`TStyleCommand`](/api/type-aliases/TStyleCommand)
+- [`TStyleRange`](/api/type-aliases/TStyleRange)
 - [`TStyleRef`](/api/type-aliases/TStyleRef)
 - [`TStyleObject`](/api/type-aliases/TStyleObject)
 - [`TTextMark`](/api/type-aliases/TTextMark)

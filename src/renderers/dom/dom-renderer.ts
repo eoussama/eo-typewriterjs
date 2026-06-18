@@ -226,7 +226,7 @@ export class DomRenderer implements IRenderer {
   /**
    * @description
    * Paint the document text into the target element.
-   * Segments the text at every style mark boundary, cursor position, and selection boundary,
+   * Segments the text at every style boundary, cursor position, and selection boundary,
    * rendering cursor markers and selection highlights at their correct positions.
    * Style marks are applied as className, inline CSS, and/or HTML attributes on spans.
    *

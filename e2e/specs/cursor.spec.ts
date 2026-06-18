@@ -51,8 +51,8 @@ test.describe("cursor", () => {
     ).toBeVisible();
   });
 
-  test("moveCursor then type inserts text at correct position", async ({ page }) => {
-    await gotoScenario(page, "move-cursor-type");
+  test("move then type inserts text at correct position", async ({ page }) => {
+    await gotoScenario(page, "move-type");
 
     expect(await getOutputText(page)).toBe("Hello, World");
   });

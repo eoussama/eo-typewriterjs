@@ -5,7 +5,7 @@ import type { TRichTextDocument, TStyleObject, TStyleRef, TTextMark } from "./ri
 /**
  * @description
  * A contiguous segment of document text with its merged style stack applied.
- * Styles are merged in mark order so later marks override earlier ones for
+ * Styles are merged in style order so later styles override earlier ones for
  * conflicting keys. Segments with no marks have an empty styles array.
  */
 export type TRichTextSegment = {
@@ -110,9 +110,9 @@ export function segmentRichText(document: TRichTextDocument): TRichTextSegment[]
   // Collect all unique boundary positions
   const boundarySet = new Set<number>([0, text.length]);
 
-  for (const mark of marks) {
-    boundarySet.add(Math.max(0, mark.from));
-    boundarySet.add(Math.min(text.length, mark.to));
+  for (const entry of marks) {
+    boundarySet.add(Math.max(0, entry.from));
+    boundarySet.add(Math.min(text.length, entry.to));
   }
 
   const boundaries = [...boundarySet].sort((a, b) => a - b);
@@ -131,9 +131,9 @@ export function segmentRichText(document: TRichTextDocument): TRichTextSegment[]
     // Collect all marks that fully cover this segment (in document order)
     const activeStyles: TStyleRef[] = [];
 
-    for (const mark of marks as readonly TTextMark[]) {
-      if (mark.from <= from && mark.to >= to) {
-        activeStyles.push(mark.style);
+    for (const entry of marks as readonly TTextMark[]) {
+      if (entry.from <= from && entry.to >= to) {
+        activeStyles.push(entry.style);
       }
     }
 

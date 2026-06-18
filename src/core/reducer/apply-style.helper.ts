@@ -1,4 +1,4 @@
-import type { TMarkEvent } from "../events/mark-event.type";
+import type { TStyleEvent } from "../events/style-event.type";
 import type { TTypewriterState } from "../state/typewriter-state.type";
 
 import { withSelectionCleared } from "../state/typewriter-state.type";
@@ -7,20 +7,20 @@ import { withSelectionCleared } from "../state/typewriter-state.type";
 
 /**
  * @description
- * Apply a mark event to the typewriter state by appending a new text mark to the document.
+ * Apply a style event to the typewriter state by appending a new text style to the document.
  * When the event is selection-based (`from === -1 && to === -1`), the actual range is
  * resolved from the named cursor's active selection. If the cursor has no active selection
  * the state is returned unchanged.
  *
  * @param state - The current typewriter state
- * @param event - The mark event to apply
- * @returns A new TTypewriterState with the mark appended to the document
+ * @param event - The style event to apply
+ * @returns A new TTypewriterState with the style appended to the document
  */
-export function applyMark(state: TTypewriterState, event: TMarkEvent): TTypewriterState {
+export function applyStyle(state: TTypewriterState, event: TStyleEvent): TTypewriterState {
   let from = event.from;
   let to = event.to;
 
-  // Selection-based mark: resolve range from cursor selection
+  // Selection-based style: resolve range from cursor selection
   let clearedSelection = false;
 
   if (from === -1 && to === -1) {

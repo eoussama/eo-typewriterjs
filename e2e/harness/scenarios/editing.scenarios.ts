@@ -23,7 +23,7 @@ export const EDITING_SCENARIOS: readonly TScenario[] = [
 
       tw.timeline
         .type("world", { by: "char", interval: 1 })
-        .moveCursor(0)
+        .move(0)
         .type("Hello ", { by: "char", interval: 1 });
       await tw.play();
     },
@@ -78,21 +78,21 @@ export const EDITING_SCENARIOS: readonly TScenario[] = [
 
       tw.timeline
         .type("Hello", { by: "char", interval: 1 })
-        .moveCursor(0)
+        .move(0)
         .select(3)
-        .clearSelection();
+        .unselect();
       await tw.play();
     },
   },
   {
-    id: "select-mark-and-unmark",
+    id: "select-style-and-unstyle",
     async run({ el }) {
       const tw = createTypewriter({ renderer: domRenderer(el) });
 
       tw.timeline
         .type("Hello World", { by: "char", interval: 1 })
-        .mark("tw-bold", { from: 0, to: 5 })
-        .unmark({ from: 0, to: 5 });
+        .style("tw-bold", { from: 0, to: 5 })
+        .unstyle({ from: 0, to: 5 });
       await tw.play();
     },
   },
@@ -114,9 +114,9 @@ export const EDITING_SCENARIOS: readonly TScenario[] = [
 
       tw.timeline
         .type("Hello World", { by: "char", interval: 1 })
-        .moveCursor(5)
+        .move(5)
         .select(-5)
-        .mark("tw-sel", "selection")
+        .style("tw-sel", "selection")
         .type("Hi", { by: "char", interval: 1 });
       await tw.play();
     },

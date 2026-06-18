@@ -84,7 +84,7 @@ tw.timeline.type("👨‍👩‍👧‍👦", { by: "char" });
 
 ## Styling text while typing
 
-Attach a [TStyleRef](/api/type-aliases/TStyleRef) via the `style` option. Every character inserted by this command carries the style mark in the document's `marks` array.
+Attach a [TStyleRef](/api/type-aliases/TStyleRef) via the `style` option. Every character inserted by this command carries the style style in the document's `marks` array.
 
 ```ts
 // class name
@@ -103,16 +103,16 @@ tw.timeline.type("Error", {
 });
 ```
 
-Each inserted character receives its own mark with `from = charIndex` and `to = charIndex + 1`. Marks from consecutive `.type()` calls with the same style reference are **not** automatically merged, but renderers may coalesce adjacent identical marks when rendering.
+Each inserted character receives its own style with `from = charIndex` and `to = charIndex + 1`. Marks from consecutive `.type()` calls with the same style reference are **not** automatically merged, but renderers may coalesce adjacent identical marks when rendering.
 
 ## Typing at a cursor position
 
-By default text is inserted at the current cursor position. Use `.moveCursor()` beforehand to insert at a specific location:
+By default text is inserted at the current cursor position. Use `.move()` beforehand to insert at a specific location:
 
 ```ts
 tw.timeline
   .type("world")
-  .moveCursor(0)
+  .move(0)
   .type("Hello ");
 
 await tw.play();
@@ -126,7 +126,7 @@ If the targeted cursor has an active selection when `.type()` fires, the selecte
 ```ts
 tw.timeline
   .type("Hello World")
-  .moveCursor(6)
+  .move(6)
   .select(5) // selects "World"
   .type("there"); // replaces selection with "there"
 
@@ -166,7 +166,7 @@ tw.timeline
 // Multiline with line-level timing
 tw.timeline.type("Line 1\nLine 2\nLine 3", { by: "line", interval: 500 });
 
-// Type and immediately apply a mark
+// Type and immediately apply a style
 tw.timeline
   .type("Error: ", { style: "error", interval: 80 })
   .type("file not found", { interval: 80 });

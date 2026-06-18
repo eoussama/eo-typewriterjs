@@ -69,14 +69,14 @@ describe("abort inside whole-command before hook of delete", () => {
 
 
 describe("abort inside before hook of instant commands", () => {
-  it("cancelling inside clearSelection before hook skips the operation", async () => {
+  it("cancelling inside unselect before hook skips the operation", async () => {
     const renderer = stringRenderer();
     const tw = createTypewriter({ renderer });
 
     tw.timeline
       .type("ab", { by: "char", interval: 1 })
       .select(-1)
-      .clearSelection({
+      .unselect({
         before: { callback: () => { tw.cancel(); } },
       })
       .type("X", { by: "char", interval: 1 });
@@ -85,14 +85,14 @@ describe("abort inside before hook of instant commands", () => {
     expect(renderer.toString()).toBe("ab");
   });
 
-  it("cancelling inside unmark before hook skips the operation", async () => {
+  it("cancelling inside unstyle before hook skips the operation", async () => {
     const renderer = stringRenderer();
     const tw = createTypewriter({ renderer });
 
     tw.timeline
       .type("ab", { by: "char", interval: 1 })
-      .mark("tw-a", { from: 0, to: 2 })
-      .unmark({ from: 0, to: 2 }, {
+      .style("tw-a", { from: 0, to: 2 })
+      .unstyle({ from: 0, to: 2 }, {
         before: { callback: () => { tw.cancel(); } },
       })
       .type("X", { by: "char", interval: 1 });

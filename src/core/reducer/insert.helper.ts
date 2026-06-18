@@ -11,7 +11,7 @@ import { withCursor, withSelectionCleared } from "../state/typewriter-state.type
  * @description
  * Apply an insert event to the typewriter state.
  * The text is inserted at the cursor's current index, the cursor advances
- * forward by the length of the inserted text, and any style is recorded as a mark.
+ * forward by the length of the inserted text, and any style is recorded as a style.
  * All other cursors whose index is strictly after the insertion point are shifted
  * forward by the inserted length so that their logical positions remain correct.
  * The cursor's active selection is cleared.

@@ -1,22 +1,22 @@
 import type { TCallCommand } from "../commands/call-command.type";
-import type { TClearSelectionCommand } from "../commands/clear-selection-command.type";
 import type { TDeleteCommand } from "../commands/delete-command.type";
-import type { TMarkCommand } from "../commands/mark-command.type";
-import type { TMoveCursorCommand } from "../commands/move-cursor-command.type";
+import type { TMoveCommand } from "../commands/move-command.type";
 import type { TSelectCommand } from "../commands/select-command.type";
+import type { TStyleCommand } from "../commands/style-command.type";
 import type { TTypeCommand } from "../commands/type-command.type";
-import type { TUnmarkCommand } from "../commands/unmark-command.type";
+import type { TUnselectCommand } from "../commands/unselect-command.type";
+import type { TUnstyleCommand } from "../commands/unstyle-command.type";
 import type { TWaitCommand } from "../commands/wait-command.type";
 import type { TTimelineEvent } from "../events/timeline-event.type";
 
 import { ECommandKind } from "../commands/command-kind.enum";
-import { compileClearSelection } from "./compile-clear-selection.helper";
 import { compileDelete } from "./compile-delete.helper";
-import { compileMark } from "./compile-mark.helper";
-import { compileMoveCursor } from "./compile-move-cursor.helper";
+import { compileMove } from "./compile-move.helper";
 import { compileSelect } from "./compile-select.helper";
+import { compileStyle } from "./compile-style.helper";
 import { compileType } from "./compile-type.helper";
-import { compileUnmark } from "./compile-unmark.helper";
+import { compileUnselect } from "./compile-unselect.helper";
+import { compileUnstyle } from "./compile-unstyle.helper";
 
 
 
@@ -24,7 +24,7 @@ import { compileUnmark } from "./compile-unmark.helper";
  * @description
  * A union of all supported command types.
  */
-export type TCommand = TTypeCommand | TWaitCommand | TDeleteCommand | TMoveCursorCommand | TSelectCommand | TClearSelectionCommand | TMarkCommand | TUnmarkCommand | TCallCommand;
+export type TCommand = TTypeCommand | TWaitCommand | TDeleteCommand | TMoveCommand | TSelectCommand | TUnselectCommand | TStyleCommand | TUnstyleCommand | TCallCommand;
 
 /**
  * @description
@@ -62,11 +62,11 @@ export function compile(commands: TCommand[]): TTimelineEvent[] {
         break;
       }
 
-      case ECommandKind.MOVE_CURSOR: {
-        const result = compileMoveCursor(command as TMoveCursorCommand, cursor);
+      case ECommandKind.MOVE: {
+        const result = compileMove(command as TMoveCommand, cursor);
 
         events.push(...result.events);
-        // endTime unchanged, moveCursor is instant
+        // endTime unchanged, move is instant
         break;
       }
 
@@ -78,27 +78,27 @@ export function compile(commands: TCommand[]): TTimelineEvent[] {
         break;
       }
 
-      case ECommandKind.CLEAR_SELECTION: {
-        const result = compileClearSelection(command as TClearSelectionCommand, cursor);
+      case ECommandKind.UNSELECT: {
+        const result = compileUnselect(command as TUnselectCommand, cursor);
 
         events.push(...result.events);
-        // endTime unchanged, clearSelection is instant
+        // endTime unchanged, unselect is instant
         break;
       }
 
-      case ECommandKind.MARK: {
-        const result = compileMark(command as TMarkCommand, cursor);
+      case ECommandKind.STYLE: {
+        const result = compileStyle(command as TStyleCommand, cursor);
 
         events.push(...result.events);
-        // endTime unchanged, mark is instant
+        // endTime unchanged, style is instant
         break;
       }
 
-      case ECommandKind.UNMARK: {
-        const result = compileUnmark(command as TUnmarkCommand, cursor);
+      case ECommandKind.UNSTYLE: {
+        const result = compileUnstyle(command as TUnstyleCommand, cursor);
 
         events.push(...result.events);
-        // endTime unchanged, unmark is instant
+        // endTime unchanged, unstyle is instant
         break;
       }
 

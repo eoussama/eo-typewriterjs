@@ -27,8 +27,8 @@ export type { TBaseCommand } from "./core/commands/index";
 export { normalizeCursors } from "./core/commands/index";
 export type { TCallbackContext, TCallbackFn, TCallbackHook } from "./core/commands/index";
 export type { TCallCommand } from "./core/commands/index";
-export type { TClearSelectionCommand } from "./core/commands/index";
-export type { TAdvanceMode, TAdvanceModeInput, TAdvanceUnit, TCommandKind, TCursorSelector, TDeleteCommand, TMarkCommand, TMarkRange, TMoveCursorCommand, TSelectCommand, TTypeCommand, TUnmarkCommand, TWaitCommand } from "./core/commands/index";
+export type { TUnselectCommand } from "./core/commands/index";
+export type { TAdvanceMode, TAdvanceModeInput, TAdvanceUnit, TCommandKind, TCursorSelector, TDeleteCommand, TMoveCommand, TSelectCommand, TStyleCommand, TStyleRange, TTypeCommand, TUnstyleCommand, TWaitCommand } from "./core/commands/index";
 export type { TCommand } from "./core/compiler/index";
 export { ECursorKind } from "./core/cursor/index";
 
@@ -36,7 +36,7 @@ export type { TCursorAnimation, TCursorAnimationOptions, TCursorKind, TCursorRen
 
 export { EEventKind } from "./core/events/index";
 export type { TBaseEvent } from "./core/events/index";
-export type { TClearSelectionEvent, TDeleteEvent, TEventKind, TInsertEvent, TMarkEvent, TMoveCursorEvent, TSelectEvent, TTimelineEvent, TUnmarkEvent } from "./core/events/index";
+export type { TDeleteEvent, TEventKind, TInsertEvent, TMoveEvent, TSelectEvent, TStyleEvent, TTimelineEvent, TUnselectEvent, TUnstyleEvent } from "./core/events/index";
 
 export { EPlaybackStatus } from "./core/player/index";
 export type { TCheckpoint, TPlaybackControllerState, TPlaybackStatus } from "./core/player/index";
@@ -51,7 +51,7 @@ export type { TSelectionState, TTypewriterState } from "./core/state/index";
 export { getSelection, withCursor, withSelection, withSelectionCleared } from "./core/state/index";
 
 export { TimelineBuilder } from "./core/timeline/index";
-export type { TClearSelectionOptions, TCommandHookOptions, TDeleteOptions, TMarkOptions, TMoveCursorOptions, TSelectOptions, TTypeOptions, TUnmarkOptions, TWaitOptions } from "./core/timeline/index";
+export type { TCommandHookOptions, TDeleteOptions, TMoveOptions, TSelectOptions, TStyleOptions, TTypeOptions, TUnselectOptions, TUnstyleOptions, TWaitOptions } from "./core/timeline/index";
 
 export { DomRenderer, domRenderer } from "./renderers/index";
 export { StringRenderer, stringRenderer } from "./renderers/index";

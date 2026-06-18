@@ -6,13 +6,13 @@ import { createTypewriter, domRenderer } from "@eo-typewriterjs";
 
 export const STYLING_SCENARIOS: readonly TScenario[] = [
   {
-    id: "mark-after-typing",
+    id: "style-after-typing",
     async run({ el }) {
       const tw = createTypewriter({ renderer: domRenderer(el) });
 
       tw.timeline
         .type("Hello world", { by: "char", interval: 1 })
-        .mark("tw-highlight", { from: 0, to: 5 });
+        .style("tw-highlight", { from: 0, to: 5 });
       await tw.play();
     },
   },
@@ -34,82 +34,82 @@ export const STYLING_SCENARIOS: readonly TScenario[] = [
 
       tw.timeline
         .type("Error | Ok", { by: "char", interval: 1 })
-        .mark("tw-danger", { from: 0, to: 5 })
-        .mark("tw-success", { from: 8, to: 10 });
+        .style("tw-danger", { from: 0, to: 5 })
+        .style("tw-success", { from: 8, to: 10 });
       await tw.play();
     },
   },
   {
-    id: "selection-mark",
+    id: "selection-style",
     async run({ el }) {
       const tw = createTypewriter({ renderer: domRenderer(el) });
 
       tw.timeline
         .type("Hello world", { by: "char", interval: 1 })
         .select(-5, { by: "char" })
-        .mark("tw-highlight", "selection");
+        .style("tw-highlight", "selection");
       await tw.play();
     },
   },
   {
-    id: "style-object-mark",
+    id: "style-object",
     async run({ el }) {
       const tw = createTypewriter({ renderer: domRenderer(el) });
 
       tw.timeline
         .type("Styled", { by: "char", interval: 1 })
-        .mark({ css: { color: "red" } }, { from: 0, to: 6 });
+        .style({ css: { color: "red" } }, { from: 0, to: 6 });
       await tw.play();
     },
   },
   {
-    id: "clear-selection",
+    id: "unselect",
     async run({ el }) {
       const tw = createTypewriter({ renderer: domRenderer(el) });
 
       tw.timeline
         .type("Hello World", { by: "char", interval: 1 })
-        .moveCursor(6)
+        .move(6)
         .select(5)
-        .clearSelection();
+        .unselect();
       await tw.play();
     },
   },
   {
-    id: "unmark-range",
+    id: "unstyle-range",
     async run({ el }) {
       const tw = createTypewriter({ renderer: domRenderer(el) });
 
       tw.timeline
         .type("Hello World", { by: "char", interval: 1 })
-        .mark("tw-highlight", { from: 0, to: 11 })
-        .unmark({ from: 6, to: 11 });
+        .style("tw-highlight", { from: 0, to: 11 })
+        .unstyle({ from: 6, to: 11 });
       await tw.play();
     },
   },
   {
-    id: "unmark-selection",
+    id: "unstyle-selection",
     async run({ el }) {
       const tw = createTypewriter({ renderer: domRenderer(el) });
 
       tw.timeline
         .type("Hello World", { by: "char", interval: 1 })
-        .mark("tw-highlight", { from: 0, to: 11 })
-        .moveCursor(6)
+        .style("tw-highlight", { from: 0, to: 11 })
+        .move(6)
         .select(5)
-        .unmark("selection");
+        .unstyle("selection");
       await tw.play();
     },
   },
   {
-    id: "unmark-split",
+    id: "unstyle-split",
     async run({ el }) {
       const tw = createTypewriter({ renderer: domRenderer(el) });
 
       tw.timeline
         .type("Hello World", { by: "char", interval: 1 })
-        .mark("tw-highlight", { from: 0, to: 11 })
-        .unmark({ from: 3, to: 8 });
+        .style("tw-highlight", { from: 0, to: 11 })
+        .unstyle({ from: 3, to: 8 });
       await tw.play();
     },
   },

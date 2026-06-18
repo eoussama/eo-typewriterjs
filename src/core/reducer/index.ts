@@ -1,8 +1,8 @@
-export { applyMark } from "./apply-mark.helper";
-export { clearSelection } from "./clear-selection.helper";
+export { applyStyle } from "./apply-style.helper";
 export { deleteTextAtCursor } from "./delete-text-at-cursor.helper";
 export { insertTextAtCursor } from "./insert.helper";
-export { moveCursor } from "./move-cursor.helper";
+export { move } from "./move.helper";
 export { reduce } from "./reduce.helper";
-export { removeMarks } from "./remove-marks.helper";
+export { removeStyles } from "./remove-styles.helper";
 export { selectText } from "./select-text.helper";
+export { unselect } from "./unselect.helper";

@@ -25,22 +25,22 @@ You add **commands** to the timeline using the fluent builder methods:
 | `.type(text, options?)` | Insert text step by step |
 | `.wait(duration)` | Pause before the next command |
 | `.delete(count, options?)` | Remove text backward from the cursor |
-| `.moveCursor(index, options?)` | Teleport the cursor to an absolute index |
+| `.move(index, options?)` | Teleport the cursor to an absolute index |
 | `.select(count, options?)` | Create a text selection relative to the cursor |
-| `.clearSelection(options?)` | Remove the active selection from a cursor |
-| `.mark(style, range, options?)` | Apply a style mark to a document range |
-| `.unmark(range, options?)` | Remove style marks that overlap a range |
+| `.unselect(options?)` | Remove the active selection from a cursor |
+| `.style(style, range, options?)` | Apply a style style to a document range |
+| `.unstyle(range, options?)` | Remove style marks that overlap a range |
 | `.call(fn, options?)` | Schedule an inline callback (sync or async) |
 
 At play time, `compile()` converts the ordered command list into a flat array of **timeline events** — one event per step — each stamped with an absolute timestamp.
 
-`wait`, `moveCursor`, `select`, `clearSelection`, `mark`, `unmark`, and `call` are special:
+`wait`, `move`, `select`, `unselect`, `style`, `unstyle`, and `call` are special:
 - `wait` generates no events but advances the internal clock
-- `moveCursor` generates a single instant event and does **not** advance the clock
+- `move` generates a single instant event and does **not** advance the clock
 - `select` generates a single instant event and does **not** advance the clock
-- `clearSelection` generates a single instant event and does **not** advance the clock
-- `mark` generates one or more instant mark events (one per cursor when `range` is `"selection"`) and does **not** advance the clock
-- `unmark` generates a single instant event and does **not** advance the clock
+- `unselect` generates a single instant event and does **not** advance the clock
+- `style` generates one or more instant style events (one per cursor when `range` is `"selection"`) and does **not** advance the clock
+- `unstyle` generates a single instant event and does **not** advance the clock
 - `call` executes the callback at the current clock position; if the callback returns a `Promise`, playback suspends until it settles
 
 ### 2. Events → State (reduce)
@@ -157,9 +157,9 @@ You can implement this interface to write to a canvas, a terminal, a virtual DOM
 tw.timeline
   .type("Hello World")
   .wait(300)
-  .moveCursor(6)
+  .move(6)
   .select(5)
-  .mark("highlight", "selection")
+  .style("highlight", "selection")
   .delete(2, { by: "char", interval: 60 });
 
 await tw.play(); // compiles fresh each time

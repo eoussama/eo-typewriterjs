@@ -54,7 +54,7 @@ export type TCallbackFn = (context: TCallbackContext) => void | Promise<void>;
  * - `unit` — when provided, the hook fires once per generated step of this unit type.
  *   When omitted the hook fires once for the entire command.
  *
- * For commands that do not naturally segment (moveCursor, select, mark, wait, call),
+ * For commands that do not naturally segment (move, select, style, wait, call),
  * a provided `unit` is ignored and the hook fires once for the whole command.
  */
 export type TCallbackHook = {

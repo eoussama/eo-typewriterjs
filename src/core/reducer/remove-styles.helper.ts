@@ -1,4 +1,4 @@
-import type { TUnmarkEvent } from "../events/unmark-event.type";
+import type { TUnstyleEvent } from "../events/unstyle-event.type";
 import type { TTextMark } from "../state/rich-text-document.type";
 import type { TTypewriterState } from "../state/typewriter-state.type";
 
@@ -22,19 +22,19 @@ import { withSelectionCleared } from "../state/typewriter-state.type";
 function clipMarks(marks: readonly TTextMark[], from: number, to: number): readonly TTextMark[] {
   const result: TTextMark[] = [];
 
-  for (const mark of marks) {
-    if (mark.to <= from || mark.from >= to) {
-      result.push(mark);
+  for (const entry of marks) {
+    if (entry.to <= from || entry.from >= to) {
+      result.push(entry);
     }
-    else if (mark.from < from && mark.to > to) {
-      result.push({ ...mark, to: from });
-      result.push({ ...mark, from: to });
+    else if (entry.from < from && entry.to > to) {
+      result.push({ ...entry, to: from });
+      result.push({ ...entry, from: to });
     }
-    else if (mark.from < from) {
-      result.push({ ...mark, to: from });
+    else if (entry.from < from) {
+      result.push({ ...entry, to: from });
     }
-    else if (mark.to > to) {
-      result.push({ ...mark, from: to });
+    else if (entry.to > to) {
+      result.push({ ...entry, from: to });
     }
   }
 
@@ -43,17 +43,17 @@ function clipMarks(marks: readonly TTextMark[], from: number, to: number): reado
 
 /**
  * @description
- * Apply an unmark event to the typewriter state by removing or clipping all marks
+ * Apply an unstyle event to the typewriter state by removing or clipping all marks
  * that overlap the target range.
  * When the event is selection-based (`from === -1 && to === -1`), the actual range is
  * resolved from the named cursor's active selection. If the cursor has no active selection
  * the state is returned unchanged.
  *
  * @param state - The current typewriter state
- * @param event - The unmark event to apply
+ * @param event - The unstyle event to apply
  * @returns A new TTypewriterState with marks in the range removed or clipped
  */
-export function removeMarks(state: TTypewriterState, event: TUnmarkEvent): TTypewriterState {
+export function removeStyles(state: TTypewriterState, event: TUnstyleEvent): TTypewriterState {
   let from = event.from;
   let to = event.to;
 

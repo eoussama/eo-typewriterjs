@@ -121,12 +121,12 @@ await tw.play();
 
 ## Interaction with cursor position
 
-`.delete()` removes text backward from wherever the cursor currently is. Use `.moveCursor()` first to delete from a specific position:
+`.delete()` removes text backward from wherever the cursor currently is. Use `.move()` first to delete from a specific position:
 
 ```ts
 tw.timeline
   .type("Hello World")
-  .moveCursor(5) // cursor is now at index 5 (between "Hello" and " ")
+  .move(5) // cursor is now at index 5 (between "Hello" and " ")
   .delete(5, { by: "char", interval: 60 }); // removes "Hello"
 
 await tw.play();
@@ -140,7 +140,7 @@ If the targeted cursor has an active selection when `.delete()` fires, the entir
 ```ts
 tw.timeline
   .type("Hello World")
-  .moveCursor(6)
+  .move(6)
   .select(5) // selects "World"
   .delete(1); // deletes the selection in one step
 

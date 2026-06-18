@@ -217,14 +217,14 @@ describe("before/after hooks whole-command", () => {
     expect(order).toStrictEqual(["before", "after", "next"]);
   });
 
-  it("moveCursor: before and after fire around the cursor move", async () => {
+  it("move: before and after fire around the cursor move", async () => {
     const renderer = stringRenderer();
     const tw = createTypewriter({ renderer });
     const order: string[] = [];
 
     tw.timeline
       .type("ab", { by: "char", interval: 1 })
-      .moveCursor(0, {
+      .move(0, {
         before: { callback: () => { order.push("before"); } },
         after: { callback: () => { order.push("after"); } },
       })
@@ -251,14 +251,14 @@ describe("before/after hooks whole-command", () => {
     expect(order).toStrictEqual(["before", "after", "next"]);
   });
 
-  it("mark: before and after fire around the mark application", async () => {
+  it("style: before and after fire around the style application", async () => {
     const renderer = stringRenderer();
     const tw = createTypewriter({ renderer });
     const order: string[] = [];
 
     tw.timeline
       .type("ab", { by: "char", interval: 1 })
-      .mark("tw-cls", { from: 0, to: 2 }, {
+      .style("tw-cls", { from: 0, to: 2 }, {
         before: { callback: () => { order.push("before"); } },
         after: { callback: () => { order.push("after"); } },
       })
@@ -765,19 +765,19 @@ describe("abort inside per-unit hooks of type/delete", () => {
 
 
 describe("abort inside before hook of instant commands", () => {
-  it("aborting inside moveCursor before hook skips the cursor move", async () => {
+  it("aborting inside move before hook skips the cursor move", async () => {
     const renderer = stringRenderer();
     const tw = createTypewriter({ renderer });
 
     tw.timeline
       .type("ab", { by: "char", interval: 1 })
-      .moveCursor(0, {
+      .move(0, {
         before: { callback: () => { tw.cancel(); } },
       })
       .type("X", { by: "char", interval: 1 });
     await tw.play();
 
-    // X should not be typed since moveCursor before hook aborted
+    // X should not be typed since move before hook aborted
     expect(renderer.toString()).toBe("ab");
   });
 
@@ -796,13 +796,13 @@ describe("abort inside before hook of instant commands", () => {
     expect(renderer.toString()).toBe("ab");
   });
 
-  it("aborting inside mark before hook skips the mark", async () => {
+  it("aborting inside style before hook skips the style", async () => {
     const renderer = stringRenderer();
     const tw = createTypewriter({ renderer });
 
     tw.timeline
       .type("ab", { by: "char", interval: 1 })
-      .mark("tw-cls", { from: 0, to: 2 }, {
+      .style("tw-cls", { from: 0, to: 2 }, {
         before: { callback: () => { tw.cancel(); } },
       })
       .type("X", { by: "char", interval: 1 });

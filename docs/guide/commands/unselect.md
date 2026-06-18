@@ -1,17 +1,17 @@
-# `.clearSelection()` — remove the active text selection
+# `.unselect()` — remove the active text selection
 
 Removes the active text selection from one or more cursors.
 
 ```ts
-tw.timeline.clearSelection(options?: TClearSelectionOptions): TimelineBuilder
+tw.timeline.unselect(options?: TUnselectOptions): TimelineBuilder
 ```
 
-`.clearSelection()` is an **instant command**. It produces a single event per targeted cursor at the current timeline clock position and does **not** advance the clock. If the targeted cursor has no active selection the state is left unchanged.
+`.unselect()` is an **instant command**. It produces a single event per targeted cursor at the current timeline clock position and does **not** advance the clock. If the targeted cursor has no active selection the state is left unchanged.
 
 ## Options
 
 ```ts
-type TClearSelectionOptions = {
+type TUnselectOptions = {
   cursor?: TCursorSelector; // default: "main"
   before?: TCallbackHook;
   after?: TCallbackHook;
@@ -31,11 +31,11 @@ type TClearSelectionOptions = {
 - The selection for each targeted cursor is removed from the state.
 - If a cursor has no active selection, that cursor is unaffected and no error is raised.
 - The cursor's text position is not changed.
-- Works alongside `.select()` — any selection created by `.select()` can later be dismissed explicitly with `.clearSelection()`.
+- Works alongside `.select()` — any selection created by `.select()` can later be dismissed explicitly with `.unselect()`.
 
 ## When to use
 
-In most cases, a selection is cleared automatically by `.type()`, `.delete()`, or `.moveCursor()` targeting the same cursor. Use `.clearSelection()` when you need to remove a selection **without** mutating the document or moving the cursor — for example, after a `.mark()` that already consumed the selection, or to restore a clean visual state.
+In most cases, a selection is cleared automatically by `.type()`, `.delete()`, or `.move()` targeting the same cursor. Use `.unselect()` when you need to remove a selection **without** mutating the document or moving the cursor — for example, after a `.style()` that already consumed the selection, or to restore a clean visual state.
 
 ## Examples
 
@@ -44,30 +44,30 @@ In most cases, a selection is cleared automatically by `.type()`, `.delete()`, o
 ```ts
 tw.timeline
   .type("Hello World", { by: "char", interval: 80 })
-  .moveCursor(6)
+  .move(6)
   .select(5) // selects "World"
   .wait(800)
-  .clearSelection(); // removes the selection, cursor stays at 6
+  .unselect(); // removes the selection, cursor stays at 6
 
 await tw.play();
 // "World" is no longer highlighted; cursor remains at index 6
 ```
 
-### Select, mark, then clear
+### Select, style, then clear
 
 ```ts
 tw.timeline
   .type("Hello World", { by: "char", interval: 80 })
-  .moveCursor(6)
+  .move(6)
   .select(5)
-  .mark("highlight", "selection")
-  .clearSelection(); // dismiss selection after marking
+  .style("highlight", "selection")
+  .unselect(); // dismiss selection after marking
 
 await tw.play();
 // "World" carries the "highlight" class; no selection highlight remains
 ```
 
-### Clear selection on a specific cursor
+### Unselect on a specific cursor
 
 ```ts
 tw.timeline
@@ -75,7 +75,7 @@ tw.timeline
   .select(3, { cursor: "a" })
   .select(2, { cursor: "b" })
   .wait(600)
-  .clearSelection({ cursor: "a" }); // only cursor "a"'s selection is removed
+  .unselect({ cursor: "a" }); // only cursor "a"'s selection is removed
 
 await tw.play();
 ```
@@ -88,7 +88,7 @@ tw.timeline
   .select(2, { cursor: "a" })
   .select(3, { cursor: "b" })
   .wait(600)
-  .clearSelection({ cursor: ["a", "b"] });
+  .unselect({ cursor: ["a", "b"] });
 
 await tw.play();
 ```
@@ -99,21 +99,21 @@ await tw.play();
 |---|---|
 | `.type()` | Yes, on the targeted cursor |
 | `.delete()` | Yes, on the targeted cursor |
-| `.moveCursor()` | Yes, on the targeted cursor |
-| `.clearSelection()` | Yes, explicitly, without other side effects |
-| `.mark()` with `"selection"` | Yes, after consuming the selection range |
+| `.move()` | Yes, on the targeted cursor |
+| `.unselect()` | Yes, explicitly, without other side effects |
+| `.style()` with `"selection"` | Yes, after consuming the selection range |
 | `.select()` | Replaces any existing selection |
 
 ## Edge cases
 
-- **No active selection** — `.clearSelection()` is a no-op; the state is returned unchanged.
+- **No active selection** — `.unselect()` is a no-op; the state is returned unchanged.
 - **Unknown cursor** — events are compiled for the specified cursor ID but if that cursor does not exist in state at play time the event is a no-op.
 - **Called before `.select()`** — no effect; there is nothing to clear.
 
 ## Type reference
 
-- [`TClearSelectionOptions`](/api/type-aliases/TClearSelectionOptions)
-- [`TClearSelectionCommand`](/api/type-aliases/TClearSelectionCommand)
+- [`TUnselectOptions`](/api/type-aliases/TUnselectOptions)
+- [`TUnselectCommand`](/api/type-aliases/TUnselectCommand)
 - [`TSelectionState`](/api/type-aliases/TSelectionState)
 - [`TCursorSelector`](/api/type-aliases/TCursorSelector)
 - [`TCallbackHook`](/api/type-aliases/TCallbackHook)

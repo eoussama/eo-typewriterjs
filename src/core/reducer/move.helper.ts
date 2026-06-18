@@ -1,4 +1,4 @@
-import type { TMoveCursorEvent } from "../events/move-cursor-event.type";
+import type { TMoveEvent } from "../events/move-event.type";
 import type { TCursorState } from "../state/cursor-state.type";
 import type { TTypewriterState } from "../state/typewriter-state.type";
 
@@ -8,16 +8,16 @@ import { withCursor, withSelectionCleared } from "../state/typewriter-state.type
 
 /**
  * @description
- * Apply a move-cursor event to the typewriter state.
+ * Apply a move event to the typewriter state.
  * Teleports the cursor to the given absolute index, clamped to [0, document length].
  * The cursor's active selection is cleared.
  * If the cursor does not exist it is created at the clamped index.
  *
  * @param state - The current typewriter state
- * @param event - The move-cursor event to apply
+ * @param event - The move event to apply
  * @returns A new TTypewriterState with the cursor repositioned
  */
-export function moveCursor(state: TTypewriterState, event: TMoveCursorEvent): TTypewriterState {
+export function move(state: TTypewriterState, event: TMoveEvent): TTypewriterState {
   const ensured = withCursor(state, event.cursorId);
   // withCursor guarantees the cursor exists
   const cursor = ensured.cursors[event.cursorId] as TCursorState;

@@ -6,11 +6,11 @@ export const ECommandKind = {
   TYPE: "type",
   WAIT: "wait",
   DELETE: "delete",
-  MOVE_CURSOR: "moveCursor",
+  MOVE: "move",
   SELECT: "select",
-  CLEAR_SELECTION: "clearSelection",
-  MARK: "mark",
-  UNMARK: "unmark",
+  UNSELECT: "unselect",
+  STYLE: "style",
+  UNSTYLE: "unstyle",
   CALL: "call",
 } as const;
 

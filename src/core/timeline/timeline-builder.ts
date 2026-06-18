@@ -1,7 +1,7 @@
 import type { TAudioCommandOverride } from "../audio/audio-command-override.type";
 import type { TCommand } from "../commands";
 import type { TCallbackFn, TCallbackHook } from "../commands/callback-hook.type";
-import type { TMarkRange } from "../commands/mark-command.type";
+import type { TStyleRange } from "../commands/style-command.type";
 import type { TAdvanceModeInput, TCursorSelector } from "../commands/type-command.type";
 import type { TStyleRef } from "../state/rich-text-document.type";
 
@@ -57,9 +57,9 @@ export type TDeleteOptions = TCommandHookOptions & {
 
 /**
  * @description
- * Options accepted by the `moveCursor` builder method
+ * Options accepted by the `move` builder method
  */
-export type TMoveCursorOptions = TCommandHookOptions & {
+export type TMoveOptions = TCommandHookOptions & {
   readonly cursor?: TCursorSelector;
 };
 
@@ -76,25 +76,25 @@ export type TTypeOptions = TCommandHookOptions & {
 
 /**
  * @description
- * Options accepted by the `mark` builder method
+ * Options accepted by the `style` builder method
  */
-export type TMarkOptions = TCommandHookOptions & {
+export type TStyleOptions = TCommandHookOptions & {
   readonly cursor?: TCursorSelector;
 };
 
 /**
  * @description
- * Options accepted by the `clearSelection` builder method
+ * Options accepted by the `unselect` builder method
  */
-export type TClearSelectionOptions = TCommandHookOptions & {
+export type TUnselectOptions = TCommandHookOptions & {
   readonly cursor?: TCursorSelector;
 };
 
 /**
  * @description
- * Options accepted by the `unmark` builder method
+ * Options accepted by the `unstyle` builder method
  */
-export type TUnmarkOptions = TCommandHookOptions & {
+export type TUnstyleOptions = TCommandHookOptions & {
   readonly cursor?: TCursorSelector;
 };
 
@@ -168,7 +168,7 @@ export class TimelineBuilder {
    * @description
    * Schedule a select command that creates a text selection relative to the cursor's
    * current position. A positive `count` selects forward; a negative `count` selects backward.
-   * The selection is cleared by any subsequent type, delete, or moveCursor command.
+   * The selection is cleared by any subsequent type, delete, or move command.
    *
    * @param count - Number of units to select; positive = forward, negative = backward
    * @param options - Optional configuration (advance mode, cursor id, lifecycle hooks)
@@ -193,17 +193,17 @@ export class TimelineBuilder {
 
   /**
    * @description
-   * Schedule a move-cursor command that teleports the cursor to an absolute document index.
+   * Schedule a move command that teleports the cursor to an absolute document index.
    * This command is instant and does not advance the timeline clock.
    *
    * @param index - The absolute document index to move the cursor to
    * @param options - Optional configuration (cursor id, lifecycle hooks)
    * @returns This builder instance for future chaining
    */
-  moveCursor(index: number, options?: TMoveCursorOptions): this {
+  move(index: number, options?: TMoveOptions): this {
     this._commands.push({
       id: `cmd_${++commandCounter}`,
-      kind: ECommandKind.MOVE_CURSOR,
+      kind: ECommandKind.MOVE,
       cursor: options?.cursor ?? "main",
       index,
       audio: options?.audio,
@@ -271,22 +271,22 @@ export class TimelineBuilder {
 
   /**
    * @description
-   * Schedule a mark command that applies a style to a document range or cursor selection.
+   * Schedule a style command that applies a style to a document range or cursor selection.
    * When `range` is `"selection"`, the style is applied to each targeted cursor's current selection.
    * When `range` is a `{ from, to }` object, the style is applied to those absolute document indices.
    * This command is instant and does not advance the timeline clock.
    *
-   * @param style - The style reference to apply (class name string or TStyleObject)
+   * @param styleRef - The style reference to apply (class name string or TStyleObject)
    * @param range - The target range — either absolute `{ from, to }` indices or `"selection"`
    * @param options - Optional configuration (cursor id, lifecycle hooks)
    * @returns This builder instance for future chaining
    */
-  mark(style: TStyleRef, range: TMarkRange | "selection", options?: TMarkOptions): this {
+  style(styleRef: TStyleRef, range: TStyleRange | "selection", options?: TStyleOptions): this {
     this._commands.push({
       id: `cmd_${++commandCounter}`,
-      kind: ECommandKind.MARK,
+      kind: ECommandKind.STYLE,
       cursor: options?.cursor ?? "main",
-      style,
+      style: styleRef,
       range,
       audio: options?.audio,
       before: options?.before,
@@ -300,17 +300,17 @@ export class TimelineBuilder {
 
   /**
    * @description
-   * Schedule a clearSelection command that removes the active text selection for one or more cursors.
+   * Schedule an unselect command that removes the active text selection for one or more cursors.
    * If the targeted cursor has no active selection the state is left unchanged.
    * This command is instant and does not advance the timeline clock.
    *
    * @param options - Optional configuration (cursor id, lifecycle hooks)
    * @returns This builder instance for future chaining
    */
-  clearSelection(options?: TClearSelectionOptions): this {
+  unselect(options?: TUnselectOptions): this {
     this._commands.push({
       id: `cmd_${++commandCounter}`,
-      kind: ECommandKind.CLEAR_SELECTION,
+      kind: ECommandKind.UNSELECT,
       cursor: options?.cursor ?? "main",
       audio: options?.audio,
       before: options?.before,
@@ -324,20 +324,20 @@ export class TimelineBuilder {
 
   /**
    * @description
-   * Schedule an unmark command that removes style marks overlapping a document range or cursor selection.
-   * Marks that partially overlap the range are clipped rather than fully removed.
-   * When `range` is `"selection"`, the marks are removed from each targeted cursor's current selection.
-   * When `range` is a `{ from, to }` object, marks overlapping those absolute document indices are affected.
+   * Schedule an unstyle command that removes styles overlapping a document range or cursor selection.
+   * Styles that partially overlap the range are clipped rather than fully removed.
+   * When `range` is `"selection"`, the styles are removed from each targeted cursor's current selection.
+   * When `range` is a `{ from, to }` object, styles overlapping those absolute document indices are affected.
    * This command is instant and does not advance the timeline clock.
    *
    * @param range - The target range, either absolute `{ from, to }` indices or `"selection"`
    * @param options - Optional configuration (cursor id, lifecycle hooks)
    * @returns This builder instance for future chaining
    */
-  unmark(range: TMarkRange | "selection", options?: TUnmarkOptions): this {
+  unstyle(range: TStyleRange | "selection", options?: TUnstyleOptions): this {
     this._commands.push({
       id: `cmd_${++commandCounter}`,
-      kind: ECommandKind.UNMARK,
+      kind: ECommandKind.UNSTYLE,
       cursor: options?.cursor ?? "main",
       range,
       audio: options?.audio,

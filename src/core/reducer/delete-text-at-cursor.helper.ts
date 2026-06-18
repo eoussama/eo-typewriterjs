@@ -61,13 +61,13 @@ export function deleteTextAtCursor(state: TTypewriterState, event: TDeleteEvent)
   // Adjust marks: remove marks fully within the deleted range,
   // clamp marks that partially overlap it
   const nextMarks = ensured.document.marks
-    .filter(mark => !(mark.from >= removeStart && mark.to <= removeEnd))
-    .map(mark => ({
-      ...mark,
+    .filter(entry => !(entry.from >= removeStart && entry.to <= removeEnd))
+    .map(entry => ({
+      ...entry,
       /* v8 ignore next */
-      from: mark.from > removeStart ? Math.max(removeStart, mark.from - (removeEnd - removeStart)) : mark.from,
+      from: entry.from > removeStart ? Math.max(removeStart, entry.from - (removeEnd - removeStart)) : entry.from,
       /* v8 ignore next */
-      to: mark.to > removeStart ? Math.max(removeStart, mark.to - (removeEnd - removeStart)) : mark.to,
+      to: entry.to > removeStart ? Math.max(removeStart, entry.to - (removeEnd - removeStart)) : entry.to,
     }));
 
   // Shift all other cursors whose index falls at or after the deleted range

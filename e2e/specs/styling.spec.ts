@@ -5,8 +5,8 @@ import { getOutputLocator, getOutputText, gotoScenario } from "../helpers/harnes
 
 
 test.describe("styling", () => {
-  test("mark after typing wraps marked range in a styled span", async ({ page }) => {
-    await gotoScenario(page, "mark-after-typing");
+  test("style after typing wraps styled range in a styled span", async ({ page }) => {
+    await gotoScenario(page, "style-after-typing");
 
     await expect(
       getOutputLocator(page).locator("span.tw-highlight"),
@@ -43,8 +43,8 @@ test.describe("styling", () => {
     expect(successText).toBe("Ok");
   });
 
-  test("selection-based mark applies to the selected range", async ({ page }) => {
-    await gotoScenario(page, "selection-mark");
+  test("selection-based style applies to the selected range", async ({ page }) => {
+    await gotoScenario(page, "selection-style");
 
     await expect(
       getOutputLocator(page).locator("span.tw-highlight"),
@@ -55,8 +55,8 @@ test.describe("styling", () => {
     expect(markedText).toBe("world");
   });
 
-  test("style object mark applies inline CSS to the styled range", async ({ page }) => {
-    await gotoScenario(page, "style-object-mark");
+  test("style object applies inline CSS to the styled range", async ({ page }) => {
+    await gotoScenario(page, "style-object");
 
     const styled = getOutputLocator(page).locator("span[style]");
 
@@ -69,8 +69,8 @@ test.describe("styling", () => {
     expect(await getOutputText(page)).toBe("Styled");
   });
 
-  test("clearSelection removes the selection highlight without moving the cursor", async ({ page }) => {
-    await gotoScenario(page, "clear-selection");
+  test("unselect removes the selection highlight without moving the cursor", async ({ page }) => {
+    await gotoScenario(page, "unselect");
 
     await expect(
       getOutputLocator(page).locator(".typewriter-selection"),
@@ -79,8 +79,8 @@ test.describe("styling", () => {
     expect(await getOutputText(page)).toBe("Hello World");
   });
 
-  test("unmark by range removes the styled span from the unmarked portion", async ({ page }) => {
-    await gotoScenario(page, "unmark-range");
+  test("unstyle by range removes the styled span from the unstyled portion", async ({ page }) => {
+    await gotoScenario(page, "unstyle-range");
 
     const highlight = getOutputLocator(page).locator("span.tw-highlight");
 
@@ -91,8 +91,8 @@ test.describe("styling", () => {
     expect(markedText).toBe("Hello ");
   });
 
-  test("unmark by selection removes style from the selected range and clears selection", async ({ page }) => {
-    await gotoScenario(page, "unmark-selection");
+  test("unstyle by selection removes style from the selected range and clears selection", async ({ page }) => {
+    await gotoScenario(page, "unstyle-selection");
 
     await expect(
       getOutputLocator(page).locator(".typewriter-selection"),
@@ -107,8 +107,8 @@ test.describe("styling", () => {
     expect(markedText).toBe("Hello ");
   });
 
-  test("unmark splitting a spanning mark produces two styled fragments", async ({ page }) => {
-    await gotoScenario(page, "unmark-split");
+  test("unstyle splitting a spanning style produces two styled fragments", async ({ page }) => {
+    await gotoScenario(page, "unstyle-split");
 
     const highlights = getOutputLocator(page).locator("span.tw-highlight");
 

@@ -188,10 +188,10 @@ describe("stringRenderer, toAnsiString()", () => {
 
     tw.timeline
       .type("styled", { by: "char", interval: 1 })
-      .mark("tw-bold", { from: 0, to: 6 });
+      .style("tw-bold", { from: 0, to: 6 });
     await tw.play();
 
-    // className-only mark has no ansi codes → fallback to plain text
+    // className-only style has no ansi codes → fallback to plain text
     expect(sr.toAnsiString()).toBe("styled");
   });
 
@@ -201,7 +201,7 @@ describe("stringRenderer, toAnsiString()", () => {
 
     tw.timeline
       .type("color", { by: "char", interval: 1 })
-      .mark({ ansi: { color: "31" } }, { from: 0, to: 5 });
+      .style({ ansi: { color: "31" } }, { from: 0, to: 5 });
     await tw.play();
 
     const result = sr.toAnsiString();
@@ -217,7 +217,7 @@ describe("stringRenderer, toAnsiString()", () => {
 
     tw.timeline
       .type("AB", { by: "char", interval: 1 })
-      .mark({ ansi: { color: "32" } }, { from: 0, to: 1 });
+      .style({ ansi: { color: "32" } }, { from: 0, to: 1 });
     await tw.play();
 
     const result = sr.toAnsiString();
@@ -232,8 +232,8 @@ describe("stringRenderer, toAnsiString()", () => {
 
     tw.timeline
       .type("ABCD", { by: "char", interval: 1 })
-      .mark({ ansi: { color: "31" } }, { from: 0, to: 2 })
-      .mark({ ansi: { color: "32" } }, { from: 2, to: 4 });
+      .style({ ansi: { color: "31" } }, { from: 0, to: 2 })
+      .style({ ansi: { color: "32" } }, { from: 2, to: 4 });
     await tw.play();
 
     const result = sr.toAnsiString();
@@ -249,20 +249,20 @@ describe("stringRenderer, toAnsiString()", () => {
 
     tw.timeline
       .type("XY", { by: "char", interval: 1 })
-      .mark({ className: "tw-accent", attrs: { "data-x": "1" } }, { from: 0, to: 2 });
+      .style({ className: "tw-accent", attrs: { "data-x": "1" } }, { from: 0, to: 2 });
     await tw.play();
 
     // mergeStyles produces no ansi codes → falls back to document.text
     expect(sr.toAnsiString()).toBe("XY");
   });
 
-  it("multiple ANSI codes in one mark are joined with semicolon", async () => {
+  it("multiple ANSI codes in one style are joined with semicolon", async () => {
     const sr = stringRenderer();
     const tw = createTypewriter({ renderer: sr });
 
     tw.timeline
       .type("bold", { by: "char", interval: 1 })
-      .mark({ ansi: { bold: "1", color: "31" } }, { from: 0, to: 4 });
+      .style({ ansi: { bold: "1", color: "31" } }, { from: 0, to: 4 });
     await tw.play();
 
     const result = sr.toAnsiString();

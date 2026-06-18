@@ -90,14 +90,14 @@ await tw.play();
 
 ## Composition with instant commands
 
-Instant commands (`moveCursor`, `select`, `mark`) placed immediately after `.wait()` fire at the moment the wait ends, with no further delay:
+Instant commands (`move`, `select`, `style`) placed immediately after `.wait()` fire at the moment the wait ends, with no further delay:
 
 ```ts
 tw.timeline
   .type("Hello World")
   .wait(500)
-  .moveCursor(6) // fires 500 ms after "Hello World" is typed
-  .select(5) // fires at the same instant as moveCursor
+  .move(6) // fires 500 ms after "Hello World" is typed
+  .select(5) // fires at the same instant as move
   .type("there"); // starts immediately after the instant commands
 ```
 

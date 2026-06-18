@@ -1,37 +1,37 @@
-import type { TMarkCommand } from "../commands/mark-command.type";
-import type { TMarkEvent } from "../events/mark-event.type";
+import type { TStyleCommand } from "../commands/style-command.type";
+import type { TStyleEvent } from "../events/style-event.type";
 
 import { normalizeCursors } from "../commands/normalize-cursors.helper";
 import { EEventKind } from "../events/event-kind.enum";
 
 
 
-let eventCounter = 0;
+let styleEventCounter = 0;
 
 /**
  * @description
- * Compile a single TMarkCommand into a TMarkEvent scheduled at the given start time.
+ * Compile a single TStyleCommand into TStyleEvents scheduled at the given start time.
  * When the range is `"selection"`, one event per cursor is emitted using a placeholder
  * range of `{ from: -1, to: -1 }` — the reducer resolves the actual selection at play time.
- * When the range is a fixed `TMarkRange`, a single event is emitted regardless of cursors.
+ * When the range is a fixed `TStyleRange`, a single event is emitted regardless of cursors.
  *
- * @param command - The mark command to compile
+ * @param command - The style command to compile
  * @param startTime - The absolute time offset at which this command is scheduled
  * @returns An object containing the produced events and the end time (always equal to startTime)
  */
-export function compileMark(
-  command: TMarkCommand,
+export function compileStyle(
+  command: TStyleCommand,
   startTime: number,
-): { events: TMarkEvent[]; endTime: number } {
-  const events: TMarkEvent[] = [];
+): { events: TStyleEvent[]; endTime: number } {
+  const events: TStyleEvent[] = [];
 
   if (command.range === "selection") {
     const cursorIds = normalizeCursors(command.cursor);
 
     for (const cursorId of cursorIds) {
       events.push({
-        id: `event_${++eventCounter}`,
-        kind: EEventKind.MARK,
+        id: `style_event_${++styleEventCounter}`,
+        kind: EEventKind.STYLE,
         time: startTime,
         from: -1,
         to: -1,
@@ -43,8 +43,8 @@ export function compileMark(
   }
   else {
     events.push({
-      id: `event_${++eventCounter}`,
-      kind: EEventKind.MARK,
+      id: `style_event_${++styleEventCounter}`,
+      kind: EEventKind.STYLE,
       time: startTime,
       from: command.range.from,
       to: command.range.to,

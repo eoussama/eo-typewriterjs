@@ -5,11 +5,11 @@
 export const EEventKind = {
   INSERT: "insert",
   DELETE: "delete",
-  MOVE_CURSOR: "moveCursor",
+  MOVE: "move",
   SELECT: "select",
-  CLEAR_SELECTION: "clearSelection",
-  MARK: "mark",
-  UNMARK: "unmark",
+  UNSELECT: "unselect",
+  STYLE: "style",
+  UNSTYLE: "unstyle",
 } as const;
 
 /**
