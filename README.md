@@ -1,6 +1,6 @@
 <p align="center">
     <a href="http://eoussama.github.io/eo-typewriterjs">
-      <img src="https://raw.githubusercontent.com/eoussama/eo-typewriterjs/6630a1df285bf367f1cda1716ff5ed1a59c6b0fd/assets/logo.svg" alt="Logo" width="200px">
+      <img src="https://raw.githubusercontent.com/eoussama/eo-typewriterjs/refs/heads/master/assets/logo.svg" alt="Logo" width="200px">
       <h1 align="center">eo-typewriterjs</h1>
     </a>
     <p align="center">Advanced typewriter-style text animation utility for JavaScript, with timeline playback, cursor movement, selection, deletion, and renderer-agnostic text styling.</p>

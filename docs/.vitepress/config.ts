@@ -1,4 +1,11 @@
+import { createRequire } from "node:module";
+
 import { defineConfig } from "vitepress";
+
+
+
+const require = createRequire(import.meta.url);
+const pkg = require("../../package.json") as { version: string };
 
 
 
@@ -7,6 +14,12 @@ import { defineConfig } from "vitepress";
  * VitePress site configuration for eo-typewriterjs documentation
  */
 export default defineConfig({
+  vite: {
+    define: {
+      __PKG_VERSION__: JSON.stringify(pkg.version),
+    },
+  },
+
   title: "EO TypewriterJS",
   description: "JavaScript utility for advanced typewriter-like animations.",
   base: "/eo-typewriterjs/",
@@ -21,7 +34,7 @@ export default defineConfig({
     nav: [
       { text: "Guide", link: "/guide/getting-started" },
       { text: "API Reference", link: "/api/" },
-      { text: "Sandbox", link: "/sandbox" },
+      { text: "Sandbox", link: "https://eoussama.github.io/eo-typewriterjs/sandbox/", target: "_blank" },
       {
         text: "GitHub",
         link: "https://github.com/eoussama/eo-typewriterjs",
