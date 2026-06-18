@@ -540,53 +540,6 @@ await tw.play();`,
   },
 
   {
-    id: "dual-edit-distinct",
-    title: "Dual Edit — Distinct Values",
-    description: "Two cursors fill different fields with different content, one after the other.",
-    category: "cursor",
-    code: `const tw = createTypewriter({ renderer });
-
-// "City: \\nCountry: " = 17 chars. main at 17 (after "Country: ").
-// cursor "b" parked at 6 (after "City: ").
-// "Paris" typed at cursor b (lower index) first, then "France" at main.
-// Because b is at a lower index, inserting there shifts main automatically.
-tw.timeline
-  .type("City: \\nCountry: ", { by: "char", interval: 65 })
-  .wait(400)
-  .moveCursor(6, { cursor: "b" })
-  .wait(200)
-  .type("Paris",  { cursor: "b",    by: "char", interval: 90 })
-  .type("France", { cursor: "main", by: "char", interval: 90 })
-  .wait(600);
-
-await tw.play();`,
-  },
-
-  {
-    id: "three-cursor-fill",
-    title: "Three-Cursor Fill",
-    description: "Three cursors across three lines each type a distinct value in succession.",
-    category: "cursor",
-    code: `const tw = createTypewriter({ renderer });
-
-// "Name: \\nDept: \\nScore: " = 21 chars, main cursor at 21.
-// "b" parked at 6 (end of line 1), "c" at 13 (end of line 2).
-// Fill from lowest index up so each insert shifts the cursors above correctly.
-tw.timeline
-  .type("Name: \\nDept: \\nScore: ", { by: "char", interval: 55 })
-  .wait(400)
-  .moveCursor(6,  { cursor: "b" })
-  .moveCursor(13, { cursor: "c" })
-  .wait(200)
-  .type("Alice",       { cursor: "b",    by: "char", interval: 70 })
-  .type("Engineering", { cursor: "c",    by: "char", interval: 70 })
-  .type("98",          { cursor: "main", by: "char", interval: 70 })
-  .wait(600);
-
-await tw.play();`,
-  },
-
-  {
     id: "multi-cursor-paragraph",
     title: "Multi-Cursor Corrections",
     description: "A paragraph with two typos; two cursors are positioned and correct each mistake in sequence.",
