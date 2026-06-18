@@ -238,12 +238,11 @@ tw.timeline
   .delete(16, { by: "char", interval: 40 })
   .wait(300);
 
-void (async () => {
-  await tw.play();
-  while (tw.getState().status !== EPlaybackStatus.STOPPED) {
-    await tw.replay();
-  }
-})();`,
+await tw.play();
+
+while (true) {
+  await tw.replay();
+}`,
   },
 
   // ── Editing ───────────────────────────────────────────────────────────────
@@ -990,7 +989,7 @@ tw.timeline
 await tw.play();
 
 // Second animation depends on what call() captured
-const tw2 = createTypewriter({ renderer: tw.getState ? renderer : renderer });
+const tw2 = createTypewriter({ renderer });
 tw2.timeline
   .type(branch === "long" ? "\\n(That was a long one.)" : "\\n(Short!)", {
     by: "char",
@@ -1114,6 +1113,7 @@ await tw.play();`,
     code: `const tw = createTypewriter({
   renderer,
   audio: {
+    enabled: true,
     typing: {
       strategy: EAudioStrategy.ROUND_ROBIN,
       avoidImmediateRepeat: true,
@@ -1135,6 +1135,7 @@ await tw.play();`,
     code: `const tw = createTypewriter({
   renderer,
   audio: {
+    enabled: true,
     volume: 0.9,
     typing: {
       strategy: EAudioStrategy.SHUFFLE_BAG,
