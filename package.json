@@ -70,6 +70,7 @@
     "@types/node": "^25.9.3",
     "@vitest/coverage-v8": "^4.1.8",
     "codemirror": "^6.0.2",
+    "eslint": "^9.39.4",
     "happy-dom": "^20.10.3",
     "oxc-minify": "^0.135.0",
     "typedoc": "^0.28.19",
