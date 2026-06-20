@@ -36,7 +36,7 @@ export function deleteTextAtCursor(state: TTypewriterState, event: TDeleteEvent)
   const charCount = (() => {
     const unit = event.unit;
 
-    if (unit === "char" || unit === "grapheme" || unit === "custom") {
+    if (unit === "char" || unit === "grapheme" || unit === "whole") {
       return event.count;
     }
 

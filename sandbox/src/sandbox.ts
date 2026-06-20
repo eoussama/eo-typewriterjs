@@ -456,7 +456,7 @@ const HELP_SECTIONS: readonly THelpSection[] = [
     desc: "Type a string step by step. Each step inserts one unit (char/word/line) and renders.",
     rows: [
       ["text", "The string to type"],
-      ["by", "\"char\" | \"word\" | \"line\" | \"grapheme\" | \"custom\" — advance unit (default: \"char\")"],
+      ["by", "\"char\" | \"word\" | \"line\" | \"grapheme\" | \"whole\" — advance unit (default: \"char\")"],
       ["interval", "Delay in ms between each step (default: 50)"],
       ["cursor", "\"main\" or an array of cursor IDs to type on simultaneously"],
       ["style", "CSS class or TStyleObject applied to every inserted character"],

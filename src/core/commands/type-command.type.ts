@@ -9,7 +9,7 @@ import type { ECommandKind } from "./command-kind.enum";
  * @description
  * The unit of text advance when typing
  */
-export type TAdvanceUnit = "char" | "grapheme" | "word" | "line" | "custom";
+export type TAdvanceUnit = "char" | "grapheme" | "word" | "line" | "whole";
 
 /**
  * @description

@@ -101,7 +101,7 @@ export function segmentText(text: string, unit: TAdvanceUnit): string[] {
     case "line":
       return text.split("\n").map((line, i, arr) => (i < arr.length - 1 ? `${line}\n` : line)).filter(line => line !== "");
 
-    case "custom":
+    case "whole":
       return [text];
 
     /* v8 ignore next */

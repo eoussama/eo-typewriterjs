@@ -53,8 +53,8 @@ describe("segmentText", () => {
     expect(segmentText("line1\nline2\nline3", "line")).toEqual(["line1\n", "line2\n", "line3"]);
   });
 
-  it("returns the whole text as a single step for 'custom' unit", () => {
-    expect(segmentText("anything", "custom")).toEqual(["anything"]);
+  it("returns the whole text as a single step for 'whole' unit", () => {
+    expect(segmentText("anything", "whole")).toEqual(["anything"]);
   });
 });
 
@@ -1789,9 +1789,9 @@ describe("select (unit handling)", () => {
 
 describe("command × unit × by-shape matrix", () => {
   const TEXT = "one two three\nfour five";
-  const UNITS = ["char", "grapheme", "word", "line", "custom"] as const;
+  const UNITS = ["char", "grapheme", "word", "line", "whole"] as const;
 
-  type TByInput = "char" | "grapheme" | "word" | "line" | "custom" | { unit: string; amount: number };
+  type TByInput = "char" | "grapheme" | "word" | "line" | "whole" | { unit: string; amount: number };
 
   const toByShapes = (unit: string): TByInput[] => [unit as TByInput, { unit, amount: 1 }];
 
@@ -2470,5 +2470,91 @@ describe("integration (unstyle)", () => {
     const live = tw.getLiveState();
 
     expect(live.document.styles).toHaveLength(1);
+  });
+});
+
+
+describe("whole unit", () => {
+  it("segmentText with 'whole' returns the full string as a single element array", () => {
+    expect(segmentText("Hello, World!", "whole")).toEqual(["Hello, World!"]);
+  });
+
+  it("segmentText with 'whole' on empty string returns array containing empty string", () => {
+    expect(segmentText("", "whole")).toEqual([""]);
+  });
+
+  it("segmentText with 'whole' on multi-line text returns it as one element", () => {
+    expect(segmentText("line1\nline2\nline3", "whole")).toEqual(["line1\nline2\nline3"]);
+  });
+
+  it("type by 'whole' produces exactly one insert event for the full text", () => {
+    const events = compile([
+      { id: "w1", kind: "type", cursor: "main", text: "Hello world", by: "whole", interval: 0 },
+    ]);
+
+    expect(events).toHaveLength(1);
+    expect((events[0] as TInsertEvent).text).toBe("Hello world");
+  });
+
+  it("type by 'whole' inserts the entire string at once with zero interval", async () => {
+    const renderer = stringRenderer();
+    const tw = createTypewriter({ renderer });
+
+    tw.timeline.type("Hello world", { by: "whole", interval: 0 });
+    await tw.play();
+
+    expect(renderer.toString()).toBe("Hello world");
+  });
+
+  it("type by 'whole' inserts the entire string at once with a non-zero interval", async () => {
+    const renderer = stringRenderer();
+    const tw = createTypewriter({ renderer });
+
+    tw.timeline.type("Hello world", { by: "whole", interval: 50 });
+    await tw.play();
+
+    expect(renderer.toString()).toBe("Hello world");
+  });
+
+  it("type by 'whole' with multi-line text inserts the full text as one step", async () => {
+    const renderer = stringRenderer();
+    const tw = createTypewriter({ renderer });
+
+    tw.timeline.type("line1\nline2\nline3", { by: "whole", interval: 0 });
+    await tw.play();
+
+    expect(renderer.toString()).toBe("line1\nline2\nline3");
+  });
+
+  it("type by 'whole' with Unicode and emoji inserts without mangling", async () => {
+    const renderer = stringRenderer();
+    const tw = createTypewriter({ renderer });
+
+    tw.timeline.type("👨‍👩‍👧‍👦 café naïve", { by: "whole", interval: 0 });
+    await tw.play();
+
+    expect(renderer.toString()).toBe("👨‍👩‍👧‍👦 café naïve");
+  });
+
+  it("chaining two 'whole' type commands accumulates the full output", async () => {
+    const renderer = stringRenderer();
+    const tw = createTypewriter({ renderer });
+
+    tw.timeline
+      .type("Hello", { by: "whole", interval: 0 })
+      .type(" world", { by: "whole", interval: 0 });
+    await tw.play();
+
+    expect(renderer.toString()).toBe("Hello world");
+  });
+
+  it("type by { unit: 'whole', amount: 1 } also inserts the full text as one step", async () => {
+    const renderer = stringRenderer();
+    const tw = createTypewriter({ renderer });
+
+    tw.timeline.type("Hello world", { by: { unit: "whole", amount: 1 }, interval: 0 });
+    await tw.play();
+
+    expect(renderer.toString()).toBe("Hello world");
   });
 });

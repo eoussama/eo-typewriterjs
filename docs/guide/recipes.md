@@ -129,7 +129,7 @@ await tw.play();
 
 ## Server-side / Node.js rendering
 
-Use `stringRenderer` to produce a plain-text snapshot without a DOM. Setting `by: "custom"` treats the entire input as a single step so there are no delays:
+Use `stringRenderer` to produce a plain-text snapshot without a DOM. Setting `by: "whole"` treats the entire input as a single step so there are no delays:
 
 ```ts
 import { createTypewriter, stringRenderer } from "eo-typewriterjs";
@@ -140,7 +140,7 @@ async function renderFinal(text: string): Promise<string> {
   const renderer = stringRenderer();
   const tw = createTypewriter({ renderer });
 
-  tw.timeline.type(text, { by: "custom", interval: 0 });
+  tw.timeline.type(text, { by: "whole", interval: 0 });
   await tw.play();
 
   return renderer.toString();
