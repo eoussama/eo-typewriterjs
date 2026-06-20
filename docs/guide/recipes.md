@@ -21,7 +21,7 @@ const tw = createTypewriter({ renderer: domRenderer(el) });
 tw.timeline
   .type("Hello, World!", { by: "char", interval: 80 })
   .wait(1500)
-  .delete(13, { by: "char", interval: 40 })
+  .delete(-13, { by: "char", interval: 40 })
   .wait(300);
 
 await tw.play();
@@ -48,7 +48,7 @@ for (const phrase of phrases) {
   tw.timeline
     .type(phrase, { by: "char", interval: 80 })
     .wait(1500)
-    .delete(phrase.length, { by: "char", interval: 40 })
+    .delete(-phrase.length, { by: "char", interval: 40 })
     .wait(300);
 }
 

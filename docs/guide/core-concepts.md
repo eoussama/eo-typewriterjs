@@ -23,10 +23,10 @@ You add **commands** to the timeline using the fluent builder methods:
 | Method | Description |
 |---|---|
 | `.type(text, options?)` | Insert text step by step |
-| `.delete(count, options?)` | Remove text backward from the cursor |
-| `.move(index, options?)` | Move the cursor to an absolute index |
+| `.delete(value, options?)` | Remove text from the cursor; accepts a relative count (`±n`), or `"start"`, `"end"`, `"whole"` |
+| `.move(value, options?)` | Move the cursor relative to its current position (`±n`), or jump to `"start"` or `"end"` |
 | `.wait(duration)` | Pause before the next command |
-| `.select(count, options?)` | Create a text selection relative to the cursor |
+| `.select(value, options?)` | Create a text selection; accepts a relative count (`±n`), or `"start"`, `"end"`, `"whole"` |
 | `.unselect(options?)` | Remove the active selection from a cursor |
 | `.style(style, range, options?)` | Apply a style to a document range |
 | `.unstyle(range, options?)` | Remove text styles that overlap a range |
@@ -175,7 +175,7 @@ const tw = createTypewriter({ renderer: domRenderer(el) });
 tw.timeline
   .type("EO TypewriterTS", { by: "char", interval: 60 })
   .wait(500)
-  .delete(2, { by: "char", interval: 80 })
+  .delete(-2, { by: "char", interval: 80 })
   .wait(300)
   .type("JS ⌨️", { by: "char", interval: 80 });
 

@@ -19,7 +19,7 @@ const tw = createTypewriter({ renderer: domRenderer(el) });
 tw.timeline
   .type("Hello world", { by: "char", interval: 80 })
   .wait(500)
-  .delete(5);
+  .delete(-5);
 
 await tw.play();
 ```
@@ -33,7 +33,7 @@ tw.timeline
   .type("Loading", { interval: 80 })
   .type("...", { interval: 300 })
   .wait(400)
-  .delete(6, { interval: 1 })
+  .delete(-6, { interval: 1 })
   .type("ed!", { by: "word" });
 ```
 
@@ -45,9 +45,9 @@ Commands are appended in the order they are called.
 |---|---|---|
 | [Type](/guide/commands/type) | `.type(text, options?)` | One event per step, advances clock |
 | [Wait](/guide/commands/wait) | `.wait(duration)` | No events, advances clock |
-| [Delete](/guide/commands/delete) | `.delete(count, options?)` | One event per step, advances clock |
-| [Move](/guide/commands/move) | `.move(index, options?)` | One event at current clock position |
-| [Select](/guide/commands/select) | `.select(count, options?)` | One event at current clock position |
+| [Delete](/guide/commands/delete) | `.delete(value, options?)` | One event per step for numeric counts; one instant event for boundary strings |
+| [Move](/guide/commands/move) | `.move(value, options?)` | One event at current clock position |
+| [Select](/guide/commands/select) | `.select(value, options?)` | One event at current clock position |
 | [Unselect](/guide/commands/unselect) | `.unselect(options?)` | One event at current clock position |
 | [Style](/guide/commands/style) | `.style(style, range, options?)` | One event at current clock position |
 | [Unstyle](/guide/commands/unstyle) | `.unstyle(range, options?)` | One event at current clock position |
@@ -59,7 +59,8 @@ See the [Commands overview](/guide/commands/) for the full reference.
 
 The compiler maintains an internal clock cursor starting at `0 ms`. Each command is placed relative to that cursor:
 
-- `type` and `delete` advance the clock by the total duration of all their steps (`count × interval`).
+- `type` advances the clock by the total duration of all its steps.
+- `delete` advances the clock when given a numeric count (`steps × interval`). When given a boundary string (`"start"`, `"end"`, `"whole"`), it compiles to a single instant event and does not advance the clock.
 - `wait` advances the clock by its `duration` without producing any state-changing events.
 - `move`, `select`, `unselect`, `style`, and `unstyle` are compiled at the current clock position without advancing it. If one of these follows a timed command, its compiled event is placed at that command's ending timestamp.
 - `call` has no compiled representation at all. It does not appear in the event stream and does not affect the clock.
