@@ -120,17 +120,21 @@ test.describe("callbacks", () => {
     expect(await getOutputText(page)).toBe("He");
   });
 
-  test("whole-command before and after hooks fire around the entire command", async ({ page }) => {
+  test("hooks fire once per command step", async ({ page }) => {
     await gotoScenario(page, "whole-command-before-after");
 
     const logs = await getLogs(page);
 
-    expect(logs).toContain("whole-before");
-    expect(logs).toContain("whole-after");
+    // "Hi" = 2 chars, before and after fire per char = 2 each
+    const beforeLogs = logs.filter(l => l === "whole-before");
+    const afterLogs = logs.filter(l => l === "whole-after");
 
-    const beforeIdx = logs.indexOf("whole-before");
-    const afterIdx = logs.indexOf("whole-after");
+    expect(beforeLogs).toHaveLength(2);
+    expect(afterLogs).toHaveLength(2);
 
-    expect(beforeIdx).toBeLessThan(afterIdx);
+    const firstBefore = logs.indexOf("whole-before");
+    const firstAfter = logs.indexOf("whole-after");
+
+    expect(firstBefore).toBeLessThan(firstAfter);
   });
 });

@@ -16,13 +16,15 @@ import { ECommandKind } from "../commands/command-kind.enum";
 export type TCommandHookOptions = {
   /**
    * @description
-   * Hook invoked before the command (or before each step when `unit` is set)
+   * Hook invoked before each step of the command,
+   * or once for instant commands (move, select, style, wait, call)
    */
   readonly before?: TCallbackHook;
 
   /**
    * @description
-   * Hook invoked after the command (or after each step when `unit` is set)
+   * Hook invoked after each step of the command,
+   * or once for instant commands (move, select, style, wait, call)
    */
   readonly after?: TCallbackHook;
 

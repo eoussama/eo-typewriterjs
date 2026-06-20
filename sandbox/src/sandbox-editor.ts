@@ -117,8 +117,8 @@ const TIMELINE_METHODS: Completion[] = [
  */
 /* eslint-disable no-template-curly-in-string */
 const SHARED_HOOK_OPTS: Completion[] = [
-  snip("before", "before: { callback: async (ctx) => {\n  ${1:// fires before command}\n} }", "property", "{ callback, unit? }", "Hook fired before the command."),
-  snip("after", "after: { callback: async (ctx) => {\n  ${1:// fires after command}\n} }", "property", "{ callback, unit? }", "Hook fired after the command."),
+  snip("before", "before: async (ctx) => {\n  ${1:// fires before each step}\n}", "property", "TCallbackHook", "Hook fired before each step."),
+  snip("after", "after: async (ctx) => {\n  ${1:// fires after each step}\n}", "property", "TCallbackHook", "Hook fired after each step."),
   { label: "cursor", type: "property", detail: "\"main\" | string[]", info: "Target cursor ID(s). Defaults to \"main\"." },
 ];
 /* eslint-enable no-template-curly-in-string */
@@ -150,8 +150,8 @@ const DELETE_OPTS: Completion[] = [
  */
 /* eslint-disable no-template-curly-in-string */
 const WAIT_OPTS: Completion[] = [
-  snip("before", "before: { callback: async (ctx) => {\n  ${1:// fires before wait}\n} }", "property", "{ callback, unit? }", "Hook fired before the wait."),
-  snip("after", "after: { callback: async (ctx) => {\n  ${1:// fires after wait}\n} }", "property", "{ callback, unit? }", "Hook fired after the wait."),
+  snip("before", "before: async (ctx) => {\n  ${1:// fires before wait}\n}", "property", "TCallbackHook", "Hook fired before the wait."),
+  snip("after", "after: async (ctx) => {\n  ${1:// fires after wait}\n}", "property", "TCallbackHook", "Hook fired after the wait."),
 ];
 /* eslint-enable no-template-curly-in-string */
 

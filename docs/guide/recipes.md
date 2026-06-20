@@ -201,7 +201,7 @@ await tw.play();
 
 ## Per-step hook
 
-Use the `after` hook with `unit` to react after every individual character:
+Use the `after` hook to react after every individual character:
 
 ```ts
 const chars: string[] = [];
@@ -209,11 +209,8 @@ const chars: string[] = [];
 tw.timeline.type("Hello", {
   by: "char",
   interval: 80,
-  after: {
-    unit: "char",
-    callback: ({ state }) => {
-      chars.push(state.document.text.at(-1) ?? "");
-    },
+  after: ({ state }) => {
+    chars.push(state.document.text.at(-1) ?? "");
   },
 });
 

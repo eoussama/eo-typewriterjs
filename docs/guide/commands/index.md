@@ -22,8 +22,8 @@ All commands accept the following options in addition to their own:
 
 | Option | Type | Description |
 |---|---|---|
-| `before` | `TCallbackHook` | Hook invoked before the command (or before each step when `unit` is set) |
-| `after` | `TCallbackHook` | Hook invoked after the command (or after each step when `unit` is set) |
+| `before` | `TCallbackHook` | Hook invoked before each step (or once for instant commands) |
+| `after` | `TCallbackHook` | Hook invoked after each step (or once for instant commands) |
 | `audio` | `TAudioCommandOverride` | Per-command audio override — `false` to silence, or an object with voice/volume settings |
 
 See [Hooks & Context](#hooks-and-context) below for the full hook shape.
@@ -47,38 +47,29 @@ See [Multi-cursor](/guide/commands/type#multi-cursor) in the type command docs f
 
 ## Hooks and context
 
-Every command accepts optional `before` and `after` lifecycle hooks. Omit `unit` for a whole-command hook; set `unit` for a per-step hook that fires once per character, word, or other advance unit:
+Every command accepts optional `before` and `after` lifecycle hooks. Both fire once per step for segmented commands (`type`, `delete`) and once total for instant commands (`move`, `select`, `style`, `wait`, `call`).
 
 ```ts
-// Whole-command — fires once before/after the entire type command
 tw.timeline.type("Hello", {
   by: "char",
   interval: 80,
-  before: { callback: ({ state }) => console.log("start") },
-  after:  { callback: ({ state }) => console.log("done") },
-});
-
-// Per-step — fires once per character
-tw.timeline.type("Hello", {
-  by: "char",
-  interval: 80,
-  after: {
-    unit: "char",
-    callback: ({ stepIndex, stepCount }) => {
-      console.log(`${stepIndex + 1} / ${stepCount}`);
-    },
+  before: ({ state, stepIndex, stepCount, unit }) => {
+    console.log(`step ${stepIndex + 1}/${stepCount} (${unit}): "${state.document.text}"`);
+  },
+  after: ({ state }) => {
+    console.log("after:", state.document.text);
   },
 });
 ```
 
-The `callback` function receives a `TCallbackContext`:
+The hook function receives a `TCallbackContext`:
 
 | Field | Type | Description |
 |---|---|---|
 | `state` | `TTypewriterState` | Current document and cursor snapshot |
-| `stepIndex` | `number` | Zero-based index of the current step (per-unit hooks only) |
+| `stepIndex` | `number` | Zero-based index of the current step |
 | `stepCount` | `number` | Total step count for the command |
-| `unit` | `string \| null` | Advance unit string, or `null` for whole-command hooks |
+| `unit` | `string \| null` | Advance unit for segmented commands, or `null` for instant commands |
 | `signal` | `AbortSignal` | Aborted when `tw.cancel()` is called |
 
 ## Command pages

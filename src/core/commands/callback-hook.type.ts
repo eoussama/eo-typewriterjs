@@ -16,21 +16,19 @@ export type TCallbackContext = {
 
   /**
    * @description
-   * The logical step index within the command (0-based).
-   * For whole-command hooks this is always 0.
+   * The logical step index within the command (0-based)
    */
   readonly stepIndex: number;
 
   /**
    * @description
-   * Total number of steps for this command.
-   * For whole-command hooks this is always 1.
+   * Total number of steps for this command
    */
   readonly stepCount: number;
 
   /**
    * @description
-   * The advance unit used for per-unit hooks, or null for whole-command hooks
+   * The advance unit for the current step, or null for instant commands
    */
   readonly unit: TAdvanceUnit | null;
 
@@ -50,14 +48,7 @@ export type TCallbackFn = (context: TCallbackContext) => void | Promise<void>;
 /**
  * @description
  * A before/after lifecycle hook attached to a command.
- * - `callback` — the function to invoke
- * - `unit` — when provided, the hook fires once per generated step of this unit type.
- *   When omitted the hook fires once for the entire command.
- *
- * For commands that do not naturally segment (move, select, style, wait, call),
- * a provided `unit` is ignored and the hook fires once for the whole command.
+ * The function fires once per command step for segmented commands (type, delete),
+ * or once for instant commands (move, select, style, wait, call).
  */
-export type TCallbackHook = {
-  readonly callback: TCallbackFn;
-  readonly unit?: TAdvanceUnit;
-};
+export type TCallbackHook = TCallbackFn;

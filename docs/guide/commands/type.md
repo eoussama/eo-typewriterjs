@@ -28,8 +28,8 @@ type TTypeOptions = {
 | `interval` | `number` | `50` | Milliseconds between each step |
 | `style` | `TStyleRef` | — | Style applied to every character as it is inserted |
 | `cursor` | `TCursorSelector` | `"main"` | Which cursor(s) to use |
-| `before` | `TCallbackHook` | — | Hook fired before the command (or before each step when `unit` is set) |
-| `after` | `TCallbackHook` | — | Hook fired after the command (or after each step when `unit` is set) |
+| `before` | `TCallbackHook` | — | Hook fired before each step |
+| `after` | `TCallbackHook` | — | Hook fired after each step |
 | `audio` | `TAudioCommandOverride` | — | Per-command audio override — `false` to silence, or a voice/volume object |
 
 ## Advance modes (`by`)

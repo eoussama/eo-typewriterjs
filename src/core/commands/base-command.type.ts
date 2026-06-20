@@ -14,13 +14,15 @@ export type TBaseCommand = {
 
   /**
    * @description
-   * Optional hook invoked before the command (or before each step when `unit` is provided)
+   * Optional hook invoked before each step of the command,
+   * or once for instant commands (move, select, style, wait, call)
    */
   readonly before?: TCallbackHook;
 
   /**
    * @description
-   * Optional hook invoked after the command (or after each step when `unit` is provided)
+   * Optional hook invoked after each step of the command,
+   * or once for instant commands (move, select, style, wait, call)
    */
   readonly after?: TCallbackHook;
 

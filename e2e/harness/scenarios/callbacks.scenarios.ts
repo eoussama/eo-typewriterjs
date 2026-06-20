@@ -56,12 +56,8 @@ export const CALLBACKS_SCENARIOS: readonly TScenario[] = [
       tw.timeline.type("Hello", {
         by: "char",
         interval: 1,
-        before: {
-          callback: () => { log("before"); },
-        },
-        after: {
-          callback: () => { log("after"); },
-        },
+        before: () => { log("before"); },
+        after: () => { log("after"); },
       });
       await tw.play();
     },
@@ -74,10 +70,7 @@ export const CALLBACKS_SCENARIOS: readonly TScenario[] = [
       tw.timeline.type("Hi", {
         by: "char",
         interval: 1,
-        after: {
-          unit: "char",
-          callback: ({ stepIndex }) => { log(`step:${stepIndex}`); },
-        },
+        after: ({ stepIndex }) => { log(`step:${stepIndex}`); },
       });
       await tw.play();
     },
@@ -90,10 +83,7 @@ export const CALLBACKS_SCENARIOS: readonly TScenario[] = [
       tw.timeline.type("Hi", {
         by: "char",
         interval: 1,
-        before: {
-          unit: "char",
-          callback: ({ stepIndex }) => { log(`before:${stepIndex}`); },
-        },
+        before: ({ stepIndex }) => { log(`before:${stepIndex}`); },
       });
       await tw.play();
     },
@@ -107,11 +97,9 @@ export const CALLBACKS_SCENARIOS: readonly TScenario[] = [
         .type("Never", {
           by: "char",
           interval: 1,
-          before: {
-            callback: () => {
-              log("before-fired");
-              tw.cancel();
-            },
+          before: () => {
+            log("before-fired");
+            tw.cancel();
           },
         })
         .type(" also-never", { by: "char", interval: 1 });
@@ -127,15 +115,11 @@ export const CALLBACKS_SCENARIOS: readonly TScenario[] = [
       tw.timeline
         .type("Before", { by: "char", interval: 1 })
         .wait(5000, {
-          before: {
-            callback: () => {
-              log("wait-before-fired");
-              tw.cancel();
-            },
+          before: () => {
+            log("wait-before-fired");
+            tw.cancel();
           },
-          after: {
-            callback: () => { log("wait-after-fired"); },
-          },
+          after: () => { log("wait-after-fired"); },
         })
         .type(" After", { by: "char", interval: 1 });
       await tw.play();
@@ -154,11 +138,9 @@ export const CALLBACKS_SCENARIOS: readonly TScenario[] = [
         .call(
           () => { callbackFired = true; },
           {
-            before: {
-              callback: () => {
-                log("call-before-fired");
-                tw.cancel();
-              },
+            before: () => {
+              log("call-before-fired");
+              tw.cancel();
             },
           },
         )
@@ -178,14 +160,8 @@ export const CALLBACKS_SCENARIOS: readonly TScenario[] = [
         .delete(3, {
           by: "char",
           interval: 1,
-          before: {
-            unit: "char",
-            callback: ({ stepIndex }) => { log(`del-before:${stepIndex}`); },
-          },
-          after: {
-            unit: "char",
-            callback: ({ stepIndex }) => { log(`del-after:${stepIndex}`); },
-          },
+          before: ({ stepIndex }) => { log(`del-before:${stepIndex}`); },
+          after: ({ stepIndex }) => { log(`del-after:${stepIndex}`); },
         });
       await tw.play();
     },
@@ -195,14 +171,12 @@ export const CALLBACKS_SCENARIOS: readonly TScenario[] = [
     async run({ el, log }) {
       const tw = createTypewriter({ renderer: domRenderer(el) });
 
-      tw.timeline.delete(2, {
+      tw.timeline.type("Hi", {
         by: "char",
         interval: 1,
-        before: { callback: () => { log("whole-before"); } },
-        after: { callback: () => { log("whole-after"); } },
+        before: () => { log("whole-before"); },
+        after: () => { log("whole-after"); },
       });
-
-      tw.timeline.type("Hi", { by: "char", interval: 1 });
       await tw.play();
     },
   },

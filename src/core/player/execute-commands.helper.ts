@@ -142,7 +142,7 @@ function resolveAdvanceMode(input: TAdvanceModeInput | undefined): { unit: strin
  * @param state - Current typewriter state
  * @param stepIndex - Current step index within the command
  * @param stepCount - Total step count for the command
- * @param unit - The advance unit, or null for whole-command hooks
+ * @param unit - The advance unit, or null for instant commands
  * @param signal - The active AbortSignal
  * @returns A populated TCallbackContext
  */
@@ -176,18 +176,7 @@ async function invokeHook(hook: TCallbackHook | undefined, ctx: TCallbackContext
     return;
   }
 
-  await hook.callback(ctx);
-}
-
-/**
- * @description
- * Determine whether a hook is configured as per-unit (has a unit property).
- *
- * @param hook - The hook to inspect
- * @returns True if the hook should fire per-step
- */
-function isPerUnitHook(hook: TCallbackHook | undefined): boolean {
-  return hook !== undefined && hook.unit !== undefined;
+  await hook(ctx);
 }
 
 // ---------------------------------------------------------------------------
@@ -197,7 +186,7 @@ function isPerUnitHook(hook: TCallbackHook | undefined): boolean {
 /**
  * @description
  * Execute a type command, applying each chunk as an insert event and invoking
- * per-unit or whole-command hooks as configured.
+ * before/after hooks once per step.
  *
  * @param command - The type command to execute
  * @param state - The state before this command
@@ -216,33 +205,17 @@ async function executeType(
   const steps = segmentText(command.text, mode.unit as Parameters<typeof segmentText>[1]);
   const chunks = chunkSteps(steps, mode.amount);
   const cursorIds = normalizeCursors(command.cursor);
-  const stepCount = chunks.length;
-
-  const perUnitBefore = isPerUnitHook(command.before) ? command.before : undefined;
-  const perUnitAfter = isPerUnitHook(command.after) ? command.after : undefined;
-  const wholeCommandBefore = !isPerUnitHook(command.before) ? command.before : undefined;
-  const wholeCommandAfter = !isPerUnitHook(command.after) ? command.after : undefined;
-
-  await invokeHook(wholeCommandBefore, makeContext(state, 0, 1, null, options.signal));
-
-  if (options.signal.aborted) {
-    return state;
-  }
 
   for (let i = 0; i < chunks.length; i++) {
-    const chunk = chunks[i]!;
-
     /* v8 ignore next 3 */
     if (options.signal.aborted) {
       break;
     }
 
-    if (perUnitBefore !== undefined) {
-      await invokeHook(perUnitBefore, makeContext(state, i, stepCount, mode.unit, options.signal));
+    await invokeHook(command.before, makeContext(state, i, chunks.length, mode.unit, options.signal));
 
-      if (options.signal.aborted) {
-        break;
-      }
+    if (options.signal.aborted) {
+      break;
     }
 
     options.getAudioManager?.()?.playTyping(command.audio);
@@ -253,7 +226,7 @@ async function executeType(
         kind: EEventKind.INSERT,
         time: 0,
         cursorId,
-        text: chunk,
+        text: chunks[i]!,
         sourceCommandId: command.id,
         ...(command.style !== undefined ? { style: command.style } : {}),
       };
@@ -263,12 +236,10 @@ async function executeType(
 
     renderer.render(state);
 
-    if (perUnitAfter !== undefined) {
-      await invokeHook(perUnitAfter, makeContext(state, i, stepCount, mode.unit, options.signal));
+    await invokeHook(command.after, makeContext(state, i, chunks.length, mode.unit, options.signal));
 
-      if (options.signal.aborted) {
-        break;
-      }
+    if (options.signal.aborted) {
+      break;
     }
 
     if (i < chunks.length - 1 && !options.signal.aborted) {
@@ -276,17 +247,13 @@ async function executeType(
     }
   }
 
-  if (!options.signal.aborted) {
-    await invokeHook(wholeCommandAfter, makeContext(state, 0, 1, null, options.signal));
-  }
-
   return state;
 }
 
 /**
  * @description
- * Execute a delete command, applying each delete event and invoking per-unit or
- * whole-command hooks as configured.
+ * Execute a delete command, applying each delete event and invoking
+ * before/after hooks once per step.
  *
  * @param command - The delete command to execute
  * @param state - The state before this command
@@ -307,17 +274,6 @@ async function executeDelete(
   const stepCount = Math.ceil(totalUnits / amount);
   const cursorIds = normalizeCursors(command.cursor);
 
-  const perUnitBefore = isPerUnitHook(command.before) ? command.before : undefined;
-  const perUnitAfter = isPerUnitHook(command.after) ? command.after : undefined;
-  const wholeCommandBefore = !isPerUnitHook(command.before) ? command.before : undefined;
-  const wholeCommandAfter = !isPerUnitHook(command.after) ? command.after : undefined;
-
-  await invokeHook(wholeCommandBefore, makeContext(state, 0, 1, null, options.signal));
-
-  if (options.signal.aborted) {
-    return state;
-  }
-
   for (let i = 0; i < stepCount; i++) {
     /* v8 ignore next 3 */
     if (options.signal.aborted) {
@@ -327,12 +283,10 @@ async function executeDelete(
     const remaining = totalUnits - i * amount;
     const stepUnits = Math.min(amount, remaining);
 
-    if (perUnitBefore !== undefined) {
-      await invokeHook(perUnitBefore, makeContext(state, i, stepCount, mode.unit, options.signal));
+    await invokeHook(command.before, makeContext(state, i, stepCount, mode.unit, options.signal));
 
-      if (options.signal.aborted) {
-        break;
-      }
+    if (options.signal.aborted) {
+      break;
     }
 
     options.getAudioManager?.()?.playDelete(command.audio);
@@ -353,21 +307,15 @@ async function executeDelete(
 
     renderer.render(state);
 
-    if (perUnitAfter !== undefined) {
-      await invokeHook(perUnitAfter, makeContext(state, i, stepCount, mode.unit, options.signal));
+    await invokeHook(command.after, makeContext(state, i, stepCount, mode.unit, options.signal));
 
-      if (options.signal.aborted) {
-        break;
-      }
+    if (options.signal.aborted) {
+      break;
     }
 
     if (i < stepCount - 1 && !options.signal.aborted) {
       await awaitDelay(interval, options);
     }
-  }
-
-  if (!options.signal.aborted) {
-    await invokeHook(wholeCommandAfter, makeContext(state, 0, 1, null, options.signal));
   }
 
   return state;

@@ -933,15 +933,11 @@ tw.timeline
   .type("Hello, hooks!", {
     by: "char",
     interval: 70,
-    before: {
-      callback: ({ state }) => {
-        log.push("before: \\"" + state.document.text + "\\"");
-      },
+    before: ({ state }) => {
+      log.push("before: \\"" + state.document.text + "\\"");
     },
-    after: {
-      callback: ({ state }) => {
-        log.push("after: \\"" + state.document.text + "\\"");
-      },
+    after: ({ state }) => {
+      log.push("after: \\"" + state.document.text + "\\"");
     },
   })
   .call(() => {
@@ -954,7 +950,7 @@ await tw.play();`,
   {
     id: "per-unit-hook",
     title: "Per-Character Hook",
-    description: "Set unit on a hook to fire it once per character typed. Use stepIndex and stepCount to track progress.",
+    description: "The after hook fires once per step — once per character when by is 'char'. Use stepIndex and stepCount to track progress.",
     category: "callbacks",
     code: `const tw = createTypewriter({ renderer });
 
@@ -963,12 +959,9 @@ tw.timeline
   .type("Loading", {
     by: "char",
     interval: 120,
-    after: {
-      unit: "char",
-      callback: ({ stepIndex, stepCount, state }) => {
-        const pct = Math.round(((stepIndex + 1) / stepCount) * 100);
-        console.log(\`[\${pct}%] typed so far: "\${state.document.text}"\`);
-      },
+    after: ({ stepIndex, stepCount, state }) => {
+      const pct = Math.round(((stepIndex + 1) / stepCount) * 100);
+      console.log(\`[\${pct}%] typed so far: "\${state.document.text}"\`);
     },
   });
 

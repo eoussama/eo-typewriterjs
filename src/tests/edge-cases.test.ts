@@ -40,7 +40,7 @@ describe("abort inside whole-command before hook of type", () => {
       .type("Hello", {
         by: "char",
         interval: 1,
-        before: { callback: () => { tw.cancel(); } },
+        before: () => { tw.cancel(); },
       });
     await tw.play();
 
@@ -59,7 +59,7 @@ describe("abort inside whole-command before hook of delete", () => {
       .delete(3, {
         by: "char",
         interval: 1,
-        before: { callback: () => { tw.cancel(); } },
+        before: () => { tw.cancel(); },
       });
     await tw.play();
 
@@ -77,7 +77,7 @@ describe("abort inside before hook of instant commands", () => {
       .type("ab", { by: "char", interval: 1 })
       .select(-1)
       .unselect({
-        before: { callback: () => { tw.cancel(); } },
+        before: () => { tw.cancel(); },
       })
       .type("X", { by: "char", interval: 1 });
     await tw.play();
@@ -93,7 +93,7 @@ describe("abort inside before hook of instant commands", () => {
       .type("ab", { by: "char", interval: 1 })
       .style("tw-a", { from: 0, to: 2 })
       .unstyle({ from: 0, to: 2 }, {
-        before: { callback: () => { tw.cancel(); } },
+        before: () => { tw.cancel(); },
       })
       .type("X", { by: "char", interval: 1 });
     await tw.play();
@@ -125,13 +125,11 @@ describe("abort inside before hook of wait and call commands", () => {
     tw.timeline
       .type("X", { by: "char", interval: 1 })
       .wait(500, {
-        before: {
-          callback: () => {
-            order.push("before");
-            tw.cancel();
-          },
+        before: () => {
+          order.push("before");
+          tw.cancel();
         },
-        after: { callback: () => { order.push("after"); } },
+        after: () => { order.push("after"); },
       });
     await tw.play();
 
@@ -147,7 +145,7 @@ describe("abort inside before hook of wait and call commands", () => {
 
     tw.timeline.call(
       () => { callbackFired = true; },
-      { before: { callback: () => { tw.cancel(); } } },
+      { before: () => { tw.cancel(); } },
     );
     await tw.play();
 
