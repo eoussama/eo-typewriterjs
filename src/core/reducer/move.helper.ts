@@ -42,7 +42,14 @@ function resolveIndex(text: string, startIndex: number, offset: number, by: TAdv
 /**
  * @description
  * Apply a move event to the typewriter state.
- * Moves the cursor forward or backward by `offset` units relative to its current position.
+ *
+ * Boundary operand semantics:
+ * - `"start"`: jump cursor to absolute document start (index 0)
+ * - `"end"`: jump cursor to absolute document end (index text.length)
+ *
+ * Numeric operand semantics:
+ * - Moves the cursor forward or backward by `offset` units relative to its current position.
+ *
  * The cursor's active selection is cleared.
  * If the cursor does not exist it is created at index 0 before moving.
  *
@@ -52,10 +59,19 @@ function resolveIndex(text: string, startIndex: number, offset: number, by: TAdv
  */
 export function move(state: TTypewriterState, event: TMoveEvent): TTypewriterState {
   const ensured = withCursor(state, event.cursorId);
-  // withCursor guarantees the cursor exists
   const cursor = ensured.cursors[event.cursorId] as TCursorState;
 
-  const newIndex = resolveIndex(ensured.document.text, cursor.index, event.offset, event.by);
+  let newIndex: number;
+
+  if (event.boundary === "start") {
+    newIndex = 0;
+  }
+  else if (event.boundary === "end") {
+    newIndex = ensured.document.text.length;
+  }
+  else {
+    newIndex = resolveIndex(ensured.document.text, cursor.index, event.offset, event.by);
+  }
 
   const afterMove: TTypewriterState = {
     ...ensured,

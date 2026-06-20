@@ -17,6 +17,7 @@ import type { TTypewriterState } from "../state/typewriter-state.type";
 
 import { ECommandKind } from "../commands/command-kind.enum";
 import { normalizeCursors } from "../commands/normalize-cursors.helper";
+import { compileDelete } from "../compiler/compile-delete.helper";
 import { compileMove } from "../compiler/compile-move.helper";
 import { compileSelect } from "../compiler/compile-select.helper";
 import { compileStyle } from "../compiler/compile-style.helper";
@@ -267,15 +268,43 @@ async function executeDelete(
   renderer: IRenderer,
   options: TExecuteCommandsOptions,
 ): Promise<TTypewriterState> {
+  // For boundary-string operands ("start", "end", "whole") compile to a single event
+  // and apply it in one step, then return.
+  if (typeof command.count === "string") {
+    await invokeHook(command.before, makeContext(state, 0, 1, null, options.signal));
+
+    /* v8 ignore next 3 */
+    if (options.signal.aborted) {
+      return state;
+    }
+
+    options.getAudioManager?.()?.playDelete(command.audio);
+
+    const { events } = compileDelete(command, 0);
+
+    for (const event of events) {
+      state = reduce(state, event);
+    }
+
+    renderer.render(state);
+
+    /* v8 ignore next 3 */
+    if (!options.signal.aborted) {
+      await invokeHook(command.after, makeContext(state, 0, 1, null, options.signal));
+    }
+
+    return state;
+  }
+
+  // Numeric operand path
   const mode = resolveAdvanceMode(command.by);
   const interval = command.interval ?? DEFAULT_INTERVAL;
   const amount = Math.max(1, mode.amount);
   const cursorIds = normalizeCursors(command.cursor);
 
-  const isWhole = command.count === 0;
   const direction: 1 | -1 = command.count >= 0 ? 1 : -1;
-  const totalUnits = isWhole ? 1 : Math.abs(command.count);
-  const stepCount = isWhole ? 1 : Math.ceil(totalUnits / amount);
+  const totalUnits = Math.abs(command.count);
+  const stepCount = Math.ceil(totalUnits / amount);
 
   for (let i = 0; i < stepCount; i++) {
     /* v8 ignore next 3 */
@@ -284,7 +313,7 @@ async function executeDelete(
     }
 
     const remaining = totalUnits - i * amount;
-    const stepUnits = isWhole ? 0 : Math.min(amount, remaining);
+    const stepUnits = Math.min(amount, remaining);
 
     await invokeHook(command.before, makeContext(state, i, stepCount, mode.unit, options.signal));
 

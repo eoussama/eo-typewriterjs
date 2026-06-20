@@ -5,10 +5,10 @@ export type { TCallbackContext, TCallbackFn, TCallbackHook } from "./callback-ho
 export { ECommandKind } from "./command-kind.enum";
 export type { TCommandKind } from "./command-kind.enum";
 
-export type { TDeleteCommand } from "./delete-command.type";
-export type { TMoveCommand } from "./move-command.type";
+export type { TDeleteCommand, TDeleteValue } from "./delete-command.type";
+export type { TMoveCommand, TMoveValue } from "./move-command.type";
 export { normalizeCursors } from "./normalize-cursors.helper";
-export type { TSelectCommand } from "./select-command.type";
+export type { TSelectCommand, TSelectValue } from "./select-command.type";
 export type { TStyleCommand, TStyleRange } from "./style-command.type";
 export type { TAdvanceMode, TAdvanceModeInput, TAdvanceUnit, TCursorSelector, TTypeCommand } from "./type-command.type";
 export type { TUnselectCommand } from "./unselect-command.type";

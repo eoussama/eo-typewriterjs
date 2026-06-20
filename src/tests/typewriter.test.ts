@@ -191,11 +191,11 @@ describe("compile (delete)", () => {
     expect((events[2] as TDeleteEvent | undefined)?.count).toBe(1);
   });
 
-  it("emits one whole-document event for a count of 0", () => {
-    const events = compile([{ id: "d4", kind: "delete", cursor: "main", count: 0 }]);
+  it("emits one whole-document event for a count of 'whole'", () => {
+    const events = compile([{ id: "d4", kind: "delete", cursor: "main", count: "whole" }]);
 
     expect(events).toHaveLength(1);
-    expect((events[0] as TDeleteEvent).count).toBe(0);
+    expect((events[0] as TDeleteEvent).boundary).toBe("whole");
   });
 
   it("advances time cursor after delete", () => {
@@ -453,10 +453,10 @@ describe("reduce (selectText edge cases)", () => {
     expect(state.selections.main).toStrictEqual({ from: 6, to: 11 });
   });
 
-  it("selecting count=0 selects the entire document", () => {
+  it("select('whole') selects the entire document", () => {
     const commands = [
       { id: "c1", kind: "type" as const, cursor: "main", text: "Hello", by: "char" as const, interval: 1 },
-      { id: "c2", kind: "select" as const, cursor: "main", count: 0, by: "char" as const },
+      { id: "c2", kind: "select" as const, cursor: "main", count: "whole" as const },
     ];
 
     const events = compile(commands);
@@ -1621,28 +1621,26 @@ describe("delete (unit handling)", () => {
     expect(renderer.toString()).toBe("hi");
   });
 
-  it("delete whole document when count is 0", async () => {
+  it("delete('whole') deletes the entire document", async () => {
     const renderer = stringRenderer();
     const tw = createTypewriter({ renderer });
 
     tw.timeline
       .type("one two three four", { by: "char", interval: 1 })
-      .delete(0);
+      .delete("whole");
     await tw.play();
 
     expect(renderer.toString()).toBe("");
   });
 
-  it("delete whole document clears an active selection", async () => {
+  it("delete('whole') clears an active selection", async () => {
     const renderer = stringRenderer();
     const tw = createTypewriter({ renderer });
 
-    // Select some text first, then delete whole document — the loop
-    // that calls withSelectionCleared for each active selection runs
     tw.timeline
       .type("hello world", { by: "char", interval: 1 })
       .select(-5)
-      .delete(0);
+      .delete("whole");
     await tw.play();
 
     expect(renderer.toString()).toBe("");
@@ -1791,6 +1789,212 @@ describe("multi-cursor delete index adjustment", () => {
     await tw.play();
 
     expect(renderer.toString()).toBe("aXbc");
+  });
+});
+
+
+describe("boundary operand tests (move, delete, select)", () => {
+  it("move('start') jumps cursor to document start", async () => {
+    const renderer = stringRenderer();
+    const tw = createTypewriter({ renderer });
+
+    tw.timeline
+      .type("hello world", { by: "char", interval: 1 })
+      .move("start")
+      .type(">", { by: "char", interval: 1 });
+    await tw.play();
+
+    expect(renderer.toString()).toBe(">hello world");
+  });
+
+  it("move('end') jumps cursor to document end", async () => {
+    const renderer = stringRenderer();
+    const tw = createTypewriter({ renderer });
+
+    tw.timeline
+      .type("hello world", { by: "char", interval: 1 })
+      .move("start")
+      .move("end")
+      .type("!", { by: "char", interval: 1 });
+    await tw.play();
+
+    expect(renderer.toString()).toBe("hello world!");
+  });
+
+  it("select('start') selects from cursor to document start", async () => {
+    const renderer = stringRenderer();
+    const tw = createTypewriter({ renderer });
+
+    tw.timeline
+      .type("hello world", { by: "char", interval: 1 })
+      .move(-5)
+      .select("start");
+    await tw.play();
+
+    const live = tw.getLiveState();
+
+    // cursor at 6 after move(-5), select("start") → [0, 6]
+    expect(live.selections.main).toStrictEqual({ from: 0, to: 6 });
+  });
+
+  it("select('end') selects from cursor to document end", async () => {
+    const renderer = stringRenderer();
+    const tw = createTypewriter({ renderer });
+
+    tw.timeline
+      .type("hello world", { by: "char", interval: 1 })
+      .move("start")
+      .select("end");
+    await tw.play();
+
+    const live = tw.getLiveState();
+
+    // cursor at 0 after move("start"), select("end") → [0, 11]
+    expect(live.selections.main).toStrictEqual({ from: 0, to: 11 });
+  });
+
+  it("select('whole') selects entire document regardless of cursor position", async () => {
+    const renderer = stringRenderer();
+    const tw = createTypewriter({ renderer });
+
+    tw.timeline
+      .type("hello world", { by: "char", interval: 1 })
+      .move(-3)
+      .select("whole");
+    await tw.play();
+
+    const live = tw.getLiveState();
+
+    expect(live.selections.main).toStrictEqual({ from: 0, to: 11 });
+  });
+
+  it("delete('start') deletes from cursor back to document start", async () => {
+    const renderer = stringRenderer();
+    const tw = createTypewriter({ renderer });
+
+    tw.timeline
+      .type("hello world", { by: "char", interval: 1 })
+      .move(-5)
+      .delete("start");
+    await tw.play();
+
+    // cursor at 6, delete to start removes "hello " → "world"
+    expect(renderer.toString()).toBe("world");
+  });
+
+  it("delete('end') deletes from cursor forward to document end", async () => {
+    const renderer = stringRenderer();
+    const tw = createTypewriter({ renderer });
+
+    tw.timeline
+      .type("hello world", { by: "char", interval: 1 })
+      .move(-5)
+      .delete("end");
+    await tw.play();
+
+    // cursor at 6, delete to end removes "world" → "hello "
+    expect(renderer.toString()).toBe("hello ");
+  });
+
+  it("delete('whole') deletes the entire document", async () => {
+    const renderer = stringRenderer();
+    const tw = createTypewriter({ renderer });
+
+    tw.timeline
+      .type("hello world", { by: "char", interval: 1 })
+      .delete("whole");
+    await tw.play();
+
+    expect(renderer.toString()).toBe("");
+  });
+
+  it("delete('start') at document start is a no-op", async () => {
+    const renderer = stringRenderer();
+    const tw = createTypewriter({ renderer });
+
+    tw.timeline
+      .type("hi", { by: "char", interval: 1 })
+      .move("start")
+      .delete("start");
+    await tw.play();
+
+    expect(renderer.toString()).toBe("hi");
+  });
+
+  it("delete('end') at document end is a no-op", async () => {
+    const renderer = stringRenderer();
+    const tw = createTypewriter({ renderer });
+
+    tw.timeline
+      .type("hi", { by: "char", interval: 1 })
+      .delete("end");
+    await tw.play();
+
+    expect(renderer.toString()).toBe("hi");
+  });
+
+  it("compiled move('start') event carries boundary='start'", () => {
+    const events = compile([{ id: "m1", kind: "move", cursor: "main", offset: "start" }]);
+
+    expect(events).toHaveLength(1);
+    expect((events[0] as { boundary?: string }).boundary).toBe("start");
+  });
+
+  it("compiled move('end') event carries boundary='end'", () => {
+    const events = compile([{ id: "m2", kind: "move", cursor: "main", offset: "end" }]);
+
+    expect(events).toHaveLength(1);
+    expect((events[0] as { boundary?: string }).boundary).toBe("end");
+  });
+
+  it("compiled select('start') event carries boundary='start'", () => {
+    const events = compile([{ id: "s1", kind: "select", cursor: "main", count: "start" }]);
+
+    expect(events).toHaveLength(1);
+    expect((events[0] as { boundary?: string }).boundary).toBe("start");
+  });
+
+  it("compiled select('end') event carries boundary='end'", () => {
+    const events = compile([{ id: "s2", kind: "select", cursor: "main", count: "end" }]);
+
+    expect(events).toHaveLength(1);
+    expect((events[0] as { boundary?: string }).boundary).toBe("end");
+  });
+
+  it("compiled select('whole') event carries boundary='whole'", () => {
+    const events = compile([{ id: "s3", kind: "select", cursor: "main", count: "whole" }]);
+
+    expect(events).toHaveLength(1);
+    expect((events[0] as { boundary?: string }).boundary).toBe("whole");
+  });
+
+  it("compiled delete('start') event carries boundary='start'", () => {
+    const events = compile([{ id: "d1", kind: "delete", cursor: "main", count: "start" }]);
+
+    expect(events).toHaveLength(1);
+    expect((events[0] as TDeleteEvent).boundary).toBe("start");
+  });
+
+  it("compiled delete('end') event carries boundary='end'", () => {
+    const events = compile([{ id: "d2", kind: "delete", cursor: "main", count: "end" }]);
+
+    expect(events).toHaveLength(1);
+    expect((events[0] as TDeleteEvent).boundary).toBe("end");
+  });
+
+  it("move('start') then move('end') effectively clears selection", async () => {
+    const renderer = stringRenderer();
+    const tw = createTypewriter({ renderer });
+
+    tw.timeline
+      .type("abc", { by: "char", interval: 1 })
+      .select("whole")
+      .move("start");
+    await tw.play();
+
+    const live = tw.getLiveState();
+
+    expect(live.selections.main).toBeUndefined();
   });
 });
 

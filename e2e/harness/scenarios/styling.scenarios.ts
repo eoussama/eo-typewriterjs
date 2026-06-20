@@ -69,7 +69,7 @@ export const STYLING_SCENARIOS: readonly TScenario[] = [
 
       tw.timeline
         .type("Hello World", { by: "char", interval: 1 })
-        .move(6)
+        .move(-5)
         .select(5)
         .unselect();
       await tw.play();
@@ -95,7 +95,7 @@ export const STYLING_SCENARIOS: readonly TScenario[] = [
       tw.timeline
         .type("Hello World", { by: "char", interval: 1 })
         .style("tw-highlight", { from: 0, to: 11 })
-        .move(6)
+        .move(-5)
         .select(5)
         .unstyle("selection");
       await tw.play();

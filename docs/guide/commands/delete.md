@@ -3,25 +3,27 @@
 Removes text relative to the cursor position, one step at a time.
 
 ```ts
-tw.timeline.delete(count: number, options?: TDeleteOptions): TimelineBuilder
+tw.timeline.delete(count: TDeleteValue, options?: TDeleteOptions): TimelineBuilder
 ```
 
-**Signed count semantics:**
+**Operand semantics:**
 
-| `count` | Direction |
+| `count` | Behavior |
 |---|---|
-| Positive (`count > 0`) | Delete **forward** from the cursor |
-| Negative (`count < 0`) | Delete **backward** from the cursor |
-| Zero (`count === 0`) | Delete the **entire document** text |
+| Positive number (`count > 0`) | Delete **forward** from the cursor |
+| Negative number (`count < 0`) | Delete **backward** from the cursor |
+| `"start"` | Delete from the cursor back to document **start** |
+| `"end"` | Delete from the cursor forward to document **end** |
+| `"whole"` | Delete the **entire document** |
 
-Each step produces a delete event that removes one unit and re-renders. The command advances the timeline clock by `steps × interval` ms.
+String operands (`"start"`, `"end"`, `"whole"`) are instant — they happen in one step and do not respect `by` or `interval`. Numeric counts advance the timeline clock by `steps × interval` ms.
 
 ## Options
 
 ```ts
 type TDeleteOptions = {
-  by?: TAdvanceModeInput;      // default: "char"
-  interval?: number;           // default: 50 (ms)
+  by?: TAdvanceModeInput;      // default: "char"  (numeric counts only)
+  interval?: number;           // default: 50 (ms) (numeric counts only)
   cursor?: TCursorSelector;    // default: "main"
   before?: TCallbackHook;
   after?: TCallbackHook;
@@ -31,28 +33,32 @@ type TDeleteOptions = {
 
 | Option | Type | Default | Description |
 |---|---|---|---|
-| `by` | `TAdvanceModeInput` | `"char"` | How to count units when deleting |
-| `interval` | `number` | `50` | Milliseconds between each deletion step |
+| `by` | `TAdvanceModeInput` | `"char"` | How to count units (numeric counts only) |
+| `interval` | `number` | `50` | Milliseconds between each deletion step (numeric counts only) |
 | `cursor` | `TCursorSelector` | `"main"` | Which cursor to delete from (supports multi-cursor arrays) |
-| `before` | `TCallbackHook` | — | Hook fired before each step |
-| `after` | `TCallbackHook` | — | Hook fired after each step |
+| `before` | `TCallbackHook` | — | Hook fired before each step (or once for boundary operands) |
+| `after` | `TCallbackHook` | — | Hook fired after each step (or once for boundary operands) |
 | `audio` | `TAudioCommandOverride` | — | Per-command audio override — `false` to silence, or a voice/volume object |
 
 ## Behavior
 
 - **Backward deletion** (`count < 0`): removes units before the cursor and moves it left.
 - **Forward deletion** (`count > 0`): removes units after the cursor; the cursor stays in place.
-- **Whole-text deletion** (`count = 0`): clears the entire document in one step.
-- Deletion is **clamped** — it never deletes beyond the document boundaries.
-- Multi-cursor: pass an array to `cursor` to delete from multiple cursors simultaneously.
+- **Boundary `"start"`**: removes all text from cursor position to document start in one step.
+- **Boundary `"end"`**: removes all text from cursor position to document end in one step.
+- **Boundary `"whole"`**: clears the entire document in one step.
+- All deletions are **clamped** — never exceeds document boundaries.
+- `"start"` is a no-op when the cursor is already at position 0.
+- `"end"` is a no-op when the cursor is already at the end of the document.
 
 ## Advance modes (`by`)
+
+Applies to numeric counts only:
 
 ```ts
 tw.timeline.delete(-5, { by: "char" });     // delete 5 chars backward
 tw.timeline.delete(-2, { by: "word" });     // delete 2 words backward
 tw.timeline.delete(3, { by: "char" });      // delete 3 chars forward
-tw.timeline.delete(0);                      // delete the whole document
 ```
 
 Use the object form for multi-unit steps:
@@ -76,6 +82,40 @@ await tw.play();
 // types "Hello world", pauses, backspaces " world" → "Hello"
 ```
 
+### Delete to document start
+
+```ts
+tw.timeline
+  .type("Hello world", { by: "char", interval: 80 })
+  .move(-5)          // cursor at 6 (between "Hello " and "world")
+  .delete("start");  // removes "Hello " → "world"
+
+await tw.play();
+```
+
+### Delete to document end
+
+```ts
+tw.timeline
+  .type("Hello world", { by: "char", interval: 80 })
+  .move(-5)        // cursor at 6
+  .delete("end");  // removes "world" → "Hello "
+
+await tw.play();
+```
+
+### Delete entire document
+
+```ts
+tw.timeline
+  .type("Temporary text", { by: "char", interval: 60 })
+  .wait(800)
+  .delete("whole");
+
+await tw.play();
+// full erasure in one step
+```
+
 ### Delete by word (backward)
 
 ```ts
@@ -93,24 +133,10 @@ await tw.play();
 ```ts
 tw.timeline
   .type("Helo world", { by: "char", interval: 80 })
-  .move(-9)                                 // move cursor back 9 chars (at index 1)
-  .delete(1, { by: "char", interval: 50 }) // forward delete the duplicate "l"
-  .type("", { by: "char" })                // cursor now points at corrected text
+  .move(-9)
+  .delete(1, { by: "char", interval: 50 }); // forward delete duplicate 'l'
 
 await tw.play();
-// "Helo world" → "Helo world" with extra l removed at position 1 → "Helo world"
-```
-
-### Clear everything at once
-
-```ts
-tw.timeline
-  .type("Temporary text", { by: "char", interval: 60 })
-  .wait(800)
-  .delete(0);  // whole-document deletion
-
-await tw.play();
-// full erasure in one step
 ```
 
 ### Simulated typing correction
@@ -123,7 +149,6 @@ tw.timeline
   .type("ello world", { by: "char", interval: 80 });
 
 await tw.play();
-// types typo, then corrects it
 ```
 
 ## Interaction with cursor position
@@ -146,16 +171,17 @@ If the targeted cursor has an active selection when `.delete()` fires, the entir
 
 ## Edge cases
 
-- **`count = 0`** — deletes the entire document text in one step.
-- **Cursor at position 0 with negative count** — the command is a no-op; nothing to delete.
-- **Cursor at end with positive count** — the command is a no-op; nothing after the cursor.
+- **Cursor at position 0 with `"start"` or negative count** — no-op; nothing to delete backward.
+- **Cursor at end with `"end"` or positive count** — no-op; nothing after the cursor.
 - **`|count|` larger than available text** — deletion stops at the document boundary without error.
-- **Styles overlap deleted range** — styles that fully cover the deleted range are removed. Styles that partially overlap are trimmed. Styles entirely outside the deletion are preserved.
+- **`"whole"` on empty document** — no-op.
+- **Styles overlap deleted range** — styles fully contained in the range are removed. Styles partially overlapping are trimmed. Styles entirely outside are preserved.
 
 ## Type reference
 
 - [`TDeleteOptions`](/api/type-aliases/TDeleteOptions)
 - [`TDeleteCommand`](/api/type-aliases/TDeleteCommand)
+- [`TDeleteValue`](/api/type-aliases/TDeleteValue)
 - [`TAdvanceModeInput`](/api/type-aliases/TAdvanceModeInput)
 - [`TCursorSelector`](/api/type-aliases/TCursorSelector)
 - [`TCallbackHook`](/api/type-aliases/TCallbackHook)

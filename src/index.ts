@@ -28,7 +28,7 @@ export { normalizeCursors } from "./core/commands/index";
 export type { TCallbackContext, TCallbackFn, TCallbackHook } from "./core/commands/index";
 export type { TCallCommand } from "./core/commands/index";
 export type { TUnselectCommand } from "./core/commands/index";
-export type { TAdvanceMode, TAdvanceModeInput, TAdvanceUnit, TCommandKind, TCursorSelector, TDeleteCommand, TMoveCommand, TSelectCommand, TStyleCommand, TStyleRange, TTypeCommand, TUnstyleCommand, TWaitCommand } from "./core/commands/index";
+export type { TAdvanceMode, TAdvanceModeInput, TAdvanceUnit, TCommandKind, TCursorSelector, TDeleteCommand, TDeleteValue, TMoveCommand, TMoveValue, TSelectCommand, TSelectValue, TStyleCommand, TStyleRange, TTypeCommand, TUnstyleCommand, TWaitCommand } from "./core/commands/index";
 export type { TCommand } from "./core/compiler/index";
 export { ECursorKind } from "./core/cursor/index";
 

@@ -48,7 +48,6 @@ function resolveEndIndex(text: string, startIndex: number, count: number, by: TA
   const absCount = Math.abs(count) * amount;
 
   if (count > 0) {
-    // Select forward: segment text from startIndex to end, take `absCount` segments
     const tail = text.slice(startIndex);
     const segments = segmentText(tail, unit);
     const taken = segments.slice(0, absCount).join("").length;
@@ -56,7 +55,6 @@ function resolveEndIndex(text: string, startIndex: number, count: number, by: TA
     return Math.min(text.length, startIndex + taken);
   }
   else {
-    // Select backward: segment text from 0 to startIndex, take last `absCount` segments
     const head = text.slice(0, startIndex);
     const segments = segmentText(head, unit);
     const taken = segments.slice(Math.max(0, segments.length - absCount)).join("").length;
@@ -68,11 +66,16 @@ function resolveEndIndex(text: string, startIndex: number, count: number, by: TA
 /**
  * @description
  * Apply a select event to the typewriter state.
- * Computes a concrete `{from, to}` selection range from the event's `count` and `by`
- * fields relative to the cursor's current index, and stores it in the per-cursor
- * selections map.
- * A positive `count` selects forward; a negative `count` selects backward.
- * A zero `count` selects the entire document.
+ *
+ * Boundary operand semantics:
+ * - `"whole"`: select the entire document [0, text.length]
+ * - `"start"`: select from cursor to document start [0, cursorIndex]
+ * - `"end"`: select from cursor to document end [cursorIndex, text.length]
+ *
+ * Numeric count semantics:
+ * - positive: select forward from cursor
+ * - negative: select backward from cursor
+ *
  * If the cursor does not exist it is created at index 0 before selecting.
  *
  * @param state - The current typewriter state
@@ -81,16 +84,23 @@ function resolveEndIndex(text: string, startIndex: number, count: number, by: TA
  */
 export function selectText(state: TTypewriterState, event: TSelectEvent): TTypewriterState {
   const ensured = withCursor(state, event.cursorId);
-  // withCursor guarantees the cursor exists
   const cursor = ensured.cursors[event.cursorId] as TCursorState;
+  const cursorIndex = cursor.index;
+  const textLength = ensured.document.text.length;
 
-  if (event.count === 0) {
-    return withSelection(ensured, event.cursorId, 0, ensured.document.text.length);
+  if (event.boundary === "whole") {
+    return withSelection(ensured, event.cursorId, 0, textLength);
   }
 
-  const cursorIndex = cursor.index;
-  const endIndex = resolveEndIndex(ensured.document.text, cursorIndex, event.count, event.by);
+  if (event.boundary === "start") {
+    return withSelection(ensured, event.cursorId, 0, cursorIndex);
+  }
 
+  if (event.boundary === "end") {
+    return withSelection(ensured, event.cursorId, cursorIndex, textLength);
+  }
+
+  const endIndex = resolveEndIndex(ensured.document.text, cursorIndex, event.count, event.by);
   const from = Math.min(cursorIndex, endIndex);
   const to = Math.max(cursorIndex, endIndex);
 

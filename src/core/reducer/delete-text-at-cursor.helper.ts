@@ -9,12 +9,41 @@ import { segmentText } from "../stepping/segment-text.helper";
 
 /**
  * @description
+ * Erase the entire document and reset all cursors to index 0, clearing all selections.
+ *
+ * @param state - The current typewriter state (with the event cursor already ensured)
+ * @returns A new TTypewriterState with empty text and all cursors at 0
+ */
+function applyWholeDelete(state: TTypewriterState): TTypewriterState {
+  const updatedCursors = Object.fromEntries(
+    Object.entries(state.cursors).map(([id, cur]) => [id, { ...cur, index: 0 }]),
+  ) as TTypewriterState["cursors"];
+
+  let next: TTypewriterState = {
+    ...state,
+    document: { text: "", styles: [] },
+    cursors: updatedCursors,
+  };
+
+  for (const id of Object.keys(state.selections)) {
+    next = withSelectionCleared(next, id);
+  }
+
+  return next;
+}
+
+/**
+ * @description
  * Apply a delete event to the typewriter state.
  *
- * Direction semantics:
+ * Boundary operand semantics:
+ * - `"whole"`: delete the entire document
+ * - `"start"`: delete from cursor back to document start
+ * - `"end"`: delete from cursor forward to document end
+ *
+ * Numeric direction semantics:
  * - direction === -1 (backward): removes `count` units before the cursor
  * - direction === 1 (forward): removes `count` units after the cursor
- * - count === 0: removes the entire document text
  *
  * The cursor's active selection is cleared.
  * All other cursors whose index overlaps or follows the deleted range are adjusted.
@@ -25,39 +54,55 @@ import { segmentText } from "../stepping/segment-text.helper";
  */
 export function deleteTextAtCursor(state: TTypewriterState, event: TDeleteEvent): TTypewriterState {
   const ensured = withCursor(state, event.cursorId);
-  // withCursor guarantees the cursor exists
   const cursor = ensured.cursors[event.cursorId] as TCursorState;
   const cursorIndex = cursor.index;
   const text = ensured.document.text;
 
-  // Whole-document deletion
-  if (event.count === 0) {
-    const updatedCursors = Object.fromEntries(
-      Object.entries(ensured.cursors).map(([id, cur]) => [id, { ...cur, index: 0 }]),
-    ) as TTypewriterState["cursors"];
-
-    let afterWhole: TTypewriterState = {
-      ...ensured,
-      document: { text: "", styles: [] },
-      cursors: updatedCursors,
-    };
-
-    for (const id of Object.keys(ensured.selections)) {
-      afterWhole = withSelectionCleared(afterWhole, id);
-    }
-
-    return afterWhole;
+  // Boundary string operands
+  if (event.boundary === "whole") {
+    return applyWholeDelete(ensured);
   }
 
+  if (event.boundary === "start") {
+    if (cursorIndex === 0) {
+      return withSelectionCleared(ensured, event.cursorId);
+    }
+
+    // Synthesise a backward-delete event for the range [0, cursorIndex]
+    return deleteTextAtCursor(ensured, {
+      ...event,
+      boundary: undefined,
+      count: cursorIndex,
+      unit: "char",
+      direction: -1,
+    });
+  }
+
+  if (event.boundary === "end") {
+    const remaining = text.length - cursorIndex;
+
+    if (remaining <= 0) {
+      return withSelectionCleared(ensured, event.cursorId);
+    }
+
+    return deleteTextAtCursor(ensured, {
+      ...event,
+      boundary: undefined,
+      count: remaining,
+      unit: "char",
+      direction: 1,
+    });
+  }
+
+  // Numeric deletion
   let removeStart: number;
   let removeEnd: number;
 
   if (event.direction === -1) {
-    // Backward deletion: resolve `count` units before the cursor
     const charCount = (() => {
       const unit = event.unit;
 
-      if (unit === "char" || unit === "grapheme" || unit === "whole") {
+      if (unit === "char" || unit === "grapheme") {
         return event.count;
       }
 
@@ -72,11 +117,10 @@ export function deleteTextAtCursor(state: TTypewriterState, event: TDeleteEvent)
     removeStart = Math.max(0, cursorIndex - charCount);
   }
   else {
-    // Forward deletion: resolve `count` units after the cursor
     const charCount = (() => {
       const unit = event.unit;
 
-      if (unit === "char" || unit === "grapheme" || unit === "whole") {
+      if (unit === "char" || unit === "grapheme") {
         return event.count;
       }
 
@@ -97,10 +141,8 @@ export function deleteTextAtCursor(state: TTypewriterState, event: TDeleteEvent)
 
   const deletedLength = removeEnd - removeStart;
   const nextText = text.slice(0, removeStart) + text.slice(removeEnd);
-  const nextIndex = event.direction === -1 ? removeStart : removeStart;
+  const nextIndex = removeStart;
 
-  // Adjust styles: remove styles fully within the deleted range,
-  // clamp styles that partially overlap it
   const nextStyles = ensured.document.styles
     .filter(entry => !(entry.from >= removeStart && entry.to <= removeEnd))
     .map(entry => ({
@@ -111,7 +153,6 @@ export function deleteTextAtCursor(state: TTypewriterState, event: TDeleteEvent)
       to: entry.to > removeStart ? Math.max(removeStart, entry.to - (removeEnd - removeStart)) : entry.to,
     }));
 
-  // Shift all other cursors whose index falls at or after the deleted range
   const updatedCursors = Object.fromEntries(
     Object.entries(ensured.cursors).map(([id, cur]) => {
       if (id === event.cursorId) {
@@ -130,7 +171,6 @@ export function deleteTextAtCursor(state: TTypewriterState, event: TDeleteEvent)
     }),
   ) as TTypewriterState["cursors"];
 
-  // Shift selections of other cursors
   const updatedSelections = Object.fromEntries(
     Object.entries(ensured.selections).map(([id, sel]) => {
       if (id === event.cursorId || sel === undefined) {

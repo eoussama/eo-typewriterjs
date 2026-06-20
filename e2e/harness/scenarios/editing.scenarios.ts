@@ -12,7 +12,7 @@ export const EDITING_SCENARIOS: readonly TScenario[] = [
 
       tw.timeline
         .type("Hello world", { by: "char", interval: 1 })
-        .delete(6, { by: "char", interval: 1 });
+        .delete(-6, { by: "char", interval: 1 });
       await tw.play();
     },
   },
@@ -23,7 +23,7 @@ export const EDITING_SCENARIOS: readonly TScenario[] = [
 
       tw.timeline
         .type("world", { by: "char", interval: 1 })
-        .move(0)
+        .move("start")
         .type("Hello ", { by: "char", interval: 1 });
       await tw.play();
     },
@@ -35,7 +35,7 @@ export const EDITING_SCENARIOS: readonly TScenario[] = [
 
       tw.timeline
         .type("one two three", { by: "char", interval: 1 })
-        .delete(1, { by: "word", interval: 1 });
+        .delete(-1, { by: "word", interval: 1 });
       await tw.play();
     },
   },
@@ -46,7 +46,7 @@ export const EDITING_SCENARIOS: readonly TScenario[] = [
 
       tw.timeline
         .type("Hello", { by: "char", interval: 1 })
-        .delete(5, { by: "char", interval: 1 })
+        .delete(-5, { by: "char", interval: 1 })
         .type("World", { by: "char", interval: 1 });
       await tw.play();
     },
@@ -67,7 +67,7 @@ export const EDITING_SCENARIOS: readonly TScenario[] = [
 
       tw.timeline
         .type("Hello")
-        .delete(3);
+        .delete(-3);
       await tw.play();
     },
   },
@@ -78,7 +78,7 @@ export const EDITING_SCENARIOS: readonly TScenario[] = [
 
       tw.timeline
         .type("Hello", { by: "char", interval: 1 })
-        .move(0)
+        .move("start")
         .select(3)
         .unselect();
       await tw.play();
@@ -103,7 +103,7 @@ export const EDITING_SCENARIOS: readonly TScenario[] = [
 
       tw.timeline
         .type("Hi", { by: "char", interval: 1 })
-        .delete(100, { by: "char", interval: 1 });
+        .delete(-100, { by: "char", interval: 1 });
       await tw.play();
     },
   },
@@ -114,10 +114,105 @@ export const EDITING_SCENARIOS: readonly TScenario[] = [
 
       tw.timeline
         .type("Hello World", { by: "char", interval: 1 })
-        .move(5)
+        .move(-6)
         .select(-5)
         .style("tw-sel", "selection")
         .type("Hi", { by: "char", interval: 1 });
+      await tw.play();
+    },
+  },
+  {
+    id: "move-start-boundary",
+    async run({ el }) {
+      const tw = createTypewriter({ renderer: domRenderer(el) });
+
+      tw.timeline
+        .type("hello world", { by: "char", interval: 1 })
+        .move("start")
+        .type(">", { by: "char", interval: 1 });
+      await tw.play();
+    },
+  },
+  {
+    id: "move-end-boundary",
+    async run({ el }) {
+      const tw = createTypewriter({ renderer: domRenderer(el) });
+
+      tw.timeline
+        .type("hello world", { by: "char", interval: 1 })
+        .move("start")
+        .move("end")
+        .type("!", { by: "char", interval: 1 });
+      await tw.play();
+    },
+  },
+  {
+    id: "delete-start-boundary",
+    async run({ el }) {
+      const tw = createTypewriter({ renderer: domRenderer(el) });
+
+      tw.timeline
+        .type("hello world", { by: "char", interval: 1 })
+        .move(-5)
+        .delete("start");
+      await tw.play();
+    },
+  },
+  {
+    id: "delete-end-boundary",
+    async run({ el }) {
+      const tw = createTypewriter({ renderer: domRenderer(el) });
+
+      tw.timeline
+        .type("hello world", { by: "char", interval: 1 })
+        .move(-5)
+        .delete("end");
+      await tw.play();
+    },
+  },
+  {
+    id: "delete-whole-boundary",
+    async run({ el }) {
+      const tw = createTypewriter({ renderer: domRenderer(el) });
+
+      tw.timeline
+        .type("hello world", { by: "char", interval: 1 })
+        .delete("whole");
+      await tw.play();
+    },
+  },
+  {
+    id: "select-start-boundary",
+    async run({ el }) {
+      const tw = createTypewriter({ renderer: domRenderer(el) });
+
+      tw.timeline
+        .type("hello world", { by: "char", interval: 1 })
+        .move(-5)
+        .select("start");
+      await tw.play();
+    },
+  },
+  {
+    id: "select-end-boundary",
+    async run({ el }) {
+      const tw = createTypewriter({ renderer: domRenderer(el) });
+
+      tw.timeline
+        .type("hello world", { by: "char", interval: 1 })
+        .move("start")
+        .select("end");
+      await tw.play();
+    },
+  },
+  {
+    id: "select-whole-boundary",
+    async run({ el }) {
+      const tw = createTypewriter({ renderer: domRenderer(el) });
+
+      tw.timeline
+        .type("hello world", { by: "char", interval: 1 })
+        .select("whole");
       await tw.play();
     },
   },

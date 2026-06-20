@@ -157,7 +157,7 @@ export const CALLBACKS_SCENARIOS: readonly TScenario[] = [
 
       tw.timeline
         .type("Hello", { by: "char", interval: 1 })
-        .delete(3, {
+        .delete(-3, {
           by: "char",
           interval: 1,
           before: ({ stepIndex }) => { log(`del-before:${stepIndex}`); },

@@ -34,10 +34,14 @@ function resolveAdvanceMode(input: TAdvanceModeInput | undefined): TAdvanceMode 
  * Compile a single TDeleteCommand into a sequence of TDeleteEvents with
  * absolute timestamps relative to the provided start time.
  *
- * Signed count semantics:
+ * String operand semantics:
+ * - `"whole"`: delete the entire document — one event with boundary="whole"
+ * - `"start"`: delete from cursor to document start — one event with boundary="start"
+ * - `"end"`: delete from cursor to document end — one event with boundary="end"
+ *
+ * Numeric count semantics:
  * - positive: delete forward from the cursor
  * - negative: delete backward from the cursor
- * - zero: delete the whole document text
  *
  * Each event carries the logical unit and a per-step count in that unit;
  * the reducer resolves the actual character span at apply time.
@@ -52,15 +56,33 @@ export function compileDelete(
   command: TDeleteCommand,
   startTime: number,
 ): { events: TDeleteEvent[]; endTime: number } {
+  const cursorIds = normalizeCursors(command.cursor);
+
+  // Boundary string operands compile to a single instant event
+  if (typeof command.count === "string") {
+    const boundary = command.count;
+    const events: TDeleteEvent[] = cursorIds.map(cursorId => ({
+      id: `delete_event_${++deleteEventCounter}`,
+      kind: EEventKind.DELETE,
+      time: startTime,
+      cursorId,
+      boundary,
+      count: 0,
+      unit: "char",
+      direction: 1,
+      sourceCommandId: command.id,
+    }));
+
+    return { events, endTime: startTime + DEFAULT_INTERVAL };
+  }
+
   const mode = resolveAdvanceMode(command.by);
   const interval = command.interval ?? DEFAULT_INTERVAL;
   const amount = Math.max(1, mode.amount);
-  const cursorIds = normalizeCursors(command.cursor);
 
-  const isWhole = command.count === 0;
   const direction: 1 | -1 = command.count >= 0 ? 1 : -1;
-  const totalUnits = isWhole ? 1 : Math.abs(command.count);
-  const steps = isWhole ? 1 : Math.ceil(totalUnits / amount);
+  const totalUnits = Math.abs(command.count);
+  const steps = Math.ceil(totalUnits / amount);
 
   const events: TDeleteEvent[] = [];
 
@@ -74,7 +96,7 @@ export function compileDelete(
         kind: EEventKind.DELETE,
         time: startTime + i * interval,
         cursorId,
-        count: isWhole ? 0 : stepCount,
+        count: stepCount,
         unit: mode.unit,
         direction,
         sourceCommandId: command.id,

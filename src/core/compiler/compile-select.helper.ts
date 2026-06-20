@@ -11,6 +11,16 @@ let selectEventCounter = 0;
 /**
  * @description
  * Compile a single TSelectCommand into TSelectEvents, one per targeted cursor.
+ *
+ * String operand semantics:
+ * - `"start"`: select from cursor to document start — one event with boundary="start"
+ * - `"end"`: select from cursor to document end — one event with boundary="end"
+ * - `"whole"`: select entire document — one event with boundary="whole"
+ *
+ * Numeric count semantics:
+ * - positive: select forward from cursor
+ * - negative: select backward from cursor
+ *
  * All events are placed at the current start time and do not advance the clock.
  * The concrete selection range is resolved by the reducer at runtime.
  *
@@ -24,12 +34,28 @@ export function compileSelect(
 ): { events: TSelectEvent[]; endTime: number } {
   const cursorIds = normalizeCursors(command.cursor);
 
+  if (typeof command.count === "string") {
+    const boundary = command.count;
+    const events: TSelectEvent[] = cursorIds.map(cursorId => ({
+      id: `select_event_${++selectEventCounter}`,
+      kind: EEventKind.SELECT,
+      time: startTime,
+      cursorId,
+      boundary,
+      count: 0,
+      by: command.by ?? "char",
+      sourceCommandId: command.id,
+    }));
+
+    return { events, endTime: startTime };
+  }
+
   const events: TSelectEvent[] = cursorIds.map(cursorId => ({
     id: `select_event_${++selectEventCounter}`,
     kind: EEventKind.SELECT,
     time: startTime,
     cursorId,
-    count: command.count,
+    count: command.count as number,
     by: command.by ?? "char",
     sourceCommandId: command.id,
   }));

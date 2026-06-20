@@ -71,7 +71,7 @@ export const CURSOR_SCENARIOS: readonly TScenario[] = [
 
       tw.timeline
         .type("Hello World", { by: "char", interval: 1 })
-        .move(5)
+        .move(-6)
         .type(",", { by: "char", interval: 1 });
       await tw.play();
     },
@@ -83,6 +83,7 @@ export const CURSOR_SCENARIOS: readonly TScenario[] = [
 
       tw.timeline
         .type("Name: \nRole: ", { by: "char", interval: 1 })
+        .move("start", { cursor: "b" })
         .move(6, { cursor: "b" })
         .type("Alice", { cursor: ["main", "b"], by: "char", interval: 1 });
       await tw.play();

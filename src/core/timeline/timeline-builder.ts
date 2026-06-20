@@ -1,6 +1,9 @@
 import type { TAudioCommandOverride } from "../audio/audio-command-override.type";
 import type { TCommand } from "../commands";
 import type { TCallbackFn, TCallbackHook } from "../commands/callback-hook.type";
+import type { TDeleteValue } from "../commands/delete-command.type";
+import type { TMoveValue } from "../commands/move-command.type";
+import type { TSelectValue } from "../commands/select-command.type";
 import type { TStyleRange } from "../commands/style-command.type";
 import type { TAdvanceModeInput, TCursorSelector } from "../commands/type-command.type";
 import type { TStyleRef } from "../state/rich-text-document.type";
@@ -169,15 +172,21 @@ export class TimelineBuilder {
 
   /**
    * @description
-   * Schedule a select command that creates a text selection relative to the cursor's
-   * current position. A positive `count` selects forward; a negative `count` selects backward.
+   * Schedule a select command that creates a text selection.
+   *
+   * Operand semantics:
+   * - `number`: relative selection; positive = forward, negative = backward
+   * - `"start"`: select from cursor to document start
+   * - `"end"`: select from cursor to document end
+   * - `"whole"`: select the entire document
+   *
    * The selection is cleared by any subsequent type, delete, or move command.
    *
-   * @param count - Number of units to select; positive = forward, negative = backward
+   * @param count - Number of units or boundary string
    * @param options - Optional configuration (advance mode, cursor id, lifecycle hooks)
    * @returns This builder instance for future chaining
    */
-  select(count: number, options?: TSelectOptions): this {
+  select(count: TSelectValue, options?: TSelectOptions): this {
     this._commands.push({
       id: `cmd_${++commandCounter}`,
       kind: ECommandKind.SELECT,
@@ -196,15 +205,20 @@ export class TimelineBuilder {
 
   /**
    * @description
-   * Schedule a move command that moves the cursor relative to its current position.
-   * Positive offset moves right; negative offset moves left; zero is a no-op.
+   * Schedule a move command that moves the cursor.
+   *
+   * Operand semantics:
+   * - `number`: relative move; positive = right, negative = left, zero = no-op
+   * - `"start"`: jump to absolute document start
+   * - `"end"`: jump to absolute document end
+   *
    * This command is instant and does not advance the timeline clock.
    *
-   * @param offset - Number of units to move; positive = right, negative = left, zero = no-op
+   * @param offset - Number of units to move or boundary string
    * @param options - Optional configuration (advance mode, cursor id, lifecycle hooks)
    * @returns This builder instance for future chaining
    */
-  move(offset: number, options?: TMoveOptions): this {
+  move(offset: TMoveValue, options?: TMoveOptions): this {
     this._commands.push({
       id: `cmd_${++commandCounter}`,
       kind: ECommandKind.MOVE,
@@ -223,14 +237,19 @@ export class TimelineBuilder {
 
   /**
    * @description
-   * Schedule a delete command that removes text relative to the cursor.
-   * Positive count deletes forward; negative count deletes backward; zero deletes the whole text.
+   * Schedule a delete command that removes text.
    *
-   * @param count - Number of units; positive = forward, negative = backward, zero = whole text
+   * Operand semantics:
+   * - `number`: signed count; positive = forward, negative = backward
+   * - `"start"`: delete from cursor back to document start
+   * - `"end"`: delete from cursor forward to document end
+   * - `"whole"`: delete the entire document
+   *
+   * @param count - Number of units or boundary string
    * @param options - Optional delete configuration (advance mode, interval, cursor, lifecycle hooks)
    * @returns This builder instance for future chaining
    */
-  delete(count: number, options?: TDeleteOptions): this {
+  delete(count: TDeleteValue, options?: TDeleteOptions): this {
     this._commands.push({
       id: `cmd_${++commandCounter}`,
       kind: ECommandKind.DELETE,

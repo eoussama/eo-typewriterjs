@@ -11,6 +11,60 @@ test.describe("editing", () => {
     expect(await getOutputText(page)).toBe("Hello");
   });
 
+  test("move('start') jumps cursor to document start", async ({ page }) => {
+    await gotoScenario(page, "move-start-boundary");
+
+    expect(await getOutputText(page)).toBe(">hello world");
+  });
+
+  test("move('end') jumps cursor to document end", async ({ page }) => {
+    await gotoScenario(page, "move-end-boundary");
+
+    expect(await getOutputText(page)).toBe("hello world!");
+  });
+
+  test("delete('start') removes text from cursor to document start", async ({ page }) => {
+    await gotoScenario(page, "delete-start-boundary");
+
+    expect(await getOutputText(page)).toBe("world");
+  });
+
+  test("delete('end') removes text from cursor to document end", async ({ page }) => {
+    await gotoScenario(page, "delete-end-boundary");
+
+    expect(await getOutputText(page)).toBe("hello ");
+  });
+
+  test("delete('whole') removes the entire document", async ({ page }) => {
+    await gotoScenario(page, "delete-whole-boundary");
+
+    expect(await getOutputText(page)).toBe("");
+  });
+
+  test("select('start') shows selection from cursor to start", async ({ page }) => {
+    await gotoScenario(page, "select-start-boundary");
+
+    await expect(
+      page.locator(".typewriter-selection"),
+    ).toHaveCount(1);
+  });
+
+  test("select('end') shows selection from cursor to end", async ({ page }) => {
+    await gotoScenario(page, "select-end-boundary");
+
+    await expect(
+      page.locator(".typewriter-selection"),
+    ).toHaveCount(1);
+  });
+
+  test("select('whole') shows selection over entire document", async ({ page }) => {
+    await gotoScenario(page, "select-whole-boundary");
+
+    await expect(
+      page.locator(".typewriter-selection"),
+    ).toHaveCount(1);
+  });
+
   test("insert in middle produces correct text", async ({ page }) => {
     await gotoScenario(page, "insert-in-middle");
 
