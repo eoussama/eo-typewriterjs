@@ -270,9 +270,12 @@ async function executeDelete(
   const mode = resolveAdvanceMode(command.by);
   const interval = command.interval ?? DEFAULT_INTERVAL;
   const amount = Math.max(1, mode.amount);
-  const totalUnits = Math.max(0, command.count);
-  const stepCount = Math.ceil(totalUnits / amount);
   const cursorIds = normalizeCursors(command.cursor);
+
+  const isWhole = command.count === 0;
+  const direction: 1 | -1 = command.count >= 0 ? 1 : -1;
+  const totalUnits = isWhole ? 1 : Math.abs(command.count);
+  const stepCount = isWhole ? 1 : Math.ceil(totalUnits / amount);
 
   for (let i = 0; i < stepCount; i++) {
     /* v8 ignore next 3 */
@@ -281,7 +284,7 @@ async function executeDelete(
     }
 
     const remaining = totalUnits - i * amount;
-    const stepUnits = Math.min(amount, remaining);
+    const stepUnits = isWhole ? 0 : Math.min(amount, remaining);
 
     await invokeHook(command.before, makeContext(state, i, stepCount, mode.unit, options.signal));
 
@@ -299,6 +302,7 @@ async function executeDelete(
         cursorId,
         count: stepUnits,
         unit: mode.unit as TDeleteEvent["unit"],
+        direction,
         sourceCommandId: command.id,
       };
 

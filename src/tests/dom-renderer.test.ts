@@ -117,7 +117,7 @@ describe("domRenderer", () => {
     // Type text, move cursor back, and select forward to create an active selection
     tw.timeline
       .type("Hello", { by: "char", interval: 1 })
-      .move(0)
+      .move(-999)
       .select(3);
     await tw.play();
 
@@ -131,7 +131,7 @@ describe("domRenderer", () => {
 
     tw.timeline
       .type("Make this word pop.", { by: "char", interval: 1 })
-      .move(14)
+      .move(-5)
       .select(-4, { by: "char" })
       .style("tw-accent", "selection");
 

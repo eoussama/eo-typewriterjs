@@ -72,6 +72,7 @@ function resolveEndIndex(text: string, startIndex: number, count: number, by: TA
  * fields relative to the cursor's current index, and stores it in the per-cursor
  * selections map.
  * A positive `count` selects forward; a negative `count` selects backward.
+ * A zero `count` selects the entire document.
  * If the cursor does not exist it is created at index 0 before selecting.
  *
  * @param state - The current typewriter state
@@ -82,6 +83,10 @@ export function selectText(state: TTypewriterState, event: TSelectEvent): TTypew
   const ensured = withCursor(state, event.cursorId);
   // withCursor guarantees the cursor exists
   const cursor = ensured.cursors[event.cursorId] as TCursorState;
+
+  if (event.count === 0) {
+    return withSelection(ensured, event.cursorId, 0, ensured.document.text.length);
+  }
 
   const cursorIndex = cursor.index;
   const endIndex = resolveEndIndex(ensured.document.text, cursorIndex, event.count, event.by);

@@ -299,7 +299,7 @@ describe("stringRenderer, playback snapshots", () => {
 
     tw.timeline
       .type("Hello World", { by: "char", interval: 1 })
-      .delete(6, { by: "char", interval: 1 });
+      .delete(-6, { by: "char", interval: 1 });
     await tw.play();
 
     expect(sr.toString()).toBe("Hello");

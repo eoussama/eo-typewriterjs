@@ -32,6 +32,7 @@ type TSelectOptions = {
 
 - A positive `count` selects **forward** from the cursor's current position.
 - A negative `count` selects **backward** from the cursor's current position.
+- A zero `count` selects the **entire document** (`[0, text.length]`).
 - The selection is **relative** to the cursor — it extends `count` units in the chosen direction from wherever the cursor currently sits.
 - The selection is stored on the cursor state and consumed by the DOM renderer to render a visual highlight.
 - The selection is **cleared** by any subsequent `.type()`, `.delete()`, or `.move()` command targeting the same cursor.
@@ -42,9 +43,10 @@ type TSelectOptions = {
 The `by` option controls how selection units are measured.
 
 ```ts
-tw.timeline.select(5); // select 5 characters forward
-tw.timeline.select(-3); // select 3 characters backward
-tw.timeline.select(2, { by: "word" }); // select 2 words forward
+tw.timeline.select(5);                  // select 5 characters forward
+tw.timeline.select(-3);                 // select 3 characters backward
+tw.timeline.select(0);                  // select the entire document
+tw.timeline.select(2, { by: "word" });  // select 2 words forward
 tw.timeline.select(-1, { by: "line" }); // select 1 line backward
 tw.timeline.select(3, { by: "grapheme" }); // select 3 grapheme clusters
 ```
@@ -166,7 +168,7 @@ In the **string renderer**, `toString()` returns plain text without selection ma
 
 ## Edge cases
 
-- **`count = 0`** — clears the current selection without creating a new one.
+- **`count = 0`** — selects the entire document (`from: 0, to: text.length`).
 - **`count` exceeds document bounds** — the selection is clamped at the document boundary.
 - **Backward selection past position 0** — clamped at `0`.
 - **Selection on an empty document** — produces an empty selection; the selection range is `[0, 0]`.

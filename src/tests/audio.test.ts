@@ -391,7 +391,7 @@ describe("createTypewriter audio runtime controls", () => {
     const renderer = stringRenderer();
     const tw = createTypewriter({ renderer });
 
-    tw.timeline.type("Hello", { by: "char", interval: 1 }).delete(3, { by: "char", interval: 1 });
+    tw.timeline.type("Hello", { by: "char", interval: 1 }).delete(-3, { by: "char", interval: 1 });
     await expect(tw.play()).resolves.not.toThrow();
 
     expect(renderer.toString()).toBe("He");
@@ -415,7 +415,7 @@ describe("createTypewriter audio runtime controls", () => {
 
     tw.timeline
       .type("Hello", { by: "char", interval: 1 })
-      .delete(3, { by: "char", interval: 1, audio: false });
+      .delete(-3, { by: "char", interval: 1, audio: false });
     await tw.play();
 
     expect(renderer.toString()).toBe("He");

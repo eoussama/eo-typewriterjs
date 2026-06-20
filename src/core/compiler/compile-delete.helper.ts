@@ -33,6 +33,12 @@ function resolveAdvanceMode(input: TAdvanceModeInput | undefined): TAdvanceMode 
  * @description
  * Compile a single TDeleteCommand into a sequence of TDeleteEvents with
  * absolute timestamps relative to the provided start time.
+ *
+ * Signed count semantics:
+ * - positive: delete forward from the cursor
+ * - negative: delete backward from the cursor
+ * - zero: delete the whole document text
+ *
  * Each event carries the logical unit and a per-step count in that unit;
  * the reducer resolves the actual character span at apply time.
  * When the command targets multiple cursors, one set of events is produced per cursor
@@ -49,9 +55,12 @@ export function compileDelete(
   const mode = resolveAdvanceMode(command.by);
   const interval = command.interval ?? DEFAULT_INTERVAL;
   const amount = Math.max(1, mode.amount);
-  const totalUnits = Math.max(0, command.count);
-  const steps = Math.ceil(totalUnits / amount);
   const cursorIds = normalizeCursors(command.cursor);
+
+  const isWhole = command.count === 0;
+  const direction: 1 | -1 = command.count >= 0 ? 1 : -1;
+  const totalUnits = isWhole ? 1 : Math.abs(command.count);
+  const steps = isWhole ? 1 : Math.ceil(totalUnits / amount);
 
   const events: TDeleteEvent[] = [];
 
@@ -65,13 +74,15 @@ export function compileDelete(
         kind: EEventKind.DELETE,
         time: startTime + i * interval,
         cursorId,
-        count: stepCount,
+        count: isWhole ? 0 : stepCount,
         unit: mode.unit,
+        direction,
         sourceCommandId: command.id,
       });
     }
   }
 
+  /* v8 ignore next */
   const endTime = steps > 0 ? startTime + (steps - 1) * interval + interval : startTime;
 
   return { events, endTime };

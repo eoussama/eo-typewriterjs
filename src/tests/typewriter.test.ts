@@ -191,8 +191,11 @@ describe("compile (delete)", () => {
     expect((events[2] as TDeleteEvent | undefined)?.count).toBe(1);
   });
 
-  it("emits no events for a count of 0", () => {
-    expect(compile([{ id: "d4", kind: "delete", cursor: "main", count: 0 }])).toHaveLength(0);
+  it("emits one whole-document event for a count of 0", () => {
+    const events = compile([{ id: "d4", kind: "delete", cursor: "main", count: 0 }]);
+
+    expect(events).toHaveLength(1);
+    expect((events[0] as TDeleteEvent).count).toBe(0);
   });
 
   it("advances time cursor after delete", () => {
@@ -217,7 +220,7 @@ describe("compile (delete)", () => {
 
 describe("compile (move)", () => {
   it("compiles a move command into a single event", () => {
-    const events = compile([{ id: "mc1", kind: "move", cursor: "main", index: 3 }]);
+    const events = compile([{ id: "mc1", kind: "move", cursor: "main", offset: 3 }]);
 
     expect(events).toHaveLength(1);
     expect(events[0]?.kind).toBe("move");
@@ -226,7 +229,7 @@ describe("compile (move)", () => {
   it("does not advance the clock", () => {
     const events = compile([
       { id: "mc2", kind: "type", cursor: "main", text: "Hi", by: "char", interval: 100 },
-      { id: "mc3", kind: "move", cursor: "main", index: 0 },
+      { id: "mc3", kind: "move", cursor: "main", offset: 0 },
       { id: "mc4", kind: "type", cursor: "main", text: "AB", by: "char", interval: 50 },
     ]);
 
@@ -379,7 +382,7 @@ describe("compile (multi-cursor)", () => {
 
   it("fans out move events for each cursor", () => {
     const events = compile([
-      { id: "mcc", kind: "move", cursor: ["x", "y"], index: 5 },
+      { id: "mcc", kind: "move", cursor: ["x", "y"], offset: 5 },
     ]);
 
     expect(events).toHaveLength(2);
@@ -450,7 +453,7 @@ describe("reduce (selectText edge cases)", () => {
     expect(state.selections.main).toStrictEqual({ from: 6, to: 11 });
   });
 
-  it("selecting count=0 leaves selection unchanged (returns startIndex)", () => {
+  it("selecting count=0 selects the entire document", () => {
     const commands = [
       { id: "c1", kind: "type" as const, cursor: "main", text: "Hello", by: "char" as const, interval: 1 },
       { id: "c2", kind: "select" as const, cursor: "main", count: 0, by: "char" as const },
@@ -463,8 +466,7 @@ describe("reduce (selectText edge cases)", () => {
       state = reduce(state, event);
     }
 
-    // count=0 → selection from/to === cursorIndex (5,5) → withSelection clears it
-    expect(state.selections.main).toBeUndefined();
+    expect(state.selections.main).toStrictEqual({ from: 0, to: 5 });
   });
 
   it("selecting on empty document returns startIndex without advancing", () => {
@@ -495,7 +497,7 @@ describe("reduce (delete style clamp branches)", () => {
     const commands = [
       { id: "c1", kind: "type" as const, cursor: "main", text: "Hello world", by: "char" as const, interval: 1 },
       { id: "c2", kind: "style" as const, cursor: "main", style: "tw-a", range: { from: 0, to: 8 } },
-      { id: "c3", kind: "delete" as const, cursor: "main", count: 5, by: "char" as const, interval: 1 },
+      { id: "c3", kind: "delete" as const, cursor: "main", count: -5, by: "char" as const, interval: 1 },
     ];
 
     const events = compile(commands);
@@ -515,7 +517,7 @@ describe("reduce (delete style clamp branches)", () => {
     const commands = [
       { id: "c1", kind: "type" as const, cursor: "main", text: "Hello world", by: "char" as const, interval: 1 },
       { id: "c2", kind: "style" as const, cursor: "main", style: "tw-b", range: { from: 7, to: 10 } },
-      { id: "c3", kind: "delete" as const, cursor: "main", count: 5, by: "char" as const, interval: 1 },
+      { id: "c3", kind: "delete" as const, cursor: "main", count: -5, by: "char" as const, interval: 1 },
     ];
 
     const events = compile(commands);
@@ -537,7 +539,7 @@ describe("reduce (delete style clamp branches)", () => {
     const commands = [
       { id: "c1", kind: "type" as const, cursor: "main", text: "Hello world", by: "char" as const, interval: 1 },
       { id: "c2", kind: "style" as const, cursor: "main", style: "tw-c", range: { from: 8, to: 11 } },
-      { id: "c3", kind: "delete" as const, cursor: "main", count: 5, by: "char" as const, interval: 1 },
+      { id: "c3", kind: "delete" as const, cursor: "main", count: -5, by: "char" as const, interval: 1 },
     ];
 
     const events = compile(commands);
@@ -558,7 +560,7 @@ describe("reduce (delete style clamp branches)", () => {
     const commands = [
       { id: "c1", kind: "type" as const, cursor: "main", text: "Hello world", by: "char" as const, interval: 1 },
       { id: "c2", kind: "style" as const, cursor: "main", style: "tw-before", range: { from: 0, to: 4 } },
-      { id: "c3", kind: "delete" as const, cursor: "main", count: 5, by: "char" as const, interval: 1 },
+      { id: "c3", kind: "delete" as const, cursor: "main", count: -5, by: "char" as const, interval: 1 },
     ];
 
     const events = compile(commands);
@@ -675,7 +677,7 @@ describe("reduce (delete with styles)", () => {
     const commands = [
       { id: "c1", kind: "type" as const, cursor: "main", text: "Hello world", by: "char" as const, interval: 1 },
       { id: "c2", kind: "style" as const, cursor: "main", style: "tw-a", range: { from: 0, to: 11 } },
-      { id: "c3", kind: "delete" as const, cursor: "main", count: 5, by: "char" as const, interval: 1 },
+      { id: "c3", kind: "delete" as const, cursor: "main", count: -5, by: "char" as const, interval: 1 },
     ];
 
     const events = compile(commands);
@@ -689,11 +691,11 @@ describe("reduce (delete with styles)", () => {
     expect(state.document.styles).toHaveLength(1);
   });
 
-  it("delete at start of document (removeStart === removeEnd) clears selection only", () => {
+  it("delete backward at start of document (removeStart === removeEnd) clears selection only", () => {
     const commands = [
       { id: "c1", kind: "type" as const, cursor: "main", text: "Hi", by: "char" as const, interval: 1 },
-      { id: "c2", kind: "move" as const, cursor: "main", index: 0 },
-      { id: "c3", kind: "delete" as const, cursor: "main", count: 1, by: "char" as const, interval: 1 },
+      { id: "c2", kind: "move" as const, cursor: "main", offset: -999 },
+      { id: "c3", kind: "delete" as const, cursor: "main", count: -1, by: "char" as const, interval: 1 },
     ];
 
     const events = compile(commands);
@@ -703,7 +705,7 @@ describe("reduce (delete with styles)", () => {
       state = reduce(state, event);
     }
 
-    // Cursor is at 0, delete 1 backward from 0 → removeStart=0 === removeEnd=0 → no change
+    // Cursor at 0, delete backward 1 → removeStart=0 === removeEnd=0 → no change
     expect(state.document.text).toBe("Hi");
   });
 });
@@ -1054,7 +1056,7 @@ describe("createTypewriter", () => {
     const renderer = stringRenderer();
     const tw = createTypewriter({ renderer });
 
-    tw.timeline.type("Hello world", { by: "char", interval: 1 }).delete(6, { by: "char", interval: 1 });
+    tw.timeline.type("Hello world", { by: "char", interval: 1 }).delete(-6, { by: "char", interval: 1 });
     await tw.play();
 
     expect(renderer.toString()).toBe("Hello");
@@ -1064,7 +1066,7 @@ describe("createTypewriter", () => {
     const renderer = stringRenderer();
     const tw = createTypewriter({ renderer });
 
-    tw.timeline.type("Hello world", { by: "char", interval: 1 }).wait(10).delete(6, { by: "char", interval: 1 });
+    tw.timeline.type("Hello world", { by: "char", interval: 1 }).wait(10).delete(-6, { by: "char", interval: 1 });
     await tw.play();
 
     expect(renderer.toString()).toBe("Hello");
@@ -1074,17 +1076,17 @@ describe("createTypewriter", () => {
     const renderer = stringRenderer();
     const tw = createTypewriter({ renderer });
 
-    tw.timeline.type("Hi", { by: "char", interval: 1 }).delete(100, { by: "char", interval: 1 });
+    tw.timeline.type("Hi", { by: "char", interval: 1 }).delete(-100, { by: "char", interval: 1 });
     await tw.play();
 
     expect(renderer.toString()).toBe("");
   });
 
-  it("moves cursor to position 0 and types there, prepending text", async () => {
+  it("moves cursor to the start and types there, prepending text", async () => {
     const renderer = stringRenderer();
     const tw = createTypewriter({ renderer });
 
-    tw.timeline.type("world", { by: "char", interval: 1 }).move(0).type("Hello ", { by: "char", interval: 1 });
+    tw.timeline.type("world", { by: "char", interval: 1 }).move(-999).type("Hello ", { by: "char", interval: 1 });
     await tw.play();
 
     expect(renderer.toString()).toBe("Hello world");
@@ -1515,113 +1517,177 @@ describe("playback controls, stepping", () => {
 // Delete unit handling, word / line / char
 
 describe("delete (unit handling)", () => {
-  it("delete by word removes the last word from the document", async () => {
+  it("delete backward by word removes the last word from the document", async () => {
     const renderer = stringRenderer();
     const tw = createTypewriter({ renderer });
 
     tw.timeline
       .type("hello world", { by: "char", interval: 1 })
-      .delete(1, { by: "word", interval: 1 });
+      .delete(-1, { by: "word", interval: 1 });
     await tw.play();
 
     // "world" (5 chars) should be removed, leaving "hello "
     expect(renderer.toString()).toBe("hello ");
   });
 
-  it("delete by word removes multiple words when count > 1", async () => {
+  it("delete backward by word removes multiple words when count is -2", async () => {
     const renderer = stringRenderer();
     const tw = createTypewriter({ renderer });
 
     tw.timeline
       .type("one two three", { by: "char", interval: 1 })
-      .delete(2, { by: "word", interval: 1 });
+      .delete(-2, { by: "word", interval: 1 });
     await tw.play();
 
-    // count:2, amount:1 → 2 events, each removing 1 word.
+    // count:-2, abs=2, amount:1 → 2 events, each removing 1 word backward.
     // Event 1: removes "three" (5 chars) → "one two "
     // Event 2: removes "two " (4 chars) → "one "
     expect(renderer.toString()).toBe("one ");
   });
 
-  it("delete by line removes the last line", async () => {
+  it("delete backward by line removes the last line", async () => {
     const renderer = stringRenderer();
     const tw = createTypewriter({ renderer });
 
     tw.timeline
       .type("line1\nline2", { by: "char", interval: 1 })
-      .delete(1, { by: "line", interval: 1 });
+      .delete(-1, { by: "line", interval: 1 });
     await tw.play();
 
     // "line2" is the last segment when splitting by line (no trailing newline)
     expect(renderer.toString()).toBe("line1\n");
   });
 
-  it("delete by char removes the correct number of characters", async () => {
+  it("delete backward by char removes the correct number of characters", async () => {
     const renderer = stringRenderer();
     const tw = createTypewriter({ renderer });
 
     tw.timeline
       .type("abcde", { by: "char", interval: 1 })
-      .delete(3, { by: "char", interval: 1 });
+      .delete(-3, { by: "char", interval: 1 });
     await tw.play();
 
     expect(renderer.toString()).toBe("ab");
   });
 
-  it("delete by grapheme removes one grapheme cluster per step", async () => {
+  it("delete forward by char removes characters after the cursor", async () => {
     const renderer = stringRenderer();
     const tw = createTypewriter({ renderer });
 
-    // "hi" + pile-of-poo emoji (2 UTF-16 code units = 1 grapheme)
-    // delete(1, { by: "grapheme" }) → count:1 chars removed (grapheme fast-path)
-    // The emoji is 2 code units but the fast-path treats count as chars, so 1 char removed.
-    // To properly test grapheme-aware deletion, use delete(2) for a 2-unit emoji.
+    // Move cursor to beginning then forward-delete 3 chars
+    tw.timeline
+      .type("abcde", { by: "char", interval: 1 })
+      .move(-999)
+      .delete(3, { by: "char", interval: 1 });
+    await tw.play();
+
+    expect(renderer.toString()).toBe("de");
+  });
+
+  it("delete backward by grapheme removes one grapheme cluster per step", async () => {
+    const renderer = stringRenderer();
+    const tw = createTypewriter({ renderer });
+
     tw.timeline
       .type("hi\u{1F4A9}", { by: "char", interval: 1 })
-      .delete(2, { by: "char", interval: 1 });
+      .delete(-2, { by: "char", interval: 1 });
     await tw.play();
 
     expect(renderer.toString()).toBe("hi");
   });
 
-  it("compiled delete events carry the correct unit field", () => {
-    const wordEvents = compile([{ id: "d-unit-1", kind: "delete", cursor: "main", count: 1, by: "word" }]);
-    const lineEvents = compile([{ id: "d-unit-2", kind: "delete", cursor: "main", count: 1, by: "line" }]);
-    const charEvents = compile([{ id: "d-unit-3", kind: "delete", cursor: "main", count: 1, by: "char" }]);
+  it("compiled delete events carry the correct unit and direction fields", () => {
+    const wordEvents = compile([{ id: "d-unit-1", kind: "delete", cursor: "main", count: -1, by: "word" }]);
+    const lineEvents = compile([{ id: "d-unit-2", kind: "delete", cursor: "main", count: -1, by: "line" }]);
+    const charEvents = compile([{ id: "d-unit-3", kind: "delete", cursor: "main", count: -1, by: "char" }]);
 
     expect((wordEvents[0] as TDeleteEvent).unit).toBe("word");
     expect((lineEvents[0] as TDeleteEvent).unit).toBe("line");
     expect((charEvents[0] as TDeleteEvent).unit).toBe("char");
+    expect((wordEvents[0] as TDeleteEvent).direction).toBe(-1);
   });
 
-  it("delete by word at start of document (no text before cursor) is a no-op", async () => {
+  it("delete backward by word at start of document (no text before cursor) is a no-op", async () => {
     const renderer = stringRenderer();
     const tw = createTypewriter({ renderer });
 
     tw.timeline
       .type("hi", { by: "char", interval: 1 })
-      .move(0)
-      .delete(1, { by: "word", interval: 1 });
+      .move(-999)
+      .delete(-1, { by: "word", interval: 1 });
     await tw.play();
 
     // Cursor at 0, no text before it, nothing is removed
     expect(renderer.toString()).toBe("hi");
   });
 
-  it("delete by word with amount:2 uses amount as the number of logical units per step", async () => {
+  it("delete whole document when count is 0", async () => {
     const renderer = stringRenderer();
     const tw = createTypewriter({ renderer });
 
-    // count:2, amount:2 → ceil(2/2)=1 step, stepCount=min(2,2)=2.
-    // The event carries count:2 and unit:"word".
-    // Reducer: take last 2 word-segments from "one two three four" → "three four" (10 chars removed).
     tw.timeline
       .type("one two three four", { by: "char", interval: 1 })
-      .delete(2, { by: { unit: "word", amount: 2 }, interval: 1 });
+      .delete(0);
+    await tw.play();
+
+    expect(renderer.toString()).toBe("");
+  });
+
+  it("delete whole document clears an active selection", async () => {
+    const renderer = stringRenderer();
+    const tw = createTypewriter({ renderer });
+
+    // Select some text first, then delete whole document — the loop
+    // that calls withSelectionCleared for each active selection runs
+    tw.timeline
+      .type("hello world", { by: "char", interval: 1 })
+      .select(-5)
+      .delete(0);
+    await tw.play();
+
+    expect(renderer.toString()).toBe("");
+  });
+
+  it("delete backward by word with amount:2 uses amount as the number of logical units per step", async () => {
+    const renderer = stringRenderer();
+    const tw = createTypewriter({ renderer });
+
+    // count:-2, abs=2, amount:2 → ceil(2/2)=1 step.
+    // Each step removes 2 words backward.
+    tw.timeline
+      .type("one two three four", { by: "char", interval: 1 })
+      .delete(-2, { by: { unit: "word", amount: 2 }, interval: 1 });
     await tw.play();
 
     // 1 step removes 2 words ("three " + "four") → "one two "
     expect(renderer.toString()).toBe("one two ");
+  });
+
+  it("delete forward by word removes the first word from the cursor", async () => {
+    const renderer = stringRenderer();
+    const tw = createTypewriter({ renderer });
+
+    // Move to start then forward-delete 1 word
+    tw.timeline
+      .type("hello world", { by: "char", interval: 1 })
+      .move(-999)
+      .delete(1, { by: "word", interval: 1 });
+    await tw.play();
+
+    expect(renderer.toString()).toBe("world");
+  });
+
+  it("delete forward by line removes the first line from the cursor", async () => {
+    const renderer = stringRenderer();
+    const tw = createTypewriter({ renderer });
+
+    tw.timeline
+      .type("line1\nline2", { by: "char", interval: 1 })
+      .move(-999)
+      .delete(1, { by: "line", interval: 1 });
+    await tw.play();
+
+    expect(renderer.toString()).toBe("line2");
   });
 });
 
@@ -1695,32 +1761,32 @@ describe("multi-cursor insert index adjustment", () => {
 
 
 describe("multi-cursor delete index adjustment", () => {
-  it("deleting with a lower-index cursor shifts a higher-index cursor backward", async () => {
+  it("deleting backward with a lower-index cursor shifts a higher-index cursor backward", async () => {
     const renderer = stringRenderer();
     const tw = createTypewriter({ renderer });
 
-    // "abcd", main at 4, "b" at 2. Delete 1 with "b" → removes "b"(1) leaving "acd",
+    // "abcd", main at 4, "b" at 2. Delete -1 backward with "b" → removes char at 1 ("b"), leaving "acd",
     // main shifts from 4 to 3. Then type "Z" at main (3) → "acdZ"
     tw.timeline
       .type("abcd", { by: "char", interval: 1 })
       .move(2, { cursor: "b" })
-      .delete(1, { cursor: "b", by: "char", interval: 1 })
+      .delete(-1, { cursor: "b", by: "char", interval: 1 })
       .type("Z", { cursor: "main", by: "char", interval: 1 });
     await tw.play();
 
     expect(renderer.toString()).toBe("acdZ");
   });
 
-  it("deleting with a higher-index cursor does not shift a lower-index cursor", async () => {
+  it("deleting backward with a higher-index cursor does not shift a lower-index cursor", async () => {
     const renderer = stringRenderer();
     const tw = createTypewriter({ renderer });
 
-    // "abcd", main at 4, "b" at 1. Delete 1 with main → removes "d" leaving "abc",
+    // "abcd", main at 4, "b" at 1. Delete -1 backward with main → removes "d" leaving "abc",
     // "b" stays at 1. Then type "X" at "b" (1) → "aXbc"
     tw.timeline
       .type("abcd", { by: "char", interval: 1 })
       .move(1, { cursor: "b" })
-      .delete(1, { cursor: "main", by: "char", interval: 1 })
+      .delete(-1, { cursor: "main", by: "char", interval: 1 })
       .type("X", { cursor: "b", by: "char", interval: 1 });
     await tw.play();
 
@@ -1729,11 +1795,59 @@ describe("multi-cursor delete index adjustment", () => {
 });
 
 
+describe("move (unit handling)", () => {
+  it("move forward by one char advances the cursor position", async () => {
+    const renderer = stringRenderer();
+    const tw = createTypewriter({ renderer });
+
+    // Type "abcde", move cursor to start, then move +2 forward, then type "X"
+    tw.timeline
+      .type("abcde", { by: "char", interval: 1 })
+      .move(-999)
+      .move(2)
+      .type("X", { by: "char", interval: 1 });
+    await tw.play();
+
+    // "X" inserted at index 2 → "abXcde"
+    expect(renderer.toString()).toBe("abXcde");
+  });
+
+  it("move forward by word advances the cursor by one word", async () => {
+    const renderer = stringRenderer();
+    const tw = createTypewriter({ renderer });
+
+    tw.timeline
+      .type("hello world", { by: "char", interval: 1 })
+      .move(-999)
+      .move(1, { by: "word" })
+      .type("X", { by: "char", interval: 1 });
+    await tw.play();
+
+    // "hello " is 6 chars; X inserted at 6 → "hello Xworld"
+    expect(renderer.toString()).toBe("hello Xworld");
+  });
+
+  it("move forward using object by-form advances correctly", async () => {
+    const renderer = stringRenderer();
+    const tw = createTypewriter({ renderer });
+
+    tw.timeline
+      .type("abcde", { by: "char", interval: 1 })
+      .move(-999)
+      .move(3, { by: { unit: "char", amount: 1 } })
+      .type("X", { by: "char", interval: 1 });
+    await tw.play();
+
+    expect(renderer.toString()).toBe("abcXde");
+  });
+});
+
+
 describe("select (unit handling)", () => {
   it("select forward by word covers one full word", () => {
     const commands = [
       { id: "c1", kind: "type" as const, cursor: "main", text: "hello world", by: "char" as const, interval: 1 },
-      { id: "c2", kind: "move" as const, cursor: "main", index: 0 },
+      { id: "c2", kind: "move" as const, cursor: "main", offset: -999 },
       { id: "c3", kind: "select" as const, cursor: "main", count: 1, by: "word" as const },
     ];
 
@@ -1768,7 +1882,7 @@ describe("select (unit handling)", () => {
   it("select forward by line covers one full line including newline", () => {
     const commands = [
       { id: "c1", kind: "type" as const, cursor: "main", text: "line1\nline2", by: "char" as const, interval: 1 },
-      { id: "c2", kind: "move" as const, cursor: "main", index: 0 },
+      { id: "c2", kind: "move" as const, cursor: "main", offset: -999 },
       { id: "c3", kind: "select" as const, cursor: "main", count: 1, by: "line" as const },
     ];
 
@@ -1819,7 +1933,7 @@ describe("command × unit × by-shape matrix", () => {
 
         tw.timeline
           .type(TEXT, { by: "char", interval: 1 })
-          .delete(1, { by: by as "char", interval: 1 });
+          .delete(-1, { by: by as "char", interval: 1 });
         await tw.play();
 
         // Result is shorter than the original TEXT
@@ -1938,14 +2052,14 @@ describe("deleteTextAtCursor, cursor and selection shifting branches", () => {
     const tw = createTypewriter({ renderer });
 
     // "abcde", cursor "b" parked at 2 (inside delete range [1, 4]).
-    // Delete 3 chars with main (cursor at 4) → removes [1,4] → text = "ae".
+    // Main cursor at 5 (end of "abcde"), move -1 to get to 4. Delete -3 backward → removes [1,4] → text = "ae".
     // Cursor "b" (at 2, inside [1,4]) should be clamped to 1.
     // Then type "X" at "b" (now at 1) → "aXe"
     tw.timeline
       .type("abcde", { by: "char", interval: 1 })
       .move(2, { cursor: "b" })
-      .move(4)
-      .delete(3, { cursor: "main", by: "char", interval: 1 })
+      .move(-1)
+      .delete(-3, { cursor: "main", by: "char", interval: 1 })
       .type("X", { cursor: "b", by: "char", interval: 1 });
     await tw.play();
 
@@ -1957,12 +2071,12 @@ describe("deleteTextAtCursor, cursor and selection shifting branches", () => {
     const tw = createTypewriter({ renderer });
 
     // "abcde", cursor "b" at 1 (before delete range [2, 5]).
-    // Delete 3 chars with main (cursor at 5) → text = "ab".
+    // Delete backward -3 chars with main (cursor at 5) → removes [2,5] → text = "ab".
     // Cursor "b" stays at 1. Type "X" at "b" → "aXb"
     tw.timeline
       .type("abcde", { by: "char", interval: 1 })
       .move(1, { cursor: "b" })
-      .delete(3, { cursor: "main", by: "char", interval: 1 })
+      .delete(-3, { cursor: "main", by: "char", interval: 1 })
       .type("X", { cursor: "b", by: "char", interval: 1 });
     await tw.play();
 
@@ -1974,15 +2088,15 @@ describe("deleteTextAtCursor, cursor and selection shifting branches", () => {
     const tw = createTypewriter({ renderer });
 
     // "abcde", "b" has selection [3, 5].
-    // Main cursor at 3 deletes 2 chars (range [1, 3]) → text = "ade".
+    // Main cursor at 5, move -2 → at 3. Delete -2 backward (range [1, 3]) → text = "ade".
     // "b" sel.from=3 >= removeEnd=3 → shifts to 3-2=1
     // "b" sel.to=5 >= removeEnd=3 → shifts to 5-2=3
     tw.timeline
       .type("abcde", { by: "char", interval: 1 })
       .move(5, { cursor: "b" })
       .select(-2, { cursor: "b" })
-      .move(3)
-      .delete(2, { cursor: "main", by: "char", interval: 1 });
+      .move(-2)
+      .delete(-2, { cursor: "main", by: "char", interval: 1 });
     await tw.play();
 
     expect(renderer.toString()).toBe("ade");
@@ -1993,15 +2107,15 @@ describe("deleteTextAtCursor, cursor and selection shifting branches", () => {
     const tw = createTypewriter({ renderer });
 
     // "abcde", "b" has selection [2, 5].
-    // Main at 4 deletes 3 chars (range [1, 4]) → text = "ae".
+    // Main at 5, move -1 → at 4. Delete -3 backward (range [1, 4]) → text = "ae".
     // "b" sel.from=2: removeStart=1, removeEnd=4 → 2 > removeStart and < removeEnd → clamped to 1
     // "b" sel.to=5 >= removeEnd=4 → shifts to 5-3=2
     tw.timeline
       .type("abcde", { by: "char", interval: 1 })
       .move(5, { cursor: "b" })
       .select(-3, { cursor: "b" })
-      .move(4)
-      .delete(3, { cursor: "main", by: "char", interval: 1 });
+      .move(-1)
+      .delete(-3, { cursor: "main", by: "char", interval: 1 });
     await tw.play();
 
     expect(renderer.toString()).toBe("ae");
@@ -2012,14 +2126,14 @@ describe("deleteTextAtCursor, cursor and selection shifting branches", () => {
     const tw = createTypewriter({ renderer });
 
     // "abcde", "b" has selection [0, 3].
-    // Main at 5 deletes 3 chars (range [2, 5]) → text = "ab".
+    // Main at 5 deletes backward -3 chars (range [2, 5]) → text = "ab".
     // "b" sel.from=0 <= removeStart=2 → stays 0
     // "b" sel.to=3: removeStart=2, removeEnd=5 → 3 > removeStart and < removeEnd → clamped to 2
     tw.timeline
       .type("abcde", { by: "char", interval: 1 })
       .move(3, { cursor: "b" })
       .select(-3, { cursor: "b" })
-      .delete(3, { cursor: "main", by: "char", interval: 1 });
+      .delete(-3, { cursor: "main", by: "char", interval: 1 });
     await tw.play();
 
     expect(renderer.toString()).toBe("ab");
@@ -2030,14 +2144,14 @@ describe("deleteTextAtCursor, cursor and selection shifting branches", () => {
     const tw = createTypewriter({ renderer });
 
     // "abcde", "b" has selection [0, 1].
-    // Main at 5 deletes 2 chars (range [3, 5]) → text = "abc".
+    // Main at 5 deletes backward -2 chars (range [3, 5]) → text = "abc".
     // "b" sel.from=0 <= removeStart=3 → stays 0
     // "b" sel.to=1 <= removeStart=3 → stays 1
     tw.timeline
       .type("abcde", { by: "char", interval: 1 })
       .move(1, { cursor: "b" })
       .select(-1, { cursor: "b" })
-      .delete(2, { cursor: "main", by: "char", interval: 1 });
+      .delete(-2, { cursor: "main", by: "char", interval: 1 });
     await tw.play();
 
     expect(renderer.toString()).toBe("abc");
@@ -2340,9 +2454,10 @@ describe("integration (unselect)", () => {
     const renderer = stringRenderer();
     const tw = createTypewriter({ renderer });
 
+    // After typing "Hello World" (11 chars), cursor at 11. Move -5 → cursor at 6.
     tw.timeline
       .type("Hello World", { by: "char", interval: 1 })
-      .move(6)
+      .move(-5)
       .select(5)
       .unselect();
     await tw.play();
@@ -2410,10 +2525,11 @@ describe("integration (unstyle)", () => {
     const renderer = stringRenderer();
     const tw = createTypewriter({ renderer });
 
+    // After typing "Hello World" (11 chars), cursor at 11. Move -5 → cursor at 6, select 5 → [6,11].
     tw.timeline
       .type("Hello World", { by: "char", interval: 1 })
       .style("tw-a", { from: 0, to: 11 })
-      .move(6)
+      .move(-5)
       .select(5)
       .unstyle("selection");
     await tw.play();

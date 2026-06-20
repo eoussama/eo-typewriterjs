@@ -23,7 +23,7 @@ describe("resolveAdvanceMode undefined branch and default interval (play without
 
     tw.timeline
       .type("Hello")
-      .delete(3);
+      .delete(-3);
     await tw.play();
 
     expect(renderer.toString()).toBe("He");
@@ -56,7 +56,7 @@ describe("abort inside whole-command before hook of delete", () => {
 
     tw.timeline
       .type("Hello", { by: "char", interval: 1 })
-      .delete(3, {
+      .delete(-3, {
         by: "char",
         interval: 1,
         before: () => { tw.cancel(); },

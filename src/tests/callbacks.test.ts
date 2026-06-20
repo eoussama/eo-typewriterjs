@@ -214,7 +214,7 @@ describe("before/after hooks", () => {
 
     tw.timeline
       .type("Hello", { by: "char", interval: 1 })
-      .delete(3, {
+      .delete(-3, {
         by: "char",
         interval: 1,
         before: ({ state }) => {
@@ -234,7 +234,7 @@ describe("before/after hooks", () => {
 
     tw.timeline
       .type("abc", { by: "char", interval: 1 })
-      .delete(2, {
+      .delete(-2, {
         by: "char",
         interval: 1,
         after: ({ state }) => {
@@ -253,7 +253,7 @@ describe("before/after hooks", () => {
 
     tw.timeline
       .type("hello", { by: "char", interval: 1 })
-      .delete(5, {
+      .delete(-5, {
         by: "char",
         interval: 1,
         after: ({ unit }) => {
@@ -272,7 +272,7 @@ describe("before/after hooks", () => {
 
     tw.timeline
       .type("abc", { by: "char", interval: 1 })
-      .delete(3, {
+      .delete(-3, {
         by: "char",
         interval: 1,
         before: () => { count++; },
@@ -621,7 +621,7 @@ describe("abort inside before hooks of type/delete", () => {
 
     tw.timeline
       .type("Hello", { by: "char", interval: 1 })
-      .delete(3, {
+      .delete(-3, {
         by: "char",
         interval: 1,
         before: () => {
@@ -644,7 +644,7 @@ describe("abort inside before hooks of type/delete", () => {
 
     tw.timeline
       .type("Hello", { by: "char", interval: 1 })
-      .delete(3, {
+      .delete(-3, {
         by: "char",
         interval: 1,
         after: () => {
@@ -728,6 +728,7 @@ describe("deleteTextAtCursor additional branch coverage", () => {
       cursorId: "main",
       count: 4,
       unit: "char" as const,
+      direction: -1 as const,
       sourceCommandId: "c1",
     };
 
@@ -756,6 +757,7 @@ describe("deleteTextAtCursor additional branch coverage", () => {
       cursorId: "main",
       count: 4,
       unit: "char" as const,
+      direction: -1 as const,
       sourceCommandId: "c5",
     };
 
@@ -785,6 +787,7 @@ describe("deleteTextAtCursor additional branch coverage", () => {
       cursorId: "main",
       count: 2,
       unit: "char" as const,
+      direction: -1 as const,
       sourceCommandId: "c2",
     };
 

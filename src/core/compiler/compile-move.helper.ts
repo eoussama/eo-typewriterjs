@@ -11,6 +11,7 @@ let moveEventCounter = 0;
 /**
  * @description
  * Compile a single TMoveCommand into TMoveEvents, one per targeted cursor.
+ * A zero offset produces no events (no-op).
  * All events are placed at the current start time and do not advance the clock.
  *
  * @param command - The move command to compile
@@ -21,6 +22,10 @@ export function compileMove(
   command: TMoveCommand,
   startTime: number,
 ): { events: TMoveEvent[]; endTime: number } {
+  if (command.offset === 0) {
+    return { events: [], endTime: startTime };
+  }
+
   const cursorIds = normalizeCursors(command.cursor);
 
   const events: TMoveEvent[] = cursorIds.map(cursorId => ({
@@ -28,7 +33,8 @@ export function compileMove(
     kind: EEventKind.MOVE,
     time: startTime,
     cursorId,
-    index: command.index,
+    offset: command.offset,
+    by: command.by ?? "char",
     sourceCommandId: command.id,
   }));
 

@@ -62,6 +62,7 @@ export type TDeleteOptions = TCommandHookOptions & {
  * Options accepted by the `move` builder method
  */
 export type TMoveOptions = TCommandHookOptions & {
+  readonly by?: TAdvanceModeInput;
   readonly cursor?: TCursorSelector;
 };
 
@@ -195,19 +196,21 @@ export class TimelineBuilder {
 
   /**
    * @description
-   * Schedule a move command that teleports the cursor to an absolute document index.
+   * Schedule a move command that moves the cursor relative to its current position.
+   * Positive offset moves right; negative offset moves left; zero is a no-op.
    * This command is instant and does not advance the timeline clock.
    *
-   * @param index - The absolute document index to move the cursor to
-   * @param options - Optional configuration (cursor id, lifecycle hooks)
+   * @param offset - Number of units to move; positive = right, negative = left, zero = no-op
+   * @param options - Optional configuration (advance mode, cursor id, lifecycle hooks)
    * @returns This builder instance for future chaining
    */
-  move(index: number, options?: TMoveOptions): this {
+  move(offset: number, options?: TMoveOptions): this {
     this._commands.push({
       id: `cmd_${++commandCounter}`,
       kind: ECommandKind.MOVE,
       cursor: options?.cursor ?? "main",
-      index,
+      offset,
+      by: options?.by,
       audio: options?.audio,
       before: options?.before,
       after: options?.after,
@@ -220,9 +223,10 @@ export class TimelineBuilder {
 
   /**
    * @description
-   * Schedule a delete command that removes text backward from the cursor
+   * Schedule a delete command that removes text relative to the cursor.
+   * Positive count deletes forward; negative count deletes backward; zero deletes the whole text.
    *
-   * @param count - The number of units to delete
+   * @param count - Number of units; positive = forward, negative = backward, zero = whole text
    * @param options - Optional delete configuration (advance mode, interval, cursor, lifecycle hooks)
    * @returns This builder instance for future chaining
    */
