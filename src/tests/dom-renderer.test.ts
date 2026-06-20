@@ -156,11 +156,11 @@ describe("domRenderer", () => {
     const renderer = new DomRenderer(el);
 
     // Mount with initial state then unmount
-    renderer.mount({ document: { text: "", marks: [] }, cursors: { main: { id: "main", index: 0, visible: true, renderOptions: DEFAULT_CURSOR_RENDER_OPTIONS } }, selections: {} });
+    renderer.mount({ document: { text: "", styles: [] }, cursors: { main: { id: "main", index: 0, visible: true, renderOptions: DEFAULT_CURSOR_RENDER_OPTIONS } }, selections: {} });
     renderer.unmount();
 
     // After unmount, render should not throw (target is null, _paint returns early)
-    expect(() => renderer.render({ document: { text: "X", marks: [] }, cursors: { main: { id: "main", index: 1, visible: true, renderOptions: DEFAULT_CURSOR_RENDER_OPTIONS } }, selections: {} })).not.toThrow();
+    expect(() => renderer.render({ document: { text: "X", styles: [] }, cursors: { main: { id: "main", index: 1, visible: true, renderOptions: DEFAULT_CURSOR_RENDER_OPTIONS } }, selections: {} })).not.toThrow();
     expect(el.textContent).toBe(""); // el was set before unmount but render is no-op after
   });
 

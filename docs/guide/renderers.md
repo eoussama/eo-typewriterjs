@@ -27,7 +27,7 @@ await tw.play();
 
 #### How the DOM is rendered
 
-On every render call, `DomRenderer` segments the document by its style marks and then further splits each segment at every cursor and selection boundary. The result is a mix of plain text nodes, styled `<span>` elements, and cursor markers — all appended to a `DocumentFragment` before replacing the target's `innerHTML`.
+On every render call, `DomRenderer` segments the document by its text styles and then further splits each segment at every cursor and selection boundary. The result is a mix of plain text nodes, styled `<span>` elements, and cursor markers — all appended to a `DocumentFragment` before replacing the target's `innerHTML`.
 
 ```html
 <!-- example: text = "Hello world", style on "world" (class "highlight"), cursor at 5 -->
@@ -36,7 +36,7 @@ Hello
 <span class="highlight"> world</span>
 ```
 
-#### Style marks → DOM
+#### Text styles → DOM
 
 When a `TStyleObject` is applied to a segment, the renderer maps its fields onto the `<span>`:
 
@@ -48,7 +48,7 @@ When a `TStyleObject` is applied to a segment, the renderer maps its fields onto
 | `ansi` | Ignored by `DomRenderer` (terminal-only) |
 | `meta` | Ignored by `DomRenderer` |
 
-Multiple marks can overlap. Their styles are **merged** — later marks in document order win on conflicting keys.
+Multiple styles can overlap. Their styles are **merged** — later styles in document order win on conflicting keys.
 
 #### Cursor styling
 
@@ -96,8 +96,8 @@ Selected text is wrapped in a `<span class="typewriter-selection">`. Style it to
 
 For server-side rendering, testing, or any context without a DOM. Stores the latest state in memory. Exposes two read methods:
 
-- **`.toString()`** — returns the plain document text, marks ignored.
-- **`.toAnsiString()`** — returns the document text with ANSI escape codes applied from marks that carry an `ansi` map.
+- **`.toString()`** — returns the plain document text, styles ignored.
+- **`.toAnsiString()`** — returns the document text with ANSI escape codes applied from styles that carry an `ansi` map.
 
 ```ts
 import { createTypewriter, stringRenderer } from "eo-typewriterjs";
@@ -136,7 +136,7 @@ console.log(renderer.toString()); // "ERROR: disk full"
 console.log(renderer.toAnsiString()); // "\x1B[31;1mERROR\x1B[0m: disk full"
 ```
 
-If no marks carry an `ansi` map, `toAnsiString()` falls back to the same value as `toString()`.
+If no styles carry an `ansi` map, `toAnsiString()` falls back to the same value as `toString()`.
 
 > `StringRenderer` does not include any cursor marker in either output method.
 
@@ -193,9 +193,9 @@ render(state: TTypewriterState): void {
 }
 ```
 
-### Working with marks directly
+### Working with styles directly
 
-Style marks live on `state.document.marks`. Use the exported `segmentRichText()` helper to split the document into styled segments:
+Text styles live on `state.document.styles`. Use the exported `segmentRichText()` helper to split the document into styled segments:
 
 ```ts
 import { segmentRichText, mergeStyles } from "eo-typewriterjs";
@@ -215,4 +215,4 @@ render(state: TTypewriterState): void {
 }
 ```
 
-See [`TTypewriterState`](/api/type-aliases/TTypewriterState), [`TRichTextDocument`](/api/type-aliases/TRichTextDocument), [`TCursorState`](/api/type-aliases/TCursorState), [`TTextMark`](/api/type-aliases/TTextMark), [`TStyleObject`](/api/type-aliases/TStyleObject), and [`TRichTextSegment`](/api/type-aliases/TRichTextSegment) in the API reference for the full shape.
+See [`TTypewriterState`](/api/type-aliases/TTypewriterState), [`TRichTextDocument`](/api/type-aliases/TRichTextDocument), [`TCursorState`](/api/type-aliases/TCursorState), [`TTextStyle`](/api/type-aliases/TTextStyle), [`TStyleObject`](/api/type-aliases/TStyleObject), and [`TRichTextSegment`](/api/type-aliases/TRichTextSegment) in the API reference for the full shape.

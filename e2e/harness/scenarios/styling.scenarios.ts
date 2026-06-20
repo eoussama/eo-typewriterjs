@@ -28,7 +28,7 @@ export const STYLING_SCENARIOS: readonly TScenario[] = [
     },
   },
   {
-    id: "layered-marks",
+    id: "layered-styles",
     async run({ el }) {
       const tw = createTypewriter({ renderer: domRenderer(el) });
 

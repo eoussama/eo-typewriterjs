@@ -153,7 +153,7 @@ await tw.play();
 - **`count = 0`** — produces no events. Clock is not advanced.
 - **Cursor at position 0** — the command is a no-op; nothing to delete.
 - **`count` larger than available text** — deletion stops at position 0 without error.
-- **Marks overlap deleted range** — marks that fully cover the deleted range are removed. Marks that partially overlap are trimmed to the new boundary. Marks entirely before the deletion point are shifted left by the number of deleted characters.
+- **Styles overlap deleted range** — styles that fully cover the deleted range are removed. Styles that partially overlap are trimmed to the new boundary. Styles entirely before the deletion point are shifted left by the number of deleted characters.
 
 ## Type reference
 

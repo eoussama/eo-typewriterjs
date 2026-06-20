@@ -11,7 +11,7 @@ import { segmentText } from "../stepping/segment-text.helper";
  * @description
  * Apply a delete event to the typewriter state.
  * Removes `count` characters backward from the cursor position,
- * moves the cursor backward by the same amount, and trims any marks
+ * moves the cursor backward by the same amount, and trims any styles
  * that overlap the deleted range.
  * All other cursors whose index is at or after the deletion end are shifted
  * backward by the deleted length; cursors inside the deleted range are clamped
@@ -58,9 +58,9 @@ export function deleteTextAtCursor(state: TTypewriterState, event: TDeleteEvent)
   const nextText = currentText.slice(0, removeStart) + currentText.slice(removeEnd);
   const nextIndex = removeStart;
 
-  // Adjust marks: remove marks fully within the deleted range,
-  // clamp marks that partially overlap it
-  const nextMarks = ensured.document.marks
+  // Adjust styles: remove styles fully within the deleted range,
+  // clamp styles that partially overlap it
+  const nextStyles = ensured.document.styles
     .filter(entry => !(entry.from >= removeStart && entry.to <= removeEnd))
     .map(entry => ({
       ...entry,
@@ -116,7 +116,7 @@ export function deleteTextAtCursor(state: TTypewriterState, event: TDeleteEvent)
     ...ensured,
     document: {
       text: nextText,
-      marks: nextMarks,
+      styles: nextStyles,
     },
     cursors: updatedCursors,
     selections: updatedSelections,

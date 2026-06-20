@@ -30,8 +30,8 @@ test.describe("styling", () => {
     expect(combined).toBe("styled");
   });
 
-  test("layered marks produce independent styled spans", async ({ page }) => {
-    await gotoScenario(page, "layered-marks");
+  test("layered styles produce independent styled spans", async ({ page }) => {
+    await gotoScenario(page, "layered-styles");
 
     await expect(getOutputLocator(page).locator("span.tw-danger")).toBeVisible();
     await expect(getOutputLocator(page).locator("span.tw-success")).toBeVisible();

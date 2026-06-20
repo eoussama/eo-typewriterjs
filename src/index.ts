@@ -44,7 +44,7 @@ export type { TCheckpoint, TPlaybackControllerState, TPlaybackStatus } from "./c
 export type { IRenderer } from "./core/renderer/index";
 
 export type { TCursorState } from "./core/state/index";
-export type { TRichTextDocument, TStyleObject, TStyleRef, TTextMark } from "./core/state/index";
+export type { TRichTextDocument, TStyleObject, TStyleRef, TTextStyle } from "./core/state/index";
 export { mergeStyles, resolveStyleRef, segmentRichText } from "./core/state/index";
 export type { TRichTextSegment } from "./core/state/index";
 export type { TSelectionState, TTypewriterState } from "./core/state/index";

@@ -28,7 +28,7 @@ type TWaitOptions = {
 ## Behavior
 
 - Generates **no events** — the player's existing scheduler handles the resulting time gap naturally.
-- Does **not** affect the document text, cursor positions, selections, or marks.
+- Does **not** affect the document text, cursor positions, selections, or styles.
 - Advances the clock, so any command after a `.wait()` fires `duration` ms later.
 - A duration of `0` is valid and is effectively a no-op.
 

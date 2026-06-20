@@ -174,7 +174,7 @@ export default defineConfig({
             { text: "TSelectionState", link: "/api/type-aliases/TSelectionState" },
             { text: "TRichTextDocument", link: "/api/type-aliases/TRichTextDocument" },
             { text: "TRichTextSegment", link: "/api/type-aliases/TRichTextSegment" },
-            { text: "TTextMark", link: "/api/type-aliases/TTextMark" },
+            { text: "TTextStyle", link: "/api/type-aliases/TTextStyle" },
             { text: "TStyleObject", link: "/api/type-aliases/TStyleObject" },
             { text: "TStyleRef", link: "/api/type-aliases/TStyleRef" },
           ],

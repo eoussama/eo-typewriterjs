@@ -45,20 +45,20 @@ export function applyStyle(state: TTypewriterState, event: TStyleEvent): TTypewr
     return state;
   }
 
-  const withMark: TTypewriterState = {
+  const withStyle: TTypewriterState = {
     ...state,
     document: {
       ...state.document,
-      marks: [
-        ...state.document.marks,
+      styles: [
+        ...state.document.styles,
         { from, to, style: event.style },
       ],
     },
   };
 
   if (clearedSelection && event.cursorId !== undefined) {
-    return withSelectionCleared(withMark, event.cursorId);
+    return withSelectionCleared(withStyle, event.cursorId);
   }
 
-  return withMark;
+  return withStyle;
 }

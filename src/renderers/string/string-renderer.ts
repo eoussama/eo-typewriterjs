@@ -12,8 +12,8 @@ import { mergeStyles, segmentRichText } from "../../core/state/segment-rich-text
  * A headless renderer that stores the latest typewriter state in memory.
  * Useful for testing, server-side rendering, and string snapshot assertions.
  *
- * `toString()` returns the plain text content (marks ignored).
- * `toAnsiString()` applies ANSI escape sequences from style marks that provide an `ansi` map.
+ * `toString()` returns the plain text content (styles ignored).
+ * `toAnsiString()` applies ANSI escape sequences from text styles that provide an `ansi` map.
  */
 export class StringRenderer implements IRenderer {
   private _state: TNullable<TTypewriterState> = null;
@@ -50,8 +50,8 @@ export class StringRenderer implements IRenderer {
 
   /**
    * @description
-   * Return the document text with ANSI escape sequences applied from style marks.
-   * Only marks that include an `ansi` map contribute escape sequences.
+   * Return the document text with ANSI escape sequences applied from text styles.
+   * Only styles that include an `ansi` map contribute escape sequences.
    * Segments without any ANSI styles are emitted as plain text.
    * The string is always terminated with the ANSI reset sequence when any styling was applied.
    *

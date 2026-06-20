@@ -172,7 +172,7 @@ describe("stringRenderer, toAnsiString()", () => {
     expect(sr.toAnsiString()).toBe("");
   });
 
-  it("returns plain text when no marks are present", async () => {
+  it("returns plain text when no styles are present", async () => {
     const sr = stringRenderer();
     const tw = createTypewriter({ renderer: sr });
 
@@ -182,7 +182,7 @@ describe("stringRenderer, toAnsiString()", () => {
     expect(sr.toAnsiString()).toBe("no marks");
   });
 
-  it("returns plain text when marks have no ansi field", async () => {
+  it("returns plain text when styles have no ansi field", async () => {
     const sr = stringRenderer();
     const tw = createTypewriter({ renderer: sr });
 
@@ -226,7 +226,7 @@ describe("stringRenderer, toAnsiString()", () => {
     expect(result).toContain("B");
   });
 
-  it("handles multiple ANSI marks on disjoint ranges", async () => {
+  it("handles multiple ANSI styles on disjoint ranges", async () => {
     const sr = stringRenderer();
     const tw = createTypewriter({ renderer: sr });
 
@@ -276,7 +276,7 @@ describe("stringRenderer, toAnsiString()", () => {
     const sr = stringRenderer();
     const tw = createTypewriter({ renderer: sr });
 
-    // type() with style applies marks per-character, so each char is individually
+    // type() with style applies styles per-character, so each char is individually
     // wrapped: \x1B[31mr\x1B[0m\x1B[31me\x1B[0m\x1B[31md\x1B[0m
     tw.timeline.type("red", { by: "char", interval: 1, style: { ansi: { color: "31" } } });
     await tw.play();

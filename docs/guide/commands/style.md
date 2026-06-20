@@ -80,7 +80,7 @@ type TStyleRange = { from: number; to: number };
 - `to` — exclusive end index
 
 ```ts
-// marks characters at indices 6, 7, 8, 9, 10 ("World" in "Hello World")
+// styles characters at indices 6, 7, 8, 9, 10 ("World" in "Hello World")
 tw.timeline.style("highlight", { from: 6, to: 11 });
 ```
 
@@ -93,7 +93,7 @@ tw.timeline
   .type("Hello World")
   .move(6)
   .select(5) // selects "World" (indices 6–11)
-  .style("highlight", "selection"); // marks exactly that range
+  .style("highlight", "selection"); // styles exactly that range
 ```
 
 The style is applied using the selection's `from`/`to` values — it is equivalent to calling `.style(style, { from: selection.from, to: selection.to })`. The selection itself is not affected by `.style()`; use `.move()` or `.type()` to clear it afterward.
@@ -123,7 +123,7 @@ await tw.play();
 // "World" is wrapped in a <span class="highlight"> in the DOM renderer
 ```
 
-### Multiple marks
+### Multiple styles
 
 ```ts
 tw.timeline
@@ -156,7 +156,7 @@ tw.timeline
   .wait(600)
   .move(6)
   .select(5)
-  .style("highlight", "selection") // marks the selection
+  .style("highlight", "selection") // styles the selection
   .move(11); // clears the selection UI
 
 await tw.play();
@@ -193,28 +193,28 @@ await tw.play();
 
 ## Interaction with renderers
 
-**DOM renderer** — each style produces a `<span>` wrapping the marked characters. If `className` is set, it is applied as a CSS class. If `css` is set, it is applied as inline styles. If `attrs` is set, the attributes are added to the span element. Overlapping marks produce nested spans.
+**DOM renderer** — each style produces a `<span>` wrapping the marked characters. If `className` is set, it is applied as a CSS class. If `css` is set, it is applied as inline styles. If `attrs` is set, the attributes are added to the span element. Overlapping styles produce nested spans.
 
-**String renderer** — `toString()` ignores marks and returns plain text. `toAnsiString()` reads the `ansi` field of each style and wraps the marked range with ANSI escape codes.
+**String renderer** — `toString()` ignores styles and returns plain text. `toAnsiString()` reads the `ansi` field of each style and wraps the styled range with ANSI escape codes.
 
-**Custom renderers** — marks are available on `state.document.marks` as a `TTextMark[]` array. Use `segmentRichText(document)` to get pre-segmented character ranges with merged style information.
+**Custom renderers** — styles are available on `state.document.styles` as a `TTextStyle[]` array. Use `segmentRichText(document)` to get pre-segmented character ranges with merged style information.
 
 ## Interaction with deletion
 
 When the document text is mutated by `.delete()`:
-- Marks that fully cover the deleted range are **removed**.
-- Marks that partially overlap the deleted range are **trimmed** to the new boundary.
-- Marks that sit entirely before the deletion point are **shifted left** by the number of deleted characters.
-- Marks that sit entirely after the deletion point are unaffected.
+- Styles that fully cover the deleted range are **removed**.
+- Styles that partially overlap the deleted range are **trimmed** to the new boundary.
+- Styles that sit entirely before the deletion point are **shifted left** by the number of deleted characters.
+- Styles that sit entirely after the deletion point are unaffected.
 
 ## Edge cases
 
 - **`from === to`** — an empty style; applies to no characters. Valid but has no visible effect.
 - **`from > to`** — undefined behavior. Always use `from < to`.
-- **`range` out of document bounds** — the style is applied with the given indices even if they exceed the current document length. The renderer clips marks to the visible text.
+- **`range` out of document bounds** — the style is applied with the given indices even if they exceed the current document length. The renderer clips styles to the visible text.
 - **`"selection"` with no active selection** — applies a zero-width style at the cursor position. Effectively a no-op.
-- **Multiple marks on the same range** — all marks accumulate. The DOM renderer produces nested spans; `mergeStyles()` can merge them if needed.
-- **Mark survives replay** — marks applied in a previous `play()` are part of the document state. On `replay()`, the document is reset before compilation runs again, so marks are re-applied cleanly.
+- **Multiple styles on the same range** — all styles accumulate. The DOM renderer produces nested spans; `mergeStyles()` can merge them if needed.
+- **Style survives replay** — styles applied in a previous `play()` are part of the document state. On `replay()`, the document is reset before compilation runs again, so styles are re-applied cleanly.
 
 ## Type reference
 
@@ -223,7 +223,7 @@ When the document text is mutated by `.delete()`:
 - [`TStyleRange`](/api/type-aliases/TStyleRange)
 - [`TStyleRef`](/api/type-aliases/TStyleRef)
 - [`TStyleObject`](/api/type-aliases/TStyleObject)
-- [`TTextMark`](/api/type-aliases/TTextMark)
+- [`TTextStyle`](/api/type-aliases/TTextStyle)
 - [`TCursorSelector`](/api/type-aliases/TCursorSelector)
 - [`TCallbackHook`](/api/type-aliases/TCallbackHook)
 - [`TAudioCommandOverride`](/api/type-aliases/TAudioCommandOverride)

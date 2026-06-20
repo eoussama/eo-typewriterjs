@@ -506,8 +506,8 @@ describe("reduce (delete style clamp branches)", () => {
     }
 
     expect(state.document.text).toBe("Hello ");
-    expect(state.document.marks).toHaveLength(1);
-    expect(state.document.marks[0]?.from).toBe(0);
+    expect(state.document.styles).toHaveLength(1);
+    expect(state.document.styles[0]?.from).toBe(0);
   });
 
   it("removes a style fully contained in the deleted range", () => {
@@ -526,7 +526,7 @@ describe("reduce (delete style clamp branches)", () => {
     }
 
     expect(state.document.text).toBe("Hello ");
-    expect(state.document.marks).toHaveLength(0);
+    expect(state.document.styles).toHaveLength(0);
   });
 
   it("clamps a style that starts after removeStart", () => {
@@ -569,14 +569,14 @@ describe("reduce (delete style clamp branches)", () => {
     }
 
     expect(state.document.text).toBe("Hello ");
-    expect(state.document.marks).toHaveLength(1);
-    expect(state.document.marks[0]?.from).toBe(0);
-    expect(state.document.marks[0]?.to).toBe(4);
+    expect(state.document.styles).toHaveLength(1);
+    expect(state.document.styles[0]?.from).toBe(0);
+    expect(state.document.styles[0]?.to).toBe(4);
   });
 });
 
 describe("reduce (style)", () => {
-  it("fixed-range style appends a style to document.marks", () => {
+  it("fixed-range style appends a style to document.styles", () => {
     const commands = [
       { id: "c1", kind: "type" as const, cursor: "main", text: "Hello", by: "char" as const, interval: 1 },
       { id: "c2", kind: "style" as const, cursor: "main", style: "tw-highlight", range: { from: 0, to: 5 } },
@@ -589,11 +589,11 @@ describe("reduce (style)", () => {
       state = reduce(state, event);
     }
 
-    expect(state.document.marks).toHaveLength(1);
-    expect(state.document.marks[0]).toStrictEqual({ from: 0, to: 5, style: "tw-highlight" });
+    expect(state.document.styles).toHaveLength(1);
+    expect(state.document.styles[0]).toStrictEqual({ from: 0, to: 5, style: "tw-highlight" });
   });
 
-  it("multiple marks are accumulated on document.marks", () => {
+  it("multiple styles are accumulated on document.styles", () => {
     const commands = [
       { id: "c1", kind: "type" as const, cursor: "main", text: "Hello world", by: "char" as const, interval: 1 },
       { id: "c2", kind: "style" as const, cursor: "main", style: "tw-a", range: { from: 0, to: 5 } },
@@ -607,10 +607,10 @@ describe("reduce (style)", () => {
       state = reduce(state, event);
     }
 
-    expect(state.document.marks).toHaveLength(2);
+    expect(state.document.styles).toHaveLength(2);
   });
 
-  it("style with from >= to leaves document.marks unchanged", () => {
+  it("style with from >= to leaves document.styles unchanged", () => {
     const commands = [
       { id: "c1", kind: "type" as const, cursor: "main", text: "Hello", by: "char" as const, interval: 1 },
       { id: "c2", kind: "style" as const, cursor: "main", style: "tw-highlight", range: { from: 3, to: 3 } },
@@ -623,7 +623,7 @@ describe("reduce (style)", () => {
       state = reduce(state, event);
     }
 
-    expect(state.document.marks).toHaveLength(0);
+    expect(state.document.styles).toHaveLength(0);
   });
 
   it("selection-based style resolves to the cursor's active selection range", () => {
@@ -640,11 +640,11 @@ describe("reduce (style)", () => {
       state = reduce(state, event);
     }
 
-    expect(state.document.marks).toHaveLength(1);
-    expect(state.document.marks[0]).toStrictEqual({ from: 6, to: 11, style: "tw-highlight" });
+    expect(state.document.styles).toHaveLength(1);
+    expect(state.document.styles[0]).toStrictEqual({ from: 6, to: 11, style: "tw-highlight" });
   });
 
-  it("selection-based style with no active selection leaves marks unchanged", () => {
+  it("selection-based style with no active selection leaves styles unchanged", () => {
     const commands = [
       { id: "c1", kind: "type" as const, cursor: "main", text: "Hello", by: "char" as const, interval: 1 },
       { id: "c2", kind: "style" as const, cursor: "main", style: "tw-highlight", range: "selection" as const },
@@ -657,7 +657,7 @@ describe("reduce (style)", () => {
       state = reduce(state, event);
     }
 
-    expect(state.document.marks).toHaveLength(0);
+    expect(state.document.styles).toHaveLength(0);
   });
 
   it("applyStyle with selection-based event but no cursorId returns state unchanged", () => {
@@ -670,8 +670,8 @@ describe("reduce (style)", () => {
 });
 
 
-describe("reduce (delete with marks)", () => {
-  it("trimming marks when deleting overlapping text", () => {
+describe("reduce (delete with styles)", () => {
+  it("trimming styles when deleting overlapping text", () => {
     const commands = [
       { id: "c1", kind: "type" as const, cursor: "main", text: "Hello world", by: "char" as const, interval: 1 },
       { id: "c2", kind: "style" as const, cursor: "main", style: "tw-a", range: { from: 0, to: 11 } },
@@ -686,7 +686,7 @@ describe("reduce (delete with marks)", () => {
     }
 
     expect(state.document.text).toBe("Hello ");
-    expect(state.document.marks).toHaveLength(1);
+    expect(state.document.styles).toHaveLength(1);
   });
 
   it("delete at start of document (removeStart === removeEnd) clears selection only", () => {
@@ -723,7 +723,7 @@ describe("reduce (insert with style)", () => {
     }
 
     expect(state.document.text).toBe("Hi");
-    expect(state.document.marks.length).toBeGreaterThan(0);
+    expect(state.document.styles.length).toBeGreaterThan(0);
   });
 });
 
@@ -772,11 +772,11 @@ describe("state helpers", () => {
 
 describe("segmentRichText", () => {
   it("returns empty array for empty document", () => {
-    expect(segmentRichText({ text: "", marks: [] })).toEqual([]);
+    expect(segmentRichText({ text: "", styles: [] })).toEqual([]);
   });
 
   it("returns single segment with no styles for unstyled text", () => {
-    const segments = segmentRichText({ text: "Hello", marks: [] });
+    const segments = segmentRichText({ text: "Hello", styles: [] });
 
     expect(segments).toHaveLength(1);
     expect(segments[0]?.text).toBe("Hello");
@@ -784,7 +784,7 @@ describe("segmentRichText", () => {
   });
 
   it("splits text at style boundaries", () => {
-    const segments = segmentRichText({ text: "Hello world", marks: [{ from: 0, to: 5, style: "tw-a" }] });
+    const segments = segmentRichText({ text: "Hello world", styles: [{ from: 0, to: 5, style: "tw-a" }] });
 
     expect(segments.length).toBeGreaterThanOrEqual(2);
     expect(segments[0]?.text).toBe("Hello");
@@ -792,7 +792,7 @@ describe("segmentRichText", () => {
   });
 
   it("segment outside style has empty styles", () => {
-    const segments = segmentRichText({ text: "Hello world", marks: [{ from: 0, to: 5, style: "tw-a" }] });
+    const segments = segmentRichText({ text: "Hello world", styles: [{ from: 0, to: 5, style: "tw-a" }] });
     const last = segments[segments.length - 1];
 
     expect(last?.text).toBe(" world");
@@ -879,7 +879,7 @@ describe("stringRenderer.toAnsiString", () => {
     expect(renderer.toAnsiString()).toBe("Hello");
   });
 
-  it("returns plain text when marks have no ansi property", async () => {
+  it("returns plain text when styles have no ansi property", async () => {
     const renderer = stringRenderer();
     const tw = createTypewriter({ renderer });
 
@@ -892,7 +892,7 @@ describe("stringRenderer.toAnsiString", () => {
     expect(renderer.toAnsiString()).toBe("Hello");
   });
 
-  it("applies ANSI codes for marks with ansi property", async () => {
+  it("applies ANSI codes for styles with ansi property", async () => {
     const renderer = stringRenderer();
     const tw = createTypewriter({ renderer });
 
@@ -2173,14 +2173,14 @@ describe("reduce (removeStyles / unstyle)", () => {
       document: {
         ...state.document,
         text: "Hello world",
-        marks: [{ from: 2, to: 5, style: "tw-a" }],
+        styles: [{ from: 2, to: 5, style: "tw-a" }],
       },
     };
 
     const event: TUnstyleEvent = { id: "e1", kind: "unstyle" as const, time: 0, from: 0, to: 11, sourceCommandId: "c1" };
     const next = removeStyles(state, event);
 
-    expect(next.document.marks).toHaveLength(0);
+    expect(next.document.styles).toHaveLength(0);
   });
 
   it("preserves a style entirely outside the unstyle range", () => {
@@ -2191,15 +2191,15 @@ describe("reduce (removeStyles / unstyle)", () => {
       document: {
         ...state.document,
         text: "Hello world",
-        marks: [{ from: 0, to: 3, style: "tw-a" }],
+        styles: [{ from: 0, to: 3, style: "tw-a" }],
       },
     };
 
     const event: TUnstyleEvent = { id: "e1", kind: "unstyle" as const, time: 0, from: 6, to: 11, sourceCommandId: "c1" };
     const next = removeStyles(state, event);
 
-    expect(next.document.marks).toHaveLength(1);
-    expect(next.document.marks[0]).toStrictEqual({ from: 0, to: 3, style: "tw-a" });
+    expect(next.document.styles).toHaveLength(1);
+    expect(next.document.styles[0]).toStrictEqual({ from: 0, to: 3, style: "tw-a" });
   });
 
   it("clips a style overlapping from the left", () => {
@@ -2210,15 +2210,15 @@ describe("reduce (removeStyles / unstyle)", () => {
       document: {
         ...state.document,
         text: "Hello world",
-        marks: [{ from: 0, to: 7, style: "tw-a" }],
+        styles: [{ from: 0, to: 7, style: "tw-a" }],
       },
     };
 
     const event: TUnstyleEvent = { id: "e1", kind: "unstyle" as const, time: 0, from: 5, to: 11, sourceCommandId: "c1" };
     const next = removeStyles(state, event);
 
-    expect(next.document.marks).toHaveLength(1);
-    expect(next.document.marks[0]).toStrictEqual({ from: 0, to: 5, style: "tw-a" });
+    expect(next.document.styles).toHaveLength(1);
+    expect(next.document.styles[0]).toStrictEqual({ from: 0, to: 5, style: "tw-a" });
   });
 
   it("clips a style overlapping from the right", () => {
@@ -2229,15 +2229,15 @@ describe("reduce (removeStyles / unstyle)", () => {
       document: {
         ...state.document,
         text: "Hello world",
-        marks: [{ from: 4, to: 11, style: "tw-a" }],
+        styles: [{ from: 4, to: 11, style: "tw-a" }],
       },
     };
 
     const event: TUnstyleEvent = { id: "e1", kind: "unstyle" as const, time: 0, from: 0, to: 6, sourceCommandId: "c1" };
     const next = removeStyles(state, event);
 
-    expect(next.document.marks).toHaveLength(1);
-    expect(next.document.marks[0]).toStrictEqual({ from: 6, to: 11, style: "tw-a" });
+    expect(next.document.styles).toHaveLength(1);
+    expect(next.document.styles[0]).toStrictEqual({ from: 6, to: 11, style: "tw-a" });
   });
 
   it("splits a style that spans the entire unstyle range into two fragments", () => {
@@ -2248,16 +2248,16 @@ describe("reduce (removeStyles / unstyle)", () => {
       document: {
         ...state.document,
         text: "Hello world",
-        marks: [{ from: 0, to: 11, style: "tw-a" }],
+        styles: [{ from: 0, to: 11, style: "tw-a" }],
       },
     };
 
     const event: TUnstyleEvent = { id: "e1", kind: "unstyle" as const, time: 0, from: 3, to: 8, sourceCommandId: "c1" };
     const next = removeStyles(state, event);
 
-    expect(next.document.marks).toHaveLength(2);
-    expect(next.document.marks[0]).toStrictEqual({ from: 0, to: 3, style: "tw-a" });
-    expect(next.document.marks[1]).toStrictEqual({ from: 8, to: 11, style: "tw-a" });
+    expect(next.document.styles).toHaveLength(2);
+    expect(next.document.styles[0]).toStrictEqual({ from: 0, to: 3, style: "tw-a" });
+    expect(next.document.styles[1]).toStrictEqual({ from: 8, to: 11, style: "tw-a" });
   });
 
   it("selection-based unstyle resolves range from cursor selection and clears selection", () => {
@@ -2269,7 +2269,7 @@ describe("reduce (removeStyles / unstyle)", () => {
       document: {
         ...state.document,
         text: "Hello world",
-        marks: [{ from: 0, to: 11, style: "tw-a" }],
+        styles: [{ from: 0, to: 11, style: "tw-a" }],
       },
     };
 
@@ -2277,8 +2277,8 @@ describe("reduce (removeStyles / unstyle)", () => {
     const next = removeStyles(state, event);
 
     expect(next.selections.main).toBeUndefined();
-    expect(next.document.marks).toHaveLength(1);
-    expect(next.document.marks[0]).toStrictEqual({ from: 0, to: 6, style: "tw-a" });
+    expect(next.document.styles).toHaveLength(1);
+    expect(next.document.styles[0]).toStrictEqual({ from: 0, to: 6, style: "tw-a" });
   });
 
   it("selection-based unstyle with no active selection returns state unchanged", () => {
@@ -2305,14 +2305,14 @@ describe("reduce (removeStyles / unstyle)", () => {
       document: {
         ...state.document,
         text: "Hello",
-        marks: [{ from: 0, to: 5, style: "tw-a" }],
+        styles: [{ from: 0, to: 5, style: "tw-a" }],
       },
     };
 
     const event: TUnstyleEvent = { id: "e1", kind: "unstyle" as const, time: 0, from: 3, to: 3, sourceCommandId: "c1" };
     const next = removeStyles(state, event);
 
-    expect(next.document.marks).toHaveLength(1);
+    expect(next.document.styles).toHaveLength(1);
   });
 
   it("reduce dispatches unstyle event correctly", () => {
@@ -2323,14 +2323,14 @@ describe("reduce (removeStyles / unstyle)", () => {
       document: {
         ...state.document,
         text: "Hello",
-        marks: [{ from: 0, to: 5, style: "tw-a" }],
+        styles: [{ from: 0, to: 5, style: "tw-a" }],
       },
     };
 
     const event: TUnstyleEvent = { id: "e1", kind: "unstyle" as const, time: 0, from: 0, to: 5, sourceCommandId: "c1" };
     const next = reduce(state, event);
 
-    expect(next.document.marks).toHaveLength(0);
+    expect(next.document.styles).toHaveLength(0);
   });
 });
 
@@ -2402,8 +2402,8 @@ describe("integration (unstyle)", () => {
     const live = tw.getLiveState();
 
     expect(renderer.toString()).toBe("Hello World");
-    expect(live.document.marks).toHaveLength(1);
-    expect(live.document.marks[0]).toStrictEqual({ from: 0, to: 6, style: "tw-a" });
+    expect(live.document.styles).toHaveLength(1);
+    expect(live.document.styles[0]).toStrictEqual({ from: 0, to: 6, style: "tw-a" });
   });
 
   it("unstyle by selection removes styles in the selection range and clears selection", async () => {
@@ -2421,8 +2421,8 @@ describe("integration (unstyle)", () => {
     const live = tw.getLiveState();
 
     expect(live.selections.main).toBeUndefined();
-    expect(live.document.marks).toHaveLength(1);
-    expect(live.document.marks[0]).toStrictEqual({ from: 0, to: 6, style: "tw-a" });
+    expect(live.document.styles).toHaveLength(1);
+    expect(live.document.styles[0]).toStrictEqual({ from: 0, to: 6, style: "tw-a" });
   });
 
   it("unstyle splitting a spanning style produces two fragments", async () => {
@@ -2437,9 +2437,9 @@ describe("integration (unstyle)", () => {
 
     const live = tw.getLiveState();
 
-    expect(live.document.marks).toHaveLength(2);
-    expect(live.document.marks[0]).toStrictEqual({ from: 0, to: 3, style: "tw-a" });
-    expect(live.document.marks[1]).toStrictEqual({ from: 8, to: 11, style: "tw-a" });
+    expect(live.document.styles).toHaveLength(2);
+    expect(live.document.styles[0]).toStrictEqual({ from: 0, to: 3, style: "tw-a" });
+    expect(live.document.styles[1]).toStrictEqual({ from: 8, to: 11, style: "tw-a" });
   });
 
   it("unstyle on document with no styles is a no-op", async () => {
@@ -2453,7 +2453,7 @@ describe("integration (unstyle)", () => {
 
     const live = tw.getLiveState();
 
-    expect(live.document.marks).toHaveLength(0);
+    expect(live.document.styles).toHaveLength(0);
     expect(renderer.toString()).toBe("Hello");
   });
 
@@ -2469,6 +2469,6 @@ describe("integration (unstyle)", () => {
 
     const live = tw.getLiveState();
 
-    expect(live.document.marks).toHaveLength(1);
+    expect(live.document.styles).toHaveLength(1);
   });
 });

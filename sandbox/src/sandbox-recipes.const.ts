@@ -647,7 +647,7 @@ await tw.play();`,
     code: `const tw = createTypewriter({ renderer });
 
 // Text is typed plain first. style() applies the style after the fact.
-// "Highlight this text!" = 20 chars. Mark covers the full range 0-20.
+// "Highlight this text!" = 20 chars. Style covers the full range 0-20.
 tw.timeline
   .type("Highlight this text!", { by: "char", interval: 70 })
   .wait(400)
@@ -686,7 +686,7 @@ await tw.play();`,
 
   {
     id: "gradient-banner",
-    title: "Gradient Banner (Mark After)",
+    title: "Gradient Banner (Style After)",
     description: "Type a headline word by word, then apply a gradient style to the full text once typing finishes.",
     category: "styling",
     code: `const tw = createTypewriter({ renderer });
@@ -702,13 +702,13 @@ await tw.play();`,
   },
 
   {
-    id: "layered-marks",
-    title: "Layered Marks (Mark After)",
+    id: "layered-styles",
+    title: "Layered Styles (Style After)",
     description: "Type plain text, then apply distinct styles to different regions simultaneously.",
     category: "styling",
     code: `const tw = createTypewriter({ renderer });
 
-// All marks are applied after typing — style() stamps a style onto an existing range.
+// All styles are applied after typing — style() stamps a style onto an existing range.
 // "Deleted text | Added text | Keyword"
 //   danger: 0-12   success:15-25   pill:28-35
 tw.timeline
@@ -724,7 +724,7 @@ await tw.play();`,
 
   {
     id: "code-annotation",
-    title: "Code Annotation (Mark After)",
+    title: "Code Annotation (Style After)",
     description: "Type a function call plain, then progressively style the function name and arguments.",
     category: "styling",
     code: `const tw = createTypewriter({ renderer });
@@ -746,7 +746,7 @@ await tw.play();`,
 
   {
     id: "select-and-restyle",
-    title: "Select & Restyle (Mark After)",
+    title: "Select & Restyle (Style After)",
     description: "Type plain text, select a word backward, then apply a style to the selection.",
     category: "styling",
     code: `const tw = createTypewriter({ renderer });
@@ -810,7 +810,7 @@ await tw.play();`,
   {
     id: "unstyle-selection",
     title: "Unstyle by Selection",
-    description: "Select a range, then pass \"selection\" to unstyle() to remove marks in that region using the cursor selection as the target.",
+    description: "Select a range, then pass \"selection\" to unstyle() to remove styles in that region using the cursor selection as the target.",
     category: "styling",
     code: `const tw = createTypewriter({ renderer });
 

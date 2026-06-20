@@ -713,7 +713,7 @@ describe("abort inside before hook of instant commands", () => {
 describe("deleteTextAtCursor additional branch coverage", () => {
   it("clamps a cursor inside the deleted range to removeStart (single-event large delete)", () => {
     const state: ReturnType<typeof createInitialState> = {
-      document: { text: "abcde", marks: [] },
+      document: { text: "abcde", styles: [] },
       cursors: {
         main: { id: "main", index: 5, visible: true, renderOptions: DEFAULT_CURSOR_RENDER_OPTIONS },
         b: { id: "b", index: 3, visible: true, renderOptions: DEFAULT_CURSOR_RENDER_OPTIONS },
@@ -739,7 +739,7 @@ describe("deleteTextAtCursor additional branch coverage", () => {
 
   it("clamps selection.from/to to removeStart when inside deleted range (lines 101, 107)", () => {
     const state: ReturnType<typeof createInitialState> = {
-      document: { text: "abcde", marks: [] },
+      document: { text: "abcde", styles: [] },
       cursors: {
         main: { id: "main", index: 5, visible: true, renderOptions: DEFAULT_CURSOR_RENDER_OPTIONS },
         b: { id: "b", index: 4, visible: true, renderOptions: DEFAULT_CURSOR_RENDER_OPTIONS },
@@ -767,7 +767,7 @@ describe("deleteTextAtCursor additional branch coverage", () => {
 
   it("sel === undefined entry in selections is preserved unchanged during deletion", () => {
     const state = {
-      document: { text: "hello", marks: [] },
+      document: { text: "hello", styles: [] },
       cursors: {
         main: { id: "main", index: 5, visible: true, renderOptions: DEFAULT_CURSOR_RENDER_OPTIONS },
         b: { id: "b", index: 2, visible: true, renderOptions: DEFAULT_CURSOR_RENDER_OPTIONS },
@@ -798,7 +798,7 @@ describe("deleteTextAtCursor additional branch coverage", () => {
 describe("insertTextAtCursor additional branch coverage", () => {
   it("sel === undefined entry in selections is preserved unchanged during insertion", () => {
     const state = {
-      document: { text: "ab", marks: [] },
+      document: { text: "ab", styles: [] },
       cursors: {
         main: { id: "main", index: 2, visible: true, renderOptions: DEFAULT_CURSOR_RENDER_OPTIONS },
         b: { id: "b", index: 0, visible: true, renderOptions: DEFAULT_CURSOR_RENDER_OPTIONS },
@@ -829,7 +829,7 @@ describe("insertTextAtCursor additional branch coverage", () => {
     state = withCursor(state, "b");
     state = {
       ...state,
-      document: { text: "abc", marks: [] },
+      document: { text: "abc", styles: [] },
       cursors: {
         main: { id: "main", index: 2, visible: true, renderOptions: DEFAULT_CURSOR_RENDER_OPTIONS },
         b: { id: "b", index: 1, visible: true, renderOptions: DEFAULT_CURSOR_RENDER_OPTIONS },

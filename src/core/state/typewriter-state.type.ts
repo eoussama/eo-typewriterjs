@@ -49,7 +49,7 @@ export function createInitialState(cursorOptions?: TCursorRenderOptions): TTypew
   return {
     document: {
       text: "",
-      marks: [],
+      styles: [],
     },
     cursors: {
       main: {

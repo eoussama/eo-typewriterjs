@@ -84,7 +84,7 @@ tw.timeline.type("👨‍👩‍👧‍👦", { by: "char" });
 
 ## Styling text while typing
 
-Attach a [TStyleRef](/api/type-aliases/TStyleRef) via the `style` option. Every character inserted by this command carries the style style in the document's `marks` array.
+Attach a [TStyleRef](/api/type-aliases/TStyleRef) via the `style` option. Every character inserted by this command carries the style in the document's `styles` array.
 
 ```ts
 // class name
@@ -103,7 +103,7 @@ tw.timeline.type("Error", {
 });
 ```
 
-Each inserted character receives its own style with `from = charIndex` and `to = charIndex + 1`. Marks from consecutive `.type()` calls with the same style reference are **not** automatically merged, but renderers may coalesce adjacent identical marks when rendering.
+Each inserted character receives its own style with `from = charIndex` and `to = charIndex + 1`. Styles from consecutive `.type()` calls with the same style reference are **not** automatically merged, but renderers may coalesce adjacent identical styles when rendering.
 
 ## Typing at a cursor position
 

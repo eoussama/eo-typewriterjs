@@ -1,6 +1,6 @@
 /**
  * @description
- * Style object for rich text marks
+ * Style object for rich text
  */
 export type TStyleObject = {
   readonly className?: string;
@@ -20,7 +20,7 @@ export type TStyleRef = string | TStyleObject;
  * @description
  * A styled range within the document text
  */
-export type TTextMark = {
+export type TTextStyle = {
   readonly from: number;
   readonly to: number;
   readonly style: TStyleRef;
@@ -28,9 +28,9 @@ export type TTextMark = {
 
 /**
  * @description
- * The raw text content and associated style marks
+ * The raw text content and associated text styles
  */
 export type TRichTextDocument = {
   readonly text: string;
-  readonly marks: readonly TTextMark[];
+  readonly styles: readonly TTextStyle[];
 };

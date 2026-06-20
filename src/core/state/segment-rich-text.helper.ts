@@ -1,4 +1,4 @@
-import type { TRichTextDocument, TStyleObject, TStyleRef, TTextMark } from "./rich-text-document.type";
+import type { TRichTextDocument, TStyleObject, TStyleRef, TTextStyle } from "./rich-text-document.type";
 
 
 
@@ -6,7 +6,7 @@ import type { TRichTextDocument, TStyleObject, TStyleRef, TTextMark } from "./ri
  * @description
  * A contiguous segment of document text with its merged style stack applied.
  * Styles are merged in style order so later styles override earlier ones for
- * conflicting keys. Segments with no marks have an empty styles array.
+ * conflicting keys. Segments with no active styles have an empty styles array.
  */
 export type TRichTextSegment = {
   readonly text: string;
@@ -89,28 +89,28 @@ export function mergeStyles(styles: readonly TStyleRef[]): TStyleObject {
 
 /**
  * @description
- * Segment a rich-text document into non-overlapping runs based on its marks.
+ * Segment a rich-text document into non-overlapping runs based on its styles.
  * Each segment carries the stack of active TStyleRef values that cover it.
- * Segments with no marks are included with an empty styles array.
+ * Segments with no active styles are included with an empty styles array.
  *
  * @param document - The rich-text document to segment
  * @returns An ordered array of TRichTextSegment values covering the full text
  */
 export function segmentRichText(document: TRichTextDocument): TRichTextSegment[] {
-  const { text, marks } = document;
+  const { text, styles } = document;
 
   if (text.length === 0) {
     return [];
   }
 
-  if (marks.length === 0) {
+  if (styles.length === 0) {
     return [{ text, from: 0, to: text.length, styles: [] }];
   }
 
   // Collect all unique boundary positions
   const boundarySet = new Set<number>([0, text.length]);
 
-  for (const entry of marks) {
+  for (const entry of styles) {
     boundarySet.add(Math.max(0, entry.from));
     boundarySet.add(Math.min(text.length, entry.to));
   }
@@ -128,10 +128,10 @@ export function segmentRichText(document: TRichTextDocument): TRichTextSegment[]
       continue;
     }
 
-    // Collect all marks that fully cover this segment (in document order)
+    // Collect all styles that fully cover this segment (in document order)
     const activeStyles: TStyleRef[] = [];
 
-    for (const entry of marks as readonly TTextMark[]) {
+    for (const entry of styles as readonly TTextStyle[]) {
       if (entry.from <= from && entry.to >= to) {
         activeStyles.push(entry.style);
       }

@@ -79,7 +79,7 @@ type TBoundary = {
  * A DOM renderer that writes the current typewriter state into a target HTML element.
  * All active cursors are rendered as inline elements at their correct document positions.
  * All active per-cursor selections are rendered as highlighted spans.
- * Style marks from the rich-text document are applied as span attributes, CSS classes,
+ * Text styles from the rich-text document are applied as span attributes, CSS classes,
  * and/or inline styles — renderer-agnostic style objects are fully honoured.
  *
  * The target may be specified as a CSS selector string or a direct element reference.
@@ -228,7 +228,7 @@ export class DomRenderer implements IRenderer {
    * Paint the document text into the target element.
    * Segments the text at every style boundary, cursor position, and selection boundary,
    * rendering cursor markers and selection highlights at their correct positions.
-   * Style marks are applied as className, inline CSS, and/or HTML attributes on spans.
+   * Text styles are applied as className, inline CSS, and/or HTML attributes on spans.
    *
    * @param state - The typewriter state to render
    */

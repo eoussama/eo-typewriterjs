@@ -1,6 +1,6 @@
 import type { TInsertEvent } from "../events/insert-event.type";
 import type { TCursorState } from "../state/cursor-state.type";
-import type { TTextMark } from "../state/rich-text-document.type";
+import type { TTextStyle } from "../state/rich-text-document.type";
 import type { TTypewriterState } from "../state/typewriter-state.type";
 
 import { withCursor, withSelectionCleared } from "../state/typewriter-state.type";
@@ -35,10 +35,10 @@ export function insertTextAtCursor(state: TTypewriterState, event: TInsertEvent)
   const insertedLength = text.length;
   const nextIndex = insertIndex + insertedLength;
 
-  const nextMarks: TTextMark[] = [...ensured.document.marks];
+  const nextStyles: TTextStyle[] = [...ensured.document.styles];
 
   if (event.style !== undefined) {
-    nextMarks.push({
+    nextStyles.push({
       from: insertIndex,
       to: nextIndex,
       style: event.style,
@@ -78,7 +78,7 @@ export function insertTextAtCursor(state: TTypewriterState, event: TInsertEvent)
     ...ensured,
     document: {
       text: nextText,
-      marks: nextMarks,
+      styles: nextStyles,
     },
     cursors: updatedCursors,
     selections: updatedSelections,
