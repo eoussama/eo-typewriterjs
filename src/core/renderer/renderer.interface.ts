@@ -8,7 +8,7 @@ import type { TTypewriterState } from "../state/typewriter-state.type";
  * A renderer receives state and is responsible for displaying it.
  */
 export interface IRenderer {
-  mount?: (state: TTypewriterState) => void | Promise<void>;
   render: (state: TTypewriterState) => void | Promise<void>;
+  mount?: (state: TTypewriterState) => void | Promise<void>;
   unmount?: () => void | Promise<void>;
 }
