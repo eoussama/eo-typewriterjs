@@ -4,9 +4,9 @@ A **renderer** is the bridge between the typewriter state and your output target
 
 ## Built-in renderers
 
-### `domRenderer` — browser DOM
+### `domRenderer` - browser DOM
 
-The most common renderer for web applications. It writes the current document text into a DOM element and renders the cursor inline at the correct character position.
+The most common renderer for web applications. It writes the current document text into a DOM element and renders all active cursors inline at their correct character positions.
 
 ```ts
 import { createTypewriter, domRenderer } from "eo-typewriterjs";
@@ -23,20 +23,24 @@ tw.timeline.type("Hello, DOM!");
 await tw.play();
 ```
 
-`domRenderer(element)` returns a [`DomRenderer`](/api/classes/DomRenderer) instance.
+`domRenderer(element)` returns a [`DomRenderer`](/api/classes/DomRenderer) instance. The target may be an `Element` reference or a CSS selector string.
 
 #### How the DOM is rendered
 
-On every render call, `DomRenderer` segments the document by its text styles and then further splits each segment at every cursor and selection boundary. The result is a mix of plain text nodes, styled `<span>` elements, and cursor markers — all appended to a `DocumentFragment` before replacing the target's `innerHTML`.
+On every render call, `DomRenderer` segments the document by its text styles and then splits each segment at every cursor and selection boundary. The result is a mix of plain text nodes, styled `<span>` elements, and cursor marker `<span>` elements, all assembled into a `DocumentFragment` before replacing the target's `innerHTML`.
+
+- Text without any active style or selection is emitted as a bare text node.
+- Text inside an active selection or with an active style is wrapped in a `<span>`. If both apply, a single `<span>` carries both `typewriter-selection` and the text style classes/attributes.
+- Each visible cursor is rendered as `<span class="typewriter-cursor" aria-hidden="true" data-cursor-id="...">`.
 
 ```html
 <!-- example: text = "Hello world", style on "world" (class "highlight"), cursor at 5 -->
 Hello
-<span class="typewriter-cursor" aria-hidden="true" data-cursor-id="main"></span>
+<span class="typewriter-cursor" aria-hidden="true" data-cursor-id="main" data-cursor-kind="pipe" data-cursor-animation="blink">|</span>
 <span class="highlight"> world</span>
 ```
 
-#### Text styles → DOM
+#### Text styles to DOM
 
 When a `TStyleObject` is applied to a segment, the renderer maps its fields onto the `<span>`:
 
@@ -48,11 +52,35 @@ When a `TStyleObject` is applied to a segment, the renderer maps its fields onto
 | `ansi` | Ignored by `DomRenderer` (terminal-only) |
 | `meta` | Ignored by `DomRenderer` |
 
-Multiple styles can overlap. Their styles are **merged** — later styles in document order win on conflicting keys.
+Multiple styles can overlap. Their properties are **merged** — later styles in document order win on conflicting keys.
 
-#### Cursor styling
+#### Cursor rendering
 
-Add the `.typewriter-cursor` class to your CSS to style the blinking cursor:
+Every visible cursor is rendered as a `<span>` with the base class `typewriter-cursor`. Additional data attributes and classes communicate cursor state to CSS:
+
+| Attribute / class | Value |
+|---|---|
+| `data-cursor-id` | The cursor name (e.g. `"main"`) |
+| `data-cursor-kind` | The cursor kind (e.g. `"pipe"`, `"block"`, `"underscore"`, ...etc.) |
+| `data-cursor-animation` | `"blink"`, `"none"`, or `"custom"` |
+| `typewriter-cursor--blink` | Added when `animation` is `"blink"` |
+
+The renderer **automatically injects** a built-in stylesheet with the blink animation (`@keyframes tw-cursor-blink`) the first time a `DomRenderer` is created. No extra CSS is required to get a blinking cursor.
+
+The cursor glyph defaults to `|` for the `"pipe"` kind. You can override it via the `cursor` option at creation time or at runtime with `setCursorOptions()`. Available kinds and their default glyphs:
+
+| Kind | Default glyph |
+|---|---|
+| `"pipe"` | `\|` |
+| `"underscore"` | `_` |
+| `"block"` | `▋` |
+| `"block-underscore"` | `▄` |
+| `"caret"` | `^` |
+| `"custom"` | _(empty, provide your own `content`)_ |
+
+You can also pass `content: ""` for a CSS-only cursor (styled with `background`, `::before`, etc.) or provide any string to use as the glyph.
+
+To add your own CSS on top of the built-in defaults, target the classes directly:
 
 ```css
 .typewriter-cursor {
@@ -62,12 +90,6 @@ Add the `.typewriter-cursor` class to your CSS to style the blinking cursor:
   background: currentColor;
   border-radius: 1px;
   vertical-align: text-bottom;
-  animation: blink 1.1s step-end infinite;
-}
-
-@keyframes blink {
-  0%, 100% { opacity: 1; }
-  50%       { opacity: 0; }
 }
 ```
 
@@ -82,22 +104,22 @@ Selected text is wrapped in a `<span class="typewriter-selection">`. Style it to
 }
 ```
 
+When selected text also carries a text style, a single `<span>` carries both `typewriter-selection` and the style's class names / inline styles simultaneously.
+
 #### Lifecycle
 
 | Method | When called | Behaviour |
 |---|---|---|
-| `mount(state)` | Once, before the first event | Paints initial state (empty text + cursor) into the element |
-| `render(state)` | After every event | Repaints text and cursor at the new position |
-| `unmount()` | Once, after the last event | Releases the element reference (final content stays in place) |
+| `render(state)` | After every event | Repaints text, cursors, and selections at the new positions |
+| `mount(state)` | Once, before the first event | Resolves the target element and paints the initial state |
+| `unmount()` | When called by the consumer or player | Releases the element reference; final content stays in place |
 
----
+### `stringRenderer` - Node.js / testing
 
-### `stringRenderer` — Node.js / testing
+For server-side rendering, testing, or any context without a DOM. Stores the latest state in memory and does not produce any cursor marker output. Exposes two read methods:
 
-For server-side rendering, testing, or any context without a DOM. Stores the latest state in memory. Exposes two read methods:
-
-- **`.toString()`** — returns the plain document text, styles ignored.
-- **`.toAnsiString()`** — returns the document text with ANSI escape codes applied from styles that carry an `ansi` map.
+- **`.toString()`**, returns the plain document text, styles ignored.
+- **`.toAnsiString()`**, returns the document text with ANSI escape codes applied from styles that carry an `ansi` map.
 
 ```ts
 import { createTypewriter, stringRenderer } from "eo-typewriterjs";
@@ -117,7 +139,7 @@ console.log(renderer.toString()); // "Hello world"
 
 #### ANSI output
 
-Use the `ansi` field in a `TStyleObject` to provide ANSI code segments. The renderer joins all code values with `;` and wraps the segment in `\x1B[<codes>m...\x1B[0m`:
+Use the `ansi` field in a `TStyleObject` to provide ANSI code segments. The renderer collects all `ansi` map values for a segment, joins them with `;`, and wraps the text in `\x1B[<codes>m...\x1B[0m`:
 
 ```ts
 const renderer = stringRenderer();
@@ -140,22 +162,22 @@ If no styles carry an `ansi` map, `toAnsiString()` falls back to the same value 
 
 > `StringRenderer` does not include any cursor marker in either output method.
 
----
-
 ## Custom renderer
 
-Implement [`IRenderer`](/api/interfaces/IRenderer) to write to any output target:
+Implement [`IRenderer`](/api/interfaces/IRenderer) to write to any output target. Only `render` is required; `mount` and `unmount` are optional:
 
 ```ts
 import type { IRenderer, TTypewriterState } from "eo-typewriterjs";
 
-class ConsoleRenderer implements IRenderer {
-  mount(_state: TTypewriterState): void {
-    process.stdout.write("\x1Bc"); // clear terminal
-  }
 
+
+class ConsoleRenderer implements IRenderer {
   render(state: TTypewriterState): void {
     process.stdout.write(`\r${state.document.text}`);
+  }
+
+  mount(_state: TTypewriterState): void {
+    process.stdout.write("\x1Bc"); // clear terminal
   }
 
   unmount(): void {
@@ -173,11 +195,9 @@ await tw.play();
 
 | Method | When called | Typical use |
 |---|---|---|
-| `mount(state)` | Once, before the first event | Prepare the output target |
 | `render(state)` | After every event | Write the updated text |
-| `unmount()` | Once, after the last event | Tear down / flush |
-
----
+| `mount(state)` | Once, before the first event | Prepare the output target |
+| `unmount()` | Optional teardown | Flush / release resources |
 
 ## Reading state
 
