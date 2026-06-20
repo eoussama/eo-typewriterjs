@@ -16,7 +16,7 @@ hero:
       text: API Reference
       link: /api/
     - theme: alt
-      text: Sandbox
+      text: "Sandbox ↗\uFE0E"
       link: https://eoussama.github.io/eo-typewriterjs/sandbox/
       target: _blank
 
