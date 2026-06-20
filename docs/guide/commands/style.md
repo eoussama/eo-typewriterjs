@@ -1,6 +1,6 @@
-# `.style()` — apply a style to typed text
+# `.style()` — apply a style to document text
 
-Applies a style style to a range of already-typed document text.
+Applies a style to a range of already-typed document text.
 
 ```ts
 tw.timeline.style(
@@ -10,21 +10,21 @@ tw.timeline.style(
 ): TimelineBuilder
 ```
 
-`.style()` is an **instant command**. It produces a single event at the current timeline clock position and does **not** advance the clock. The applied style is permanent — it persists in the document until the marked text is deleted.
+`.style()` is an **instant command**. It produces a single event at the current timeline clock position and does **not** advance the clock. The applied style is permanent — it persists in the document state until the marked text is deleted or `.unstyle()` removes it.
 
 ## Parameters
 
 | Parameter | Type | Description |
 |---|---|---|
-| `style` | `TStyleRef` | The style to apply — a CSS class name or a `TStyleObject` |
-| `range` | `TStyleRange \| "selection"` | Where to apply the style — absolute indices or the current selection |
-| `options` | `TStyleOptions` | Optional cursor targeting |
+| `style` | `TStyleRef` | The style to apply — a CSS class name string or a `TStyleObject` |
+| `range` | `TStyleRange \| "selection"` | Where to apply the style — absolute `{ from, to }` indices or the cursor's current selection |
+| `options` | `TStyleOptions` | Optional cursor targeting and lifecycle hooks |
 
 ## Options
 
 ```ts
 type TStyleOptions = {
-  cursor?: TCursorSelector; // default: "main"
+  cursor?: TCursorSelector; // default: "main" (used when range is "selection")
   before?: TCallbackHook;
   after?: TCallbackHook;
   audio?: TAudioCommandOverride;
@@ -43,16 +43,17 @@ type TStyleOptions = {
 A style reference is either a plain class name string or a `TStyleObject`:
 
 ```ts
-// plain class name
-tw.timeline.style("highlight", { from: 0, to: 5 });
+// Plain class name — simplest form
+tw.timeline.style("highlight", { from: 6, to: 11 });
 
-// full style object
+// Full style object — mix and match fields as needed
 tw.timeline.style(
   {
     className: "error",
     css: { color: "#ef4444", fontWeight: "bold" },
-    attrs: { "data-label": "error" },
+    attrs: { "data-label": "error", "role": "alert" },
     ansi: { fg: "31", bold: "1" },
+    meta: { severity: "critical" },
   },
   { from: 0, to: 5 }
 );
@@ -62,13 +63,13 @@ tw.timeline.style(
 
 | Field | Type | Description |
 |---|---|---|
-| `className` | `string` | One or more CSS class names (space-separated) |
+| `className` | `string` | One or more CSS class names (space-separated), applied to the rendered span |
 | `css` | `Record<string, string>` | Inline CSS properties applied to the rendered span |
-| `attrs` | `Record<string, string>` | HTML attributes set on the rendered span |
+| `attrs` | `Record<string, string>` | HTML attributes set on the rendered span (e.g. `aria-*`, `data-*`) |
 | `ansi` | `Record<string, string>` | ANSI escape code segments used by `StringRenderer.toAnsiString()` |
-| `meta` | `Record<string, unknown>` | Arbitrary metadata; available for custom renderer inspection |
+| `meta` | `Record<string, unknown>` | Arbitrary metadata — available for custom renderer inspection |
 
-All fields are optional. A `TStyleObject` with no fields is valid but has no visible effect.
+All fields are optional and can be used in any combination.
 
 ## Range (`TStyleRange`)
 
@@ -80,27 +81,30 @@ type TStyleRange = { from: number; to: number };
 - `to` — exclusive end index
 
 ```ts
-// styles characters at indices 6, 7, 8, 9, 10 ("World" in "Hello World")
+// Styles characters at indices 6, 7, 8, 9, 10 = "World" in "Hello World"
 tw.timeline.style("highlight", { from: 6, to: 11 });
 ```
 
+Ranges are evaluated against the document text at the moment the event fires during playback. An out-of-bounds range is stored as-is; renderers clip styles to the visible text length.
+
 ### Using `"selection"`
 
-When `range` is `"selection"`, the style is applied to the targeted cursor's **current selection range** at the moment the event fires:
+When `range` is `"selection"`, the style is applied to the targeted cursor's **current selection range** at the moment the event fires. This is equivalent to passing `{ from: selection.from, to: selection.to }`.
 
 ```ts
 tw.timeline
-  .type("Hello World")
-  .move(6)
-  .select(5) // selects "World" (indices 6–11)
-  .style("highlight", "selection"); // styles exactly that range
+  .type("Hello World", { by: "char", interval: 80 })
+  .wait(400)
+  .move(-5)
+  .select(5)                         // selects "World" (indices 6–11)
+  .style("highlight", "selection"); // styles that range
 ```
 
-The style is applied using the selection's `from`/`to` values — it is equivalent to calling `.style(style, { from: selection.from, to: selection.to })`. The selection itself is not affected by `.style()`; use `.move()` or `.type()` to clear it afterward.
+`.style()` reads the selection range but does **not** clear the selection. Use `.move()` or `.unselect()` afterward to dismiss the visual highlight.
 
 ## Styling text as it is typed
 
-To attach a style to characters during insertion (rather than after), use the `style` option on `.type()`:
+To attach a style to characters during insertion rather than after, use the `style` option on `.type()`:
 
 ```ts
 tw.timeline
@@ -108,113 +112,149 @@ tw.timeline
   .type("World!", { style: "accent", interval: 80 });
 ```
 
-This is functionally equivalent to calling `.style()` immediately after each inserted character. See [`.type()`](/guide/commands/type#styling-text-while-typing) for details.
+See [`.type()` — styling while typing](/guide/commands/type#styling-text-while-typing) for details.
 
 ## Examples
 
-### Highlight a word in already-typed text
+### Highlight a word after typing
 
 ```ts
 tw.timeline
   .type("Hello World", { by: "char", interval: 80 })
+  .wait(400)
   .style("highlight", { from: 6, to: 11 });
 
 await tw.play();
-// "World" is wrapped in a <span class="highlight"> in the DOM renderer
+// "World" is wrapped in a span with class "highlight"
 ```
 
-### Multiple styles
+### Multiple non-overlapping styles
 
 ```ts
 tw.timeline
   .type("Error: file not found", { by: "char", interval: 60 })
-  .style("error", { from: 0, to: 5 }) // "Error"
-  .style("muted", { from: 7, to: 21 }); // "file not found"
+  .style("token-error",  { from: 0,  to: 5  })  // "Error"
+  .style("token-colon",  { from: 5,  to: 7  })  // ": "
+  .style("token-path",   { from: 7,  to: 21 }); // "file not found"
 
 await tw.play();
 ```
 
-### Inline CSS style
+### Inline CSS style — no class needed
 
 ```ts
 tw.timeline
-  .type("Danger zone", { by: "char", interval: 80 })
+  .type("Danger zone ahead", { by: "char", interval: 70 })
   .style(
-    { css: { color: "#ef4444", fontWeight: "bold" } },
+    { css: { color: "#ef4444", fontWeight: "bold", textDecoration: "underline" } },
     { from: 0, to: 6 }
   );
 
 await tw.play();
-// "Danger" renders with red bold text
+// "Danger" renders red, bold, and underlined
 ```
 
 ### Selection-based style
 
 ```ts
 tw.timeline
-  .type("Hello World", { by: "char", interval: 80 })
-  .wait(600)
-  .move(6)
-  .select(5)
-  .style("highlight", "selection") // styles the selection
-  .move(11); // clears the selection UI
+  .type("The quick brown fox", { by: "char", interval: 70 })
+  .wait(500)
+  .move(-9)
+  .select(5)                         // selects "brown"
+  .style("emphasis", "selection")   // marks "brown"
+  .move("end");                      // clears selection, moves to end
 
 await tw.play();
-// "World" permanently carries the "highlight" class
+// "brown" permanently carries the "emphasis" class
+```
+
+### Accessibility attributes via `attrs`
+
+```ts
+tw.timeline
+  .type("Critical: disk full", { by: "char", interval: 60 })
+  .style(
+    {
+      className: "alert",
+      attrs: { role: "alert", "aria-live": "assertive" },
+    },
+    { from: 0, to: 8 }
+  );
+
+await tw.play();
+// "Critical" span has role="alert" aria-live="assertive"
 ```
 
 ### ANSI style for terminal output
 
 ```ts
 tw.timeline
-  .type("Error: file not found", { by: "char", interval: 20 })
+  .type("Error: permission denied", { by: "char", interval: 40 })
   .style({ ansi: { fg: "31", bold: "1" } }, { from: 0, to: 5 });
 
 await tw.play();
 
 const renderer = stringRenderer();
-
 // ...
-renderer.toAnsiString(); // "\x1B[31;1mError\x1B[0m: file not found"
+console.log(renderer.toAnsiString());
+// "\x1B[31;1mError\x1B[0m: permission denied"
 ```
 
-### Combined: class + attrs for accessibility
+### Animate a highlight then swap it
 
 ```ts
 tw.timeline
-  .type("Critical error occurred", { by: "char", interval: 60 })
-  .style(
-    { className: "alert", attrs: { "role": "alert", "aria-live": "assertive" } },
-    { from: 0, to: 8 }
-  );
+  .type("Searching for pattern...", { by: "char", interval: 55 })
+  .wait(800)
+  .select("whole")
+  .style("searching", "selection")  // apply "searching" to everything
+  .unselect()
+  .wait(1000)
+  .unstyle({ from: 0, to: 24 })     // remove "searching"
+  .style("found", { from: 0, to: 9 }); // apply "found" to "Searching"
+
+await tw.play();
+```
+
+### Layered styles on the same range
+
+```ts
+tw.timeline
+  .type("Important Notice", { by: "char", interval: 60 })
+  .style("bold", { from: 0, to: 9 })
+  .style("underline", { from: 0, to: 9 });
+// Both styles accumulate — the DOM renderer produces nested spans
 
 await tw.play();
 ```
 
 ## Interaction with renderers
 
-**DOM renderer** — each style produces a `<span>` wrapping the marked characters. If `className` is set, it is applied as a CSS class. If `css` is set, it is applied as inline styles. If `attrs` is set, the attributes are added to the span element. Overlapping styles produce nested spans.
+The **DOM renderer** wraps styled characters in `<span>` elements. Styles are applied in this order:
+1. `className` — added as CSS classes
+2. `css` — applied as inline styles
+3. `attrs` — added as HTML attributes
 
-**String renderer** — `toString()` ignores styles and returns plain text. `toAnsiString()` reads the `ansi` field of each style and wraps the styled range with ANSI escape codes.
+Overlapping styles on the same character range produce nested spans. Use `segmentRichText(document)` to get pre-segmented ranges with merged style metadata if your custom renderer needs a flat structure.
 
-**Custom renderers** — styles are available on `state.document.styles` as a `TTextStyle[]` array. Use `segmentRichText(document)` to get pre-segmented character ranges with merged style information.
+The **string renderer** ignores styles in `toString()`. In `toAnsiString()`, the `ansi` field of each style is applied as ANSI escape codes.
 
 ## Interaction with deletion
 
-When the document text is mutated by `.delete()`:
-- Styles that fully cover the deleted range are **removed**.
-- Styles that partially overlap the deleted range are **trimmed** to the new boundary.
-- Styles that sit entirely before the deletion point are **shifted left** by the number of deleted characters.
-- Styles that sit entirely after the deletion point are unaffected.
+When `.delete()` removes text that overlaps a styled range:
+
+- Styles **fully inside** the deleted range are removed entirely.
+- Styles **partially overlapping** the deleted range are trimmed to the new boundary.
+- Styles **entirely outside** the deleted range are preserved and their indices are adjusted.
 
 ## Edge cases
 
-- **`from === to`** — an empty style; applies to no characters. Valid but has no visible effect.
-- **`from > to`** — undefined behavior. Always use `from < to`.
-- **`range` out of document bounds** — the style is applied with the given indices even if they exceed the current document length. The renderer clips styles to the visible text.
-- **`"selection"` with no active selection** — applies a zero-width style at the cursor position. Effectively a no-op.
-- **Multiple styles on the same range** — all styles accumulate. The DOM renderer produces nested spans; `mergeStyles()` can merge them if needed.
-- **Style survives replay** — styles applied in a previous `play()` are part of the document state. On `replay()`, the document is reset before compilation runs again, so styles are re-applied cleanly.
+- **`from === to`** — zero-width style; valid but has no visible effect.
+- **`from > to`** — undefined behavior; always use `from < to`.
+- **`"selection"` with no active selection** — applies a zero-width style at the cursor position. Effectively a no-op in renderers.
+- **Multiple styles on the same range** — all accumulate; no deduplication is performed.
+- **Out-of-bounds range** — the style is stored with the given indices. Renderers clip to visible text length.
 
 ## Type reference
 

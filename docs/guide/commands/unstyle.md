@@ -1,4 +1,4 @@
-# `.unstyle()` — remove text styles from a range
+# `.unstyle()` — remove styles from a range
 
 Removes text styles that overlap a given document range or cursor selection.
 
@@ -9,20 +9,20 @@ tw.timeline.unstyle(
 ): TimelineBuilder
 ```
 
-`.unstyle()` is an **instant command**. It produces a single event at the current timeline clock position and does **not** advance the clock. Styles are never mutated — they are either removed entirely (if fully inside the range) or **clipped** to exclude the range (if they partially overlap).
+`.unstyle()` is an **instant command**. It produces a single event at the current timeline clock position and does **not** advance the clock. Styles are never partially modified in-place — they are either removed entirely (if fully inside the range) or **clipped** to exclude the unstyle range (if they partially overlap).
 
 ## Parameters
 
 | Parameter | Type | Description |
 |---|---|---|
-| `range` | `TStyleRange \| "selection"` | The range to clear — absolute indices or the current cursor selection |
+| `range` | `TStyleRange \| "selection"` | The range to clear — absolute `{ from, to }` indices or the cursor's current selection |
 | `options` | `TUnstyleOptions` | Optional cursor targeting and lifecycle hooks |
 
 ## Options
 
 ```ts
 type TUnstyleOptions = {
-  cursor?: TCursorSelector; // default: "main"
+  cursor?: TCursorSelector; // default: "main" (used when range is "selection")
   before?: TCallbackHook;
   after?: TCallbackHook;
   audio?: TAudioCommandOverride;
@@ -46,33 +46,35 @@ type TStyleRange = { from: number; to: number };
 - `to` — exclusive end index
 
 ```ts
-// removes styles overlapping characters 6–10 ("World" in "Hello World")
+// Removes styles that overlap characters 6–10 ("World" in "Hello World")
 tw.timeline.unstyle({ from: 6, to: 11 });
 ```
 
 ### Using `"selection"`
 
-When `range` is `"selection"`, the styles are removed from the targeted cursor's **current selection range** at the moment the event fires. The selection itself is also cleared after the styles are removed.
+When `range` is `"selection"`, the styles are removed from the targeted cursor's **current selection range** at the moment the event fires. Unlike `.style("...", "selection")`, `.unstyle("selection")` **does clear the selection** after it runs.
 
 ```ts
 tw.timeline
-  .type("Hello World")
-  .move(6)
-  .select(5) // selects "World"
-  .unstyle("selection"); // removes styles in the selection range
+  .type("Hello World", { by: "char", interval: 80 })
+  .style("highlight", { from: 0, to: 11 }) // style the whole thing
+  .wait(600)
+  .move(-5)
+  .select(5)               // selects "World"
+  .unstyle("selection");   // removes styles from "World"; selection is also cleared
 ```
 
 ## Clipping behavior
 
-Styles that partially overlap the unstyle range are clipped rather than fully removed. Styles that span the entire range are split into two fragments:
+Styles that partially overlap the unstyle range are clipped — not removed entirely. A style that spans the entire range is split into two fragments flanking the cleared area.
 
 | Style position relative to unstyle range | Result |
 |---|---|
 | Entirely outside the range | Preserved unchanged |
 | Entirely inside the range | Removed |
-| Overlaps from the left (`style.from < from`) | Clipped: `style.to` set to `from` |
-| Overlaps from the right (`style.to > to`) | Clipped: `style.from` set to `to` |
-| Spans the entire range | Split into two: `[style.from, from]` and `[to, style.to]` |
+| Overlaps only from the left (`style.from < from`) | Clipped: `style.to` set to `from` |
+| Overlaps only from the right (`style.to > to`) | Clipped: `style.from` set to `to` |
+| Spans the entire range (`style.from < from` and `style.to > to`) | Split into two: `[style.from, from]` and `[to, style.to]` |
 
 ## Examples
 
@@ -81,95 +83,122 @@ Styles that partially overlap the unstyle range are clipped rather than fully re
 ```ts
 tw.timeline
   .type("Hello World", { by: "char", interval: 80 })
-  .style("highlight", { from: 0, to: 11 }) // styles everything
+  .style("highlight", { from: 0, to: 11 })  // style everything
   .wait(800)
-  .unstyle({ from: 6, to: 11 }); // removes style from "World"
+  .unstyle({ from: 6, to: 11 });            // remove from "World"
 
 await tw.play();
 // "Hello " still carries "highlight"; "World" does not
 ```
 
-### Partial overlap is clipped
+### Partial overlap is clipped, not removed
 
 ```ts
 tw.timeline
   .type("Hello World", { by: "char", interval: 80 })
-  .style("highlight", { from: 0, to: 11 }) // styles all 11 chars
-  .wait(800)
-  .unstyle({ from: 3, to: 8 }); // unstyle overlaps the single style
+  .style("highlight", { from: 0, to: 11 })  // one style covers 0–11
+  .wait(600)
+  .unstyle({ from: 3, to: 8 });             // unstyle the middle
 
 await tw.play();
 // style is split: [0, 3] and [8, 11] both keep "highlight"
-// characters 3–7 are no longer marked
+// characters 3–7 are unstyled
 ```
 
-### Remove styles using the current selection
+### Span split — both ends are preserved
+
+```ts
+tw.timeline
+  .type("ABCDEFGHIJ", { by: "char", interval: 60 })
+  .style("marked", { from: 0, to: 10 })   // style all 10 characters
+  .wait(500)
+  .unstyle({ from: 3, to: 7 });           // unstyle the middle 4
+
+await tw.play();
+// "marked" style remains on [0, 3] and [7, 10]
+// characters D, E, F, G (indices 3–6) are cleared
+```
+
+### Selection-based unstyle
 
 ```ts
 tw.timeline
   .type("Hello World", { by: "char", interval: 80 })
   .style("highlight", { from: 0, to: 11 })
   .wait(600)
-  .move(6)
-  .select(5) // selects "World"
-  .unstyle("selection"); // removes styles in the selection, clears selection
+  .move(-5)
+  .select(5)           // selects "World"
+  .unstyle("selection"); // removes styles from "World"; selection is cleared
 
 await tw.play();
-// "Hello " is still highlighted; "World" is not
+// "Hello " is still highlighted; "World" is not; selection UI is gone
 ```
 
-### Remove multiple overlapping styles
+### Remove multiple overlapping styles at once
 
 ```ts
 tw.timeline
-  .type("Hello World", { by: "char", interval: 80 })
-  .style("bold", { from: 0, to: 7 }) // "Hello W"
-  .style("italic", { from: 4, to: 11 }) // "o World"
+  .type("Hello World", { by: "char", interval: 70 })
+  .style("bold",   { from: 0, to: 7 })   // "Hello W"
+  .style("italic", { from: 4, to: 11 })  // "o World"
   .wait(600)
-  .unstyle({ from: 4, to: 7 }); // unstyles the overlapping region
+  .unstyle({ from: 4, to: 7 });          // remove styles from overlapping region
 
 await tw.play();
-// "bold" is clipped to [0, 4]; "italic" is clipped to [7, 11]
-// characters 4–6 carry neither style
+// "bold"   is clipped to [0, 4]
+// "italic" is clipped to [7, 11]
+// characters 4–6 ("o W") carry no style
 ```
 
-### Animate style then unstyle
+### Animate a style transition
 
 ```ts
 tw.timeline
-  .type("Searching...", { by: "char", interval: 60 })
-  .style("searching", { from: 0, to: 12 })
-  .wait(1200)
-  .unstyle({ from: 0, to: 12 }) // remove the search indicator
-  .style("found", { from: 0, to: 9 }); // apply result style
+  .type("Deploying...", { by: "char", interval: 60 })
+  .style("pending", { from: 0, to: 12 })
+  .wait(1500)
+  .unstyle({ from: 0, to: 12 })    // remove "pending"
+  .style("success", { from: 0, to: 12 }); // apply "success"
 
 await tw.play();
+```
+
+### Unstyle then restyle a word mid-animation
+
+```ts
+tw.timeline
+  .type("Status: loading", { by: "char", interval: 60 })
+  .style("status-loading", { from: 8, to: 15 })
+  .wait(1200)
+  .move(-7)
+  .select(7)                          // selects "loading"
+  .unstyle("selection")               // remove "status-loading" from "loading"
+  .style("status-done", "selection"); // apply "status-done" to the same range
+
+await tw.play();
+// "loading" now carries "status-done" instead of "status-loading"
+// selection was cleared by unstyle
 ```
 
 ## Interaction with renderers
 
-`.unstyle()` modifies `state.document.styles`. All renderers that read styles — the DOM renderer and `StringRenderer.toAnsiString()` — will reflect the removal on the next render frame.
+`.unstyle()` modifies `state.document.styles`. On the next render frame, the DOM renderer re-renders affected spans, and `StringRenderer.toAnsiString()` reflects the updated style list.
+
+## Relationship to `.style()`
+
+`.unstyle()` is the inverse of `.style()`. Both share the same range input format and support `"selection"`. The key difference in selection behavior:
+
+| Command | With `"selection"` | Clears selection afterward? |
+|---|---|---|
+| `.style()` | Reads selection range; applies style | No |
+| `.unstyle()` | Reads selection range; removes styles | Yes |
 
 ## Edge cases
 
 - **No styles in range** — no-op; the styles array is returned unchanged.
 - **`from === to`** — empty range; no styles are affected.
-- **`"selection"` with no active selection** — returns state unchanged without modifying styles or raising an error.
-- **`"selection"` clears the selection** — when `range` is `"selection"`, the cursor's selection is cleared after the styles are removed, mirroring the behavior of `.style("...", "selection")`.
-- **Range exceeds document bounds** — styles are still evaluated against the provided `from`/`to` values. Out-of-bounds indices produce correct results because styles are compared numerically.
-
-## Relationship to `.style()`
-
-`.unstyle()` is the inverse of `.style()`. Where `.style()` adds a style to a range, `.unstyle()` removes it. The two commands share the same range input format and support the same `"selection"` shorthand.
-
-```ts
-// Style then unstyle the same range — document ends with no styles
-tw.timeline
-  .type("Hello")
-  .style("highlight", { from: 0, to: 5 })
-  .wait(600)
-  .unstyle({ from: 0, to: 5 });
-```
+- **`"selection"` with no active selection** — the state is returned unchanged; no styles removed, no error.
+- **Range exceeds document bounds** — styles are evaluated against the provided indices numerically; out-of-bounds values produce correct results.
 
 ## Type reference
 
