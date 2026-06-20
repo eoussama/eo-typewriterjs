@@ -132,7 +132,7 @@ The `by` option on `.type()` and `.delete()` controls how text is segmented:
 | `"grapheme"` | One event per user-perceived character (Unicode grapheme cluster, handles composite emoji, ZWJ sequences, accented characters, etc.) |
 | `"word"` | One event per word (trailing whitespace attached to the preceding word) |
 | `"line"` | One event per line (newline attached to the preceding line) |
-| `"custom"` | Entire text as a single event |
+| `"whole"` | Entire text as a single event |
 | `{ unit, amount }` | `amount` consecutive segments of the given unit joined into one event |
 
 ## Renderer contract

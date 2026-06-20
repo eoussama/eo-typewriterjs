@@ -29,22 +29,22 @@ features:
     details: Move the cursor, select ranges, apply styles, and delete text while the animation runs. The document rewrites itself as it plays.
   - icon: 🌐
     title: Unicode that just works
-    details: Emoji, accented characters, RTL text, and grapheme clusters all behave correctly. Type by character, word, line, or custom chunk, no broken glyphs.
+    details: Handle Unicode text safely, including emoji, combining marks, grapheme clusters, and RTL content. Type by character, word, line, or custom chunk without broken grapheme stepping.
   - icon: 🎯
     title: Render anywhere
     details: Built-in DOM and string renderers out of the box. Implement IRenderer to target a canvas, a terminal, a stream, or anything else.
   - icon: ⏯️
     title: Full playback control
-    details: Play, pause, stop, and replay from any point. Per-command callbacks let you react to each step and drive interactive flows.
+    details: Play, pause, stop, replay, seek, and step through playback. Hooks and callbacks let you react to timed steps and orchestrate interactive flows.
   - icon: 🔷
     title: TypeScript-first
-    details: Every command, event, and renderer contract is fully typed and exported. The entire API surface is covered, no any, no surprises.
+    details: Commands, events, renderers, styles, and playback controls are strongly typed and exported for first-class TypeScript workflows.
   - icon: ⚡
     title: Lightweight by design
-    details: Pure ESM, no heavy runtime. A minimal event loop keeps animations smooth without blocking the main thread.
+    details: Lean playback core with minimal overhead and no renderer lock-in. Keep animations responsive while targeting the DOM, strings, or any custom output.
   - icon: 🔊
     title: Built-in audio engine
-    details: Attach sound effects to typing, deletion, and custom commands. Configure voice packs and per-channel volume for an audible layer.
+    details: Add audio to typing and deletion with configurable voices, strategies, and per-command overrides for a more tactile playback experience.
   - icon: 🧪
     title: Tested end to end
     details: Vitest unit tests and a full Playwright browser harness cover reducers, renderers, cursor movement, styling, editing, and callbacks.
