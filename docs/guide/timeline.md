@@ -1,6 +1,11 @@
 # Timeline
 
-The `TimelineBuilder` is the primary interface for scheduling what the typewriter produces. Commands are stored in declaration order and compiled into a flat, time-sorted list of playback events when `play()` is called.
+The `TimelineBuilder` is the central interface for defining what the typewriter produces. It works at two levels:
+
+- **Commands**: an ordered list of typed instructions (`type`, `delete`, `wait`, etc.) stored on the builder. `play()` and `replay()` execute these sequentially through an async executor.
+- **Compiled events**: a flat, time-sorted array of `TTimelineEvent` objects derived from the command list. `seek()`, `stepForward()`, and `stepBackward()` navigate this event stream using a checkpoint model.
+
+The two levels are complementary. Commands carry lifecycle hooks and async callbacks that only run during sequential execution. Compiled events provide the positional data needed for instant, deterministic state reconstruction.
 
 ## Accessing the timeline
 
@@ -8,8 +13,6 @@ Every typewriter instance exposes a `timeline` property:
 
 ```ts
 import { createTypewriter, domRenderer } from "eo-typewriterjs";
-
-
 
 const tw = createTypewriter({ renderer: domRenderer(el) });
 
@@ -23,71 +26,82 @@ await tw.play();
 
 ## Chaining
 
-All `TimelineBuilder` methods return `this`, so calls can be chained fluently:
+All `TimelineBuilder` methods return `this`, so calls chain fluently:
 
 ```ts
 tw.timeline
   .type("Loading", { interval: 80 })
   .type("...", { interval: 300 })
   .wait(400)
-  .delete(3, { interval: 80 })
-  .type("!", { interval: 1 });
+  .delete(6, { interval: 1 })
+  .type("ed!", { by: "word" });
 ```
 
 Commands are appended in the order they are called.
 
 ## Commands
 
-| Command | Method | Advances clock? |
+| Command | Method | Compiled timeline effect |
 |---|---|---|
-| [Type](/guide/commands/type) | `.type(text, options?)` | ✅ yes |
-| [Wait](/guide/commands/wait) | `.wait(duration)` | ✅ yes |
-| [Delete](/guide/commands/delete) | `.delete(count, options?)` | ✅ yes |
-| [Move](/guide/commands/move) | `.move(index, options?)` | ❌ instant |
-| [Select](/guide/commands/select) | `.select(count, options?)` | ❌ instant |
-| [UnSelect](/guide/commands/unselect) | `.unselect(options?)` | ❌ instant |
-| [Style](/guide/commands/style) | `.style(style, range, options?)` | ❌ instant |
-| [Unstyle](/guide/commands/unstyle) | `.unstyle(range, options?)` | ❌ instant |
-| [Call](/guide/commands/call) | `.call(fn, options?)` | ❌ instant |
+| [Type](/guide/commands/type) | `.type(text, options?)` | One event per step, advances clock |
+| [Wait](/guide/commands/wait) | `.wait(duration)` | No events, advances clock |
+| [Delete](/guide/commands/delete) | `.delete(count, options?)` | One event per step, advances clock |
+| [Move](/guide/commands/move) | `.move(index, options?)` | One event at current clock position |
+| [Select](/guide/commands/select) | `.select(count, options?)` | One event at current clock position |
+| [Unselect](/guide/commands/unselect) | `.unselect(options?)` | One event at current clock position |
+| [Style](/guide/commands/style) | `.style(style, range, options?)` | One event at current clock position |
+| [Unstyle](/guide/commands/unstyle) | `.unstyle(range, options?)` | One event at current clock position |
+| [Call](/guide/commands/call) | `.call(fn, options?)` | No compiled events, runtime only |
 
 See the [Commands overview](/guide/commands/) for the full reference.
 
 ## Timing model
 
-- The timeline has an internal **clock cursor** that starts at `0 ms`.
-- Commands that produce events (`type`, `delete`) advance the clock by `count × interval` ms.
-- `.wait(duration)` advances the clock by `duration` ms without producing any events.
-- Instant commands (`move`, `select`, `unselect`, `style`, `unstyle`, `call`) do **not** advance the clock — they execute at the current clock position.
+The compiler maintains an internal clock cursor starting at `0 ms`. Each command is placed relative to that cursor:
 
-Instant commands placed after a timed command fire at the exact timestamp of that command's last step.
+- `type` and `delete` advance the clock by the total duration of all their steps (`count × interval`).
+- `wait` advances the clock by its `duration` without producing any state-changing events.
+- `move`, `select`, `unselect`, `style`, and `unstyle` are compiled at the current clock position without advancing it. If one of these follows a timed command, its compiled event is placed at that command's ending timestamp.
+- `call` has no compiled representation at all. It does not appear in the event stream and does not affect the clock.
 
-## Compilation
+## Playback paths
 
-When `play()` (or `replay()`) is called, the player calls `compile(tw.timeline.commands)` internally, which converts the command list into a flat, time-sorted array of `TTimelineEvent` objects. You do not need to trigger compilation manually.
+The player uses two distinct paths depending on the operation:
 
-The compiled events are cached and reused as long as the command list has not changed (tracked via the `version` counter on `TimelineBuilder`).
+**Sequential execution**: used by `play()` and `replay()`
+
+Commands are run one by one through an async executor. Each step applies a state mutation, calls `renderer.render()`, and honors any configured `before`/`after` hooks. Async `.call()` callbacks are awaited before the next command begins.
+
+**Event-based navigation**: used by `seek()`, `stepForward()`, and `stepBackward()`
+
+The player reconstructs state by replaying compiled events up to a target position. It uses a checkpoint system (a snapshot stored every 50 events) to avoid reprocessing the full event list on every operation.
+
+Because `.call()` has no compiled events, it does not fire during event-based navigation. Lifecycle hooks also only run during sequential execution, not during seek or step reconstruction.
 
 ## Replaying
 
-Because commands are stored in the builder, the same animation can be replayed without rebuilding the timeline:
+Because commands are stored on the builder, the same animation can be replayed without rebuilding the timeline:
 
 ```ts
-await tw.play(); // first run
-await tw.replay(); // replays the same sequence
+await tw.play();
+await tw.replay();
 ```
 
 ## Inspecting commands
 
-```ts
-console.log(tw.timeline.commands);
-// ReadonlyArray<TCommand>
-```
+The `commands` property exposes the raw ordered command list:
 
-The `commands` property exposes the raw ordered command list for debugging or introspection.
+```ts
+console.log(tw.timeline.commands); // ReadonlyArray<TCommand>
+```
 
 ## Lifecycle hooks
 
-Every command accepts optional `before` and `after` hooks. These are useful for observing or reacting to each step without scheduling a separate `.call()` command. See [Hooks & Context](/guide/commands/#hooks-and-context) for the full reference.
+Every command accepts optional `before` and `after` hooks. For segmented commands (`type`, `delete`) they fire once per step. For all other commands they fire once around the single operation.
+
+These hooks only execute during sequential playback (`play()`, `replay()`). They are not invoked during `seek()` or stepping.
+
+See [Hooks & Context](/guide/commands/#hooks-and-context) for the full reference.
 
 ## Type reference
 
