@@ -35,10 +35,6 @@ export default defineConfig({
       { text: "Guide", link: "/guide/getting-started" },
       { text: "API Reference", link: "/api/" },
       { text: "Sandbox", link: "https://eoussama.github.io/eo-typewriterjs/sandbox/", target: "_blank" },
-      {
-        text: "GitHub",
-        link: "https://github.com/eoussama/eo-typewriterjs",
-      },
     ],
 
     sidebar: {
