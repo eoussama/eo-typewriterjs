@@ -66,7 +66,7 @@ export function compile(commands: TCommand[]): TTimelineEvent[] {
         const result = compileMove(command as TMoveCommand, cursor);
 
         events.push(...result.events);
-        // endTime unchanged, move is instant
+        cursor = result.endTime;
         break;
       }
 
@@ -74,7 +74,7 @@ export function compile(commands: TCommand[]): TTimelineEvent[] {
         const result = compileSelect(command as TSelectCommand, cursor);
 
         events.push(...result.events);
-        // endTime unchanged, select is instant
+        cursor = result.endTime;
         break;
       }
 

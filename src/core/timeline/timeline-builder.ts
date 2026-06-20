@@ -47,6 +47,7 @@ export type TCommandHookOptions = {
  */
 export type TSelectOptions = TCommandHookOptions & {
   readonly by?: TAdvanceModeInput;
+  readonly interval?: number;
   readonly cursor?: TCursorSelector;
 };
 
@@ -66,6 +67,7 @@ export type TDeleteOptions = TCommandHookOptions & {
  */
 export type TMoveOptions = TCommandHookOptions & {
   readonly by?: TAdvanceModeInput;
+  readonly interval?: number;
   readonly cursor?: TCursorSelector;
 };
 
@@ -193,6 +195,7 @@ export class TimelineBuilder {
       cursor: options?.cursor ?? "main",
       count,
       by: options?.by,
+      interval: options?.interval,
       audio: options?.audio,
       before: options?.before,
       after: options?.after,
@@ -225,6 +228,7 @@ export class TimelineBuilder {
       cursor: options?.cursor ?? "main",
       offset,
       by: options?.by,
+      interval: options?.interval,
       audio: options?.audio,
       before: options?.before,
       after: options?.after,

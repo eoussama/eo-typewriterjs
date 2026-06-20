@@ -27,10 +27,14 @@ export type TSelectValue = number | "start" | "end" | "whole";
  *
  * Selection is computed at reduce time using the runtime document state.
  * Any subsequent type, delete, or move command clears the selection.
+ *
+ * When `interval` is provided the timeline clock advances by that many milliseconds
+ * after the event is emitted. Omit `interval` to use the default of 50 ms.
  */
 export type TSelectCommand = TBaseCommand & {
   readonly kind: typeof ECommandKind.SELECT;
   readonly cursor: TCursorSelector;
   readonly count: TSelectValue;
   readonly by?: TAdvanceModeInput;
+  readonly interval?: number;
 };

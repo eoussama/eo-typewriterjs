@@ -22,10 +22,13 @@ export type TMoveValue = number | "start" | "end";
  * - `"start"`: jump to absolute document start (index 0)
  * - `"end"`: jump to absolute document end (index text.length)
  *
- * Produces a single instant event — it does not advance the timeline clock.
+ * When `interval` is provided the timeline clock advances by that many milliseconds
+ * after the event is emitted. Omit `interval` to use the default of 50 ms.
+ * A zero numeric offset is a no-op and does not advance the clock regardless of interval.
  */
 export type TMoveCommand = TBaseCommand & {
   readonly cursor: TCursorSelector;
   readonly offset: TMoveValue;
   readonly by?: TAdvanceModeInput;
+  readonly interval?: number;
 };

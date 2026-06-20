@@ -6,6 +6,7 @@ import { EEventKind } from "../events/event-kind.enum";
 
 
 
+const DEFAULT_INTERVAL = 50;
 let selectEventCounter = 0;
 
 /**
@@ -21,18 +22,21 @@ let selectEventCounter = 0;
  * - positive: select forward from cursor
  * - negative: select backward from cursor
  *
- * All events are placed at the current start time and do not advance the clock.
+ * The clock advances by `command.interval` (or 50 ms when omitted) after the event is emitted.
+ * Multi-cursor commands fan out one event per cursor at the same timestamp;
+ * the clock advances only once.
  * The concrete selection range is resolved by the reducer at runtime.
  *
  * @param command - The select command to compile
  * @param startTime - The absolute time offset at which this command is placed
- * @returns An object containing the produced events and the unchanged end time
+ * @returns An object containing the produced events and the end time
  */
 export function compileSelect(
   command: TSelectCommand,
   startTime: number,
 ): { events: TSelectEvent[]; endTime: number } {
   const cursorIds = normalizeCursors(command.cursor);
+  const interval = command.interval ?? DEFAULT_INTERVAL;
 
   if (typeof command.count === "string") {
     const boundary = command.count;
@@ -47,7 +51,7 @@ export function compileSelect(
       sourceCommandId: command.id,
     }));
 
-    return { events, endTime: startTime };
+    return { events, endTime: startTime + interval };
   }
 
   const events: TSelectEvent[] = cursorIds.map(cursorId => ({
@@ -60,5 +64,5 @@ export function compileSelect(
     sourceCommandId: command.id,
   }));
 
-  return { events, endTime: startTime };
+  return { events, endTime: startTime + interval };
 }

@@ -6,6 +6,7 @@ import { EEventKind } from "../events/event-kind.enum";
 
 
 
+const DEFAULT_INTERVAL = 50;
 let moveEventCounter = 0;
 
 /**
@@ -17,20 +18,23 @@ let moveEventCounter = 0;
  * - `"end"`: jump to absolute document end — emits one event with boundary="end"
  *
  * Numeric operand semantics:
- * - zero offset produces no events (no-op)
- * - non-zero offset produces a relative-move event
+ * - zero offset produces no events (no-op) and does not advance the clock
+ * - non-zero offset produces a relative-move event and advances the clock by `interval`
  *
- * All events are placed at the current start time and do not advance the clock.
+ * The clock advances by `command.interval` (or 50 ms when omitted) for every emitted event.
+ * Multi-cursor commands fan out one event per cursor at the same timestamp;
+ * the clock advances only once.
  *
  * @param command - The move command to compile
  * @param startTime - The absolute time offset at which this command is placed
- * @returns An object containing the produced events and the unchanged end time
+ * @returns An object containing the produced events and the end time
  */
 export function compileMove(
   command: TMoveCommand,
   startTime: number,
 ): { events: TMoveEvent[]; endTime: number } {
   const cursorIds = normalizeCursors(command.cursor);
+  const interval = command.interval ?? DEFAULT_INTERVAL;
 
   if (typeof command.offset === "string") {
     const boundary = command.offset;
@@ -45,7 +49,7 @@ export function compileMove(
       sourceCommandId: command.id,
     }));
 
-    return { events, endTime: startTime };
+    return { events, endTime: startTime + interval };
   }
 
   if (command.offset === 0) {
@@ -62,5 +66,5 @@ export function compileMove(
     sourceCommandId: command.id,
   }));
 
-  return { events, endTime: startTime };
+  return { events, endTime: startTime + interval };
 }

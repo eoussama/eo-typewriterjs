@@ -226,7 +226,7 @@ describe("compile (move)", () => {
     expect(events[0]?.kind).toBe("move");
   });
 
-  it("does not advance the clock", () => {
+  it("zero offset is a no-op and does not advance the clock", () => {
     const events = compile([
       { id: "mc2", kind: "type", cursor: "main", text: "Hi", by: "char", interval: 100 },
       { id: "mc3", kind: "move", cursor: "main", offset: 0 },
@@ -236,6 +236,58 @@ describe("compile (move)", () => {
     const abEvents = events.filter(e => (e as TInsertEvent).text === "A" || (e as TInsertEvent).text === "B");
 
     expect(abEvents[0]?.time).toBe(200);
+  });
+
+  it("non-zero offset advances the clock by the default interval (50 ms)", () => {
+    const events = compile([
+      { id: "mc5", kind: "type", cursor: "main", text: "Hi", by: "char", interval: 100 },
+      { id: "mc6", kind: "move", cursor: "main", offset: 1 },
+      { id: "mc7", kind: "type", cursor: "main", text: "AB", by: "char", interval: 50 },
+    ]);
+
+    const abEvents = events.filter(e => (e as TInsertEvent).text === "A" || (e as TInsertEvent).text === "B");
+
+    // type "Hi" ends at 200, move advances by default 50ms → AB starts at 250
+    expect(abEvents[0]?.time).toBe(250);
+  });
+
+  it("non-zero offset with explicit interval advances the clock by that interval", () => {
+    const events = compile([
+      { id: "mc8", kind: "type", cursor: "main", text: "Hi", by: "char", interval: 100 },
+      { id: "mc9", kind: "move", cursor: "main", offset: -1, interval: 200 },
+      { id: "mc10", kind: "type", cursor: "main", text: "AB", by: "char", interval: 50 },
+    ]);
+
+    const abEvents = events.filter(e => (e as TInsertEvent).text === "A" || (e as TInsertEvent).text === "B");
+
+    // type "Hi" ends at 200, move interval=200 → AB starts at 400
+    expect(abEvents[0]?.time).toBe(400);
+  });
+
+  it("boundary move ('start'/'end') advances the clock by the default interval", () => {
+    const events = compile([
+      { id: "mc11", kind: "type", cursor: "main", text: "Hi", by: "char", interval: 100 },
+      { id: "mc12", kind: "move", cursor: "main", offset: "start" },
+      { id: "mc13", kind: "type", cursor: "main", text: "X", by: "char", interval: 50 },
+    ]);
+
+    const xEvents = events.filter(e => (e as TInsertEvent).text === "X");
+
+    // type "Hi" ends at 200, move "start" advances by 50ms → X at 250
+    expect(xEvents[0]?.time).toBe(250);
+  });
+
+  it("multi-cursor move advances the clock only once", () => {
+    const events = compile([
+      { id: "mc14", kind: "type", cursor: "main", text: "Hi", by: "char", interval: 100 },
+      { id: "mc15", kind: "move", cursor: ["a", "b"], offset: 1 },
+      { id: "mc16", kind: "type", cursor: "main", text: "X", by: "char", interval: 50 },
+    ]);
+
+    const xEvents = events.filter(e => (e as TInsertEvent).text === "X");
+
+    // clock advances once for the multi-cursor move (default 50ms) → X at 250
+    expect(xEvents[0]?.time).toBe(250);
   });
 });
 
@@ -255,7 +307,7 @@ describe("compile (select)", () => {
     expect(events[0]?.kind).toBe("select");
   });
 
-  it("does not advance the clock", () => {
+  it("advances the clock by the default interval (50 ms)", () => {
     const events = compile([
       { id: "s2", kind: "type", cursor: "main", text: "Hi", by: "char", interval: 100 },
       { id: "s3", kind: "select", cursor: "main", count: 2, by: "char" },
@@ -264,7 +316,47 @@ describe("compile (select)", () => {
 
     const abEvents = events.filter(e => (e as TInsertEvent).text === "A" || (e as TInsertEvent).text === "B");
 
-    expect(abEvents[0]?.time).toBe(200);
+    // type "Hi" ends at 200, select advances by default 50ms → AB starts at 250
+    expect(abEvents[0]?.time).toBe(250);
+  });
+
+  it("advances the clock by an explicit interval when provided", () => {
+    const events = compile([
+      { id: "s5", kind: "type", cursor: "main", text: "Hi", by: "char", interval: 100 },
+      { id: "s6", kind: "select", cursor: "main", count: 2, by: "char", interval: 300 },
+      { id: "s7", kind: "type", cursor: "main", text: "AB", by: "char", interval: 50 },
+    ]);
+
+    const abEvents = events.filter(e => (e as TInsertEvent).text === "A" || (e as TInsertEvent).text === "B");
+
+    // type "Hi" ends at 200, select interval=300 → AB starts at 500
+    expect(abEvents[0]?.time).toBe(500);
+  });
+
+  it("boundary select advances the clock by the default interval", () => {
+    const events = compile([
+      { id: "s8", kind: "type", cursor: "main", text: "Hi", by: "char", interval: 100 },
+      { id: "s9", kind: "select", cursor: "main", count: "whole" },
+      { id: "s10", kind: "type", cursor: "main", text: "X", by: "char", interval: 50 },
+    ]);
+
+    const xEvents = events.filter(e => (e as TInsertEvent).text === "X");
+
+    // type "Hi" ends at 200, select "whole" advances by 50ms → X at 250
+    expect(xEvents[0]?.time).toBe(250);
+  });
+
+  it("multi-cursor select advances the clock only once", () => {
+    const events = compile([
+      { id: "s11", kind: "type", cursor: "main", text: "Hi", by: "char", interval: 100 },
+      { id: "s12", kind: "select", cursor: ["a", "b"], count: 3, by: "char" },
+      { id: "s13", kind: "type", cursor: "main", text: "X", by: "char", interval: 50 },
+    ]);
+
+    const xEvents = events.filter(e => (e as TInsertEvent).text === "X");
+
+    // clock advances once for the multi-cursor select (default 50ms) → X at 250
+    expect(xEvents[0]?.time).toBe(250);
   });
 });
 
