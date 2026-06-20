@@ -2794,6 +2794,189 @@ describe("integration (unstyle)", () => {
 });
 
 
+describe("delete with active selection (delete-selection)", () => {
+  it("delete with active selection removes the selected range regardless of direction", async () => {
+    const renderer = stringRenderer();
+    const tw = createTypewriter({ renderer });
+
+    tw.timeline
+      .type("Hello World", { by: "char", interval: 1 })
+      .move(-5)
+      .select(5)
+      .delete(-1, { by: "char", interval: 1 });
+    await tw.play();
+
+    expect(renderer.toString()).toBe("Hello ");
+  });
+
+  it("delete forward with active selection removes the selected range", async () => {
+    const renderer = stringRenderer();
+    const tw = createTypewriter({ renderer });
+
+    tw.timeline
+      .type("Hello World", { by: "char", interval: 1 })
+      .move(-5)
+      .select(5)
+      .delete(1, { by: "char", interval: 1 });
+    await tw.play();
+
+    expect(renderer.toString()).toBe("Hello ");
+  });
+
+  it("delete('start') with active selection removes the selected range", async () => {
+    const renderer = stringRenderer();
+    const tw = createTypewriter({ renderer });
+
+    tw.timeline
+      .type("Hello World", { by: "char", interval: 1 })
+      .move(-5)
+      .select(5)
+      .delete("start");
+    await tw.play();
+
+    expect(renderer.toString()).toBe("Hello ");
+  });
+
+  it("delete('end') with active selection removes the selected range", async () => {
+    const renderer = stringRenderer();
+    const tw = createTypewriter({ renderer });
+
+    tw.timeline
+      .type("Hello World", { by: "char", interval: 1 })
+      .move(-5)
+      .select(5)
+      .delete("end");
+    await tw.play();
+
+    expect(renderer.toString()).toBe("Hello ");
+  });
+
+  it("delete clears the selection and places cursor at start of removed range", async () => {
+    const renderer = stringRenderer();
+    const tw = createTypewriter({ renderer });
+
+    tw.timeline
+      .type("Hello World", { by: "char", interval: 1 })
+      .move(-5)
+      .select(5)
+      .delete(-1, { by: "char", interval: 1 });
+    await tw.play();
+
+    const live = tw.getLiveState();
+
+    expect(live.selections.main).toBeUndefined();
+    expect(live.cursors.main?.index).toBe(6);
+  });
+
+  it("delete('whole') still clears the entire document even when a selection is active", async () => {
+    const renderer = stringRenderer();
+    const tw = createTypewriter({ renderer });
+
+    tw.timeline
+      .type("Hello World", { by: "char", interval: 1 })
+      .move(-5)
+      .select(5)
+      .delete("whole");
+    await tw.play();
+
+    expect(renderer.toString()).toBe("");
+  });
+
+  it("delete with whole-document selection removes all text", async () => {
+    const renderer = stringRenderer();
+    const tw = createTypewriter({ renderer });
+
+    tw.timeline
+      .type("Hello World", { by: "char", interval: 1 })
+      .select("whole")
+      .delete(-1, { by: "char", interval: 1 });
+    await tw.play();
+
+    expect(renderer.toString()).toBe("");
+  });
+});
+
+
+describe("insert with active selection (type-over-selection)", () => {
+  it("typing over a selection replaces it instead of inserting alongside it", async () => {
+    const renderer = stringRenderer();
+    const tw = createTypewriter({ renderer });
+
+    // Exact scenario from the bug report
+    tw.timeline
+      .type("Hello World", { by: "char", interval: 1 })
+      .wait(400)
+      .move(-5)
+      .select(5)
+      .type("TypewriterJS", { by: "whole", interval: 1 });
+    await tw.play();
+
+    expect(renderer.toString()).toBe("Hello TypewriterJS");
+  });
+
+  it("typing over a whole-document selection replaces the entire text", async () => {
+    const renderer = stringRenderer();
+    const tw = createTypewriter({ renderer });
+
+    tw.timeline
+      .type("old text", { by: "char", interval: 1 })
+      .select("whole")
+      .type("new text", { by: "whole", interval: 1 });
+    await tw.play();
+
+    expect(renderer.toString()).toBe("new text");
+  });
+
+  it("typing an empty string over a selection deletes the selection", async () => {
+    const renderer = stringRenderer();
+    const tw = createTypewriter({ renderer });
+
+    tw.timeline
+      .type("Hello World", { by: "char", interval: 1 })
+      .move(-5)
+      .select(5)
+      .type("", { by: "whole", interval: 1 });
+    await tw.play();
+
+    expect(renderer.toString()).toBe("Hello ");
+  });
+
+  it("selection replacement clears the selection afterward", async () => {
+    const renderer = stringRenderer();
+    const tw = createTypewriter({ renderer });
+
+    tw.timeline
+      .type("Hello World", { by: "char", interval: 1 })
+      .move(-5)
+      .select(5)
+      .type("JS", { by: "whole", interval: 1 });
+    await tw.play();
+
+    const live = tw.getLiveState();
+
+    expect(live.selections.main).toBeUndefined();
+    expect(renderer.toString()).toBe("Hello JS");
+  });
+
+  it("cursor is positioned after the inserted text when replacing a selection", async () => {
+    const renderer = stringRenderer();
+    const tw = createTypewriter({ renderer });
+
+    tw.timeline
+      .type("Hello World", { by: "char", interval: 1 })
+      .move(-5)
+      .select(5)
+      .type("JS", { by: "whole", interval: 1 });
+    await tw.play();
+
+    const live = tw.getLiveState();
+
+    // "Hello " (6) + "JS" (2) = cursor at 8
+    expect(live.cursors.main?.index).toBe(8);
+  });
+});
+
+
 describe("whole unit", () => {
   it("segmentText with 'whole' returns the full string as a single element array", () => {
     expect(segmentText("Hello, World!", "whole")).toEqual(["Hello, World!"]);
