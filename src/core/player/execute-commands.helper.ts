@@ -30,7 +30,6 @@ import { segmentText } from "../stepping/segment-text.helper";
 
 
 const DEFAULT_INTERVAL = 50;
-
 let _execEventCounter = 0;
 
 /**

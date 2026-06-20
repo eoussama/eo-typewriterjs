@@ -1,5 +1,9 @@
 # Getting Started
 
+::: warning Legacy versions
+Any release prior to **6.0.0** is considered legacy and is **not compatible** with version 6 or later. This documentation covers version **6.0.0 and above** only. If you are on an older version, refer to the archived release notes for that version.
+:::
+
 ## Installation
 
 ```bash
@@ -9,6 +13,8 @@ pnpm add eo-typewriterjs
 ## Quick start
 
 ### In the browser (DOM renderer)
+
+The DOM renderer writes directly into a target element. Each render call updates the element's `innerHTML`, so the output reacts to every step of the animation in real time.
 
 ```ts
 import { createTypewriter, domRenderer } from "eo-typewriterjs";
@@ -25,6 +31,8 @@ await tw.play();
 ```
 
 ### Node.js / server (string renderer)
+
+The string renderer accumulates output in memory instead of touching the DOM. Call `renderer.toString()` after playback to read the final text. This makes it usable in server-side rendering, test environments, and anywhere the browser `document` API is not available.
 
 ```ts
 import { createTypewriter, stringRenderer } from "eo-typewriterjs";
@@ -72,6 +80,8 @@ tw.timeline
 await tw.play(); // plays both in sequence
 ```
 
+> **Note:** The `\n` character is typed into the document as a literal newline. For it to render as a visible line break in the browser, the output element must preserve whitespace, for example by using a `<pre>` tag or adding `white-space: pre` via CSS.
+
 ## Playback controls
 
 `tw.play()` returns a `Promise<void>` that resolves when all events finish. The same instance also exposes pause, stop, and replay:
@@ -113,10 +123,24 @@ const tw = createTypewriter({
 });
 ```
 
+You can adjust or toggle audio at any point during playback. Changes take effect immediately on the next sound event:
+
+```ts
+// Lower the volume mid-animation
+tw.audio.setVolume(0.3);
+
+// Mute audio entirely without stopping playback
+tw.audio.setEnabled(false);
+
+// Unmute and restore volume
+tw.audio.setEnabled(true);
+tw.audio.setVolume(1);
+```
+
 ## Next steps
 
-- Read the [Core Concepts](./core-concepts) page to understand the pipeline, state shape, and runtime controls.
-- See the available [Renderers](./renderers) for DOM, string, and custom output targets.
-- Explore the [Timeline & Commands](./timeline) page for all commands and advance modes.
-- Browse the [Commands overview](./commands/) for per-command option references, including [call](./commands/call), hooks, and audio overrides.
-- Try the interactive **[Sandbox](https://eoussama.github.io/eo-typewriterjs/sandbox/)** to experiment in real time.
+- Read the [Core Concepts](./core-concepts) page to understand the document model, state shape, and how the pipeline works.
+- See the [Renderers](./renderers) guide for DOM, string, and custom renderer targets.
+- Explore the [Timeline](./timeline) page for all available commands and advance modes.
+- Browse the [Commands reference](./commands/) for per-command options, including [type](./commands/type), [delete](./commands/delete), [wait](./commands/wait), [move](./commands/move), [select](./commands/select), [style](./commands/style), and [call](./commands/call).
+- Try the interactive **[Sandbox](https://eoussama.github.io/eo-typewriterjs/sandbox/)** to experiment with timelines in real time without any setup.
