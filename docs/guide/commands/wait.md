@@ -6,7 +6,7 @@ Inserts a timed gap before the next command starts.
 tw.timeline.wait(duration: number, options?: TWaitOptions): TimelineBuilder
 ```
 
-`.wait()` is a **timing-only command**. It advances the internal timeline clock by `duration` milliseconds but produces no playback events and does not mutate the document, cursor positions, selections, or styles. Subsequent commands simply start later.
+`.wait()` is a **timing-only command**. It advances the internal timeline clock by `duration` milliseconds but produces no state-mutating events and causes no render update. The document text, cursor positions, selections, and styles remain unchanged. Subsequent commands simply start later.
 
 ## Parameters and options
 
@@ -28,11 +28,12 @@ type TWaitOptions = {
 ## Behavior
 
 - Advances the clock by exactly `duration` ms.
-- No events are emitted; the player's scheduler handles the resulting gap naturally.
-- Does not affect the document text, cursor positions, selections, or styles.
+- No state mutations occur: no document, cursor, selection, or style changes are produced, and no render update is triggered.
+- `before` fires once before the delay starts. `after` fires once after the delay ends.
+- The `audio` option, if set, triggers playback through the typing audio channel at the start of the wait.
 - Any command placed after `.wait()` begins `duration` ms later than it otherwise would.
-- A duration of `0` is valid; the clock does not move and the command is a no-op.
-- Negative durations are not meaningful - use only non-negative values.
+- A duration of `0` is valid; the clock does not move and no delay is introduced.
+- Negative durations are treated as zero at runtime; use only non-negative values.
 - Multiple consecutive `.wait()` calls are additive: `.wait(300).wait(200)` is equivalent to `.wait(500)`.
 
 ## Examples
@@ -55,9 +56,7 @@ await tw.play();
 tw.timeline
   .type("Connecting", { by: "char", interval: 70 })
   .wait(300)
-  .type(".", { by: "char", interval: 400 })
-  .type(".", { by: "char", interval: 400 })
-  .type(".", { by: "char", interval: 400 })
+  .type("...", { by: "char", interval: 400 })
   .wait(600)
   .delete("whole")
   .type("Connected!", { by: "char", interval: 60 });
@@ -129,20 +128,20 @@ Instant commands (`move`, `select`, `style`, `call`, etc.) placed immediately af
 tw.timeline
   .type("Hello World", { by: "char", interval: 80 })
   .wait(600)
-  .move(-5)              // fires at 880 + 600 = 1480 ms
+  .move(-5)              // fires as soon as the wait ends
   .select(5)             // fires at the same instant
   .style("highlight", "selection") // fires at the same instant
   .move("end")           // fires at the same instant
   .wait(400)
-  .type("!", { by: "char", interval: 80 }); // starts at 1480 + 400 ms
+  .type("!", { by: "char", interval: 80 }); // starts 400 ms after the previous wait ends
 
 await tw.play();
 ```
 
 ## Edge cases
 
-- **`duration = 0`** - valid no-op. The clock does not move.
-- **`duration < 0`** - behavior is undefined. Use only non-negative values.
+- **`duration = 0`** - valid no-op. No delay is introduced; the clock does not move. `before` and `after` hooks still fire.
+- **`duration < 0`** - treated as zero at runtime. Use only non-negative values.
 - **Multiple consecutive waits** - durations accumulate: `.wait(200).wait(300)` produces a 500 ms pause.
 - **Wait followed by instant commands** - instant commands all fire at the same timestamp as the wait's end.
 
