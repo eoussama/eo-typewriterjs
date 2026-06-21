@@ -8,7 +8,7 @@ import type { TAdvanceModeInput, TCursorSelector } from "./type-command.type";
  * The operand for a move command.
  * - `"start"`: move cursor to the absolute start of the document
  * - `"end"`: move cursor to the absolute end of the document
- * - `number`: relative offset — positive = right, negative = left, zero = no-op
+ * - `number`: relative offset - positive = right, negative = left, zero = no-op
  */
 export type TMoveValue = number | "start" | "end";
 

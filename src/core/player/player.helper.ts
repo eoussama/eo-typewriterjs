@@ -19,7 +19,7 @@ export type TPlayerOptions = {
 /**
  * @description
  * Play a compiled list of timeline events by driving a reducer and renderer.
- * Events are scheduled using absolute timestamps — the player applies all events
+ * Events are scheduled using absolute timestamps - the player applies all events
  * whose time is at or before the current playhead position.
  * This structure naturally supports pause, seek, and speed control in future phases.
  *

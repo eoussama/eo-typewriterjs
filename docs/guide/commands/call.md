@@ -1,4 +1,4 @@
-# `.call()` — inline callback
+# `.call()` - inline callback
 
 Schedules a callback function as a step in the timeline.
 
@@ -6,7 +6,7 @@ Schedules a callback function as a step in the timeline.
 tw.timeline.call(fn: TCallbackFn, options?: TCommandHookOptions): TimelineBuilder
 ```
 
-`.call()` is an **instant command**. It does not produce playback events and does not advance the timeline clock. The callback fires at the current clock position — at the exact moment the preceding command finishes.
+`.call()` is an **instant command**. It does not produce playback events and does not advance the timeline clock. The callback fires at the current clock position - at the exact moment the preceding command finishes.
 
 If the callback returns a `Promise`, playback is **suspended** until the promise settles before the next command starts. Synchronous callbacks execute in the same tick.
 
@@ -24,9 +24,9 @@ The callback receives a single context argument:
 | Field | Type | Description |
 |---|---|---|
 | `state` | `TTypewriterState` | Read-only snapshot of the current document and cursor state |
-| `stepIndex` | `number` | Always `0` for `.call()` — it has one step |
+| `stepIndex` | `number` | Always `0` for `.call()` - it has one step |
 | `stepCount` | `number` | Always `1` for `.call()` |
-| `unit` | `null` | Always `null` — `.call()` is not a segmented command |
+| `unit` | `null` | Always `null` - `.call()` is not a segmented command |
 | `signal` | `AbortSignal` | Aborted when `tw.cancel()` is called |
 
 ```ts
@@ -66,10 +66,10 @@ tw.timeline
     const data = await response.json();
     console.log("data:", data);
   })
-  .type(" — done!", { by: "char", interval: 70 });
+  .type(" - done!", { by: "char", interval: 70 });
 
 await tw.play();
-// playback waits for the fetch before " — done!" starts typing
+// playback waits for the fetch before " - done!" starts typing
 ```
 
 ## Cancellation
@@ -86,7 +86,7 @@ tw.timeline
       console.log("result:", data);
     } catch (err) {
       if (signal.aborted) {
-        console.log("Cancelled mid-fetch — cleaning up");
+        console.log("Cancelled mid-fetch - cleaning up");
       } else {
         throw err;
       }
@@ -108,10 +108,10 @@ tw.timeline
       tw.cancel(); // stop playback; current text stays on screen
     }
   })
-  .type(" — Access granted!", { by: "char", interval: 60 });
+  .type(" - Access granted!", { by: "char", interval: 60 });
 
 await tw.play();
-// If checkAuth() returns false, " — Access granted!" is never typed
+// If checkAuth() returns false, " - Access granted!" is never typed
 ```
 
 ## Modifying runtime state
@@ -125,7 +125,7 @@ tw.timeline
   .call(() => tw.setCursorVisible(false))
   .wait(400)
   .call(() => tw.setCursorVisible(true))
-  .type(" — cursor back", { by: "char", interval: 60 });
+  .type(" - cursor back", { by: "char", interval: 60 });
 
 await tw.play();
 ```
@@ -135,7 +135,7 @@ await tw.play();
 tw.timeline
   .type("Quiet start", { by: "char", interval: 80 })
   .call(() => tw.setAudioVolume(0.8))
-  .type(" — louder now", { by: "char", interval: 80 });
+  .type(" - louder now", { by: "char", interval: 80 });
 
 await tw.play();
 ```
@@ -188,15 +188,15 @@ tw.timeline
 await tw.play();
 ```
 
-For async callbacks, the wall-clock time advances while the promise is pending, but the timeline's logical clock does not — subsequent commands still schedule from the same logical position.
+For async callbacks, the wall-clock time advances while the promise is pending, but the timeline's logical clock does not - subsequent commands still schedule from the same logical position.
 
 ## Edge cases
 
-- **Throwing synchronously** — if the callback throws, playback stops and the error propagates from `tw.play()`.
-- **Rejected promise** — if the returned promise rejects, playback stops and the rejection propagates from `tw.play()`.
-- **Already cancelled before the callback fires** — the `signal` passed to the callback is already aborted. The callback still runs; check `signal.aborted` to skip work.
-- **`tw.cancel()` called inside a synchronous callback** — playback stops cleanly after the callback returns.
-- **No return value** — if the callback returns `undefined` (or nothing), playback continues immediately on the next tick.
+- **Throwing synchronously** - if the callback throws, playback stops and the error propagates from `tw.play()`.
+- **Rejected promise** - if the returned promise rejects, playback stops and the rejection propagates from `tw.play()`.
+- **Already cancelled before the callback fires** - the `signal` passed to the callback is already aborted. The callback still runs; check `signal.aborted` to skip work.
+- **`tw.cancel()` called inside a synchronous callback** - playback stops cleanly after the callback returns.
+- **No return value** - if the callback returns `undefined` (or nothing), playback continues immediately on the next tick.
 
 ## Type reference
 

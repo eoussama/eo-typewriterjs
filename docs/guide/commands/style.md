@@ -1,4 +1,4 @@
-# `.style()` — apply a style to document text
+# `.style()` - apply a style to document text
 
 Applies a style to a range of already-typed document text.
 
@@ -10,14 +10,14 @@ tw.timeline.style(
 ): TimelineBuilder
 ```
 
-`.style()` is an **instant command**. It produces a single event at the current timeline clock position and does **not** advance the clock. The applied style is permanent — it persists in the document state until the marked text is deleted or `.unstyle()` removes it.
+`.style()` is an **instant command**. It produces a single event at the current timeline clock position and does **not** advance the clock. The applied style is permanent - it persists in the document state until the marked text is deleted or `.unstyle()` removes it.
 
 ## Parameters
 
 | Parameter | Type | Description |
 |---|---|---|
-| `style` | `TStyleRef` | The style to apply — a CSS class name string or a `TStyleObject` |
-| `range` | `TStyleRange \| "selection"` | Where to apply the style — absolute `{ from, to }` indices or the cursor's current selection |
+| `style` | `TStyleRef` | The style to apply - a CSS class name string or a `TStyleObject` |
+| `range` | `TStyleRange \| "selection"` | Where to apply the style - absolute `{ from, to }` indices or the cursor's current selection |
 | `options` | `TStyleOptions` | Optional cursor targeting and lifecycle hooks |
 
 ## Options
@@ -34,19 +34,19 @@ type TStyleOptions = {
 | Option | Type | Default | Description |
 |---|---|---|---|
 | `cursor` | `TCursorSelector` | `"main"` | Whose selection to read when `range` is `"selection"` |
-| `before` | `TCallbackHook` | — | Hook fired before the style is applied |
-| `after` | `TCallbackHook` | — | Hook fired after the style is applied |
-| `audio` | `TAudioCommandOverride` | — | Per-command audio override |
+| `before` | `TCallbackHook` | - | Hook fired before the style is applied |
+| `after` | `TCallbackHook` | - | Hook fired after the style is applied |
+| `audio` | `TAudioCommandOverride` | - | Per-command audio override |
 
 ## Style reference (`TStyleRef`)
 
 A style reference is either a plain class name string or a `TStyleObject`:
 
 ```ts
-// Plain class name — simplest form
+// Plain class name - simplest form
 tw.timeline.style("highlight", { from: 6, to: 11 });
 
-// Full style object — mix and match fields as needed
+// Full style object - mix and match fields as needed
 tw.timeline.style(
   {
     className: "error",
@@ -67,7 +67,7 @@ tw.timeline.style(
 | `css` | `Record<string, string>` | Inline CSS properties applied to the rendered span |
 | `attrs` | `Record<string, string>` | HTML attributes set on the rendered span (e.g. `aria-*`, `data-*`) |
 | `ansi` | `Record<string, string>` | ANSI escape code segments used by `StringRenderer.toAnsiString()` |
-| `meta` | `Record<string, unknown>` | Arbitrary metadata — available for custom renderer inspection |
+| `meta` | `Record<string, unknown>` | Arbitrary metadata - available for custom renderer inspection |
 
 All fields are optional and can be used in any combination.
 
@@ -77,8 +77,8 @@ All fields are optional and can be used in any combination.
 type TStyleRange = { from: number; to: number };
 ```
 
-- `from` — inclusive start index (0-based character position in the document text)
-- `to` — exclusive end index
+- `from` - inclusive start index (0-based character position in the document text)
+- `to` - exclusive end index
 
 ```ts
 // Styles characters at indices 6, 7, 8, 9, 10 = "World" in "Hello World"
@@ -112,7 +112,7 @@ tw.timeline
   .type("World!", { style: "accent", interval: 80 });
 ```
 
-See [`.type()` — styling while typing](/guide/commands/type#styling-text-while-typing) for details.
+See [`.type()` - styling while typing](/guide/commands/type#styling-text-while-typing) for details.
 
 ## Examples
 
@@ -140,7 +140,7 @@ tw.timeline
 await tw.play();
 ```
 
-### Inline CSS style — no class needed
+### Inline CSS style - no class needed
 
 ```ts
 tw.timeline
@@ -224,7 +224,7 @@ tw.timeline
   .type("Important Notice", { by: "char", interval: 60 })
   .style("bold", { from: 0, to: 9 })
   .style("underline", { from: 0, to: 9 });
-// Both styles accumulate — the DOM renderer produces nested spans
+// Both styles accumulate - the DOM renderer produces nested spans
 
 await tw.play();
 ```
@@ -232,9 +232,9 @@ await tw.play();
 ## Interaction with renderers
 
 The **DOM renderer** wraps styled characters in `<span>` elements. Styles are applied in this order:
-1. `className` — added as CSS classes
-2. `css` — applied as inline styles
-3. `attrs` — added as HTML attributes
+1. `className` - added as CSS classes
+2. `css` - applied as inline styles
+3. `attrs` - added as HTML attributes
 
 Overlapping styles on the same character range produce nested spans. Use `segmentRichText(document)` to get pre-segmented ranges with merged style metadata if your custom renderer needs a flat structure.
 
@@ -250,11 +250,11 @@ When `.delete()` removes text that overlaps a styled range:
 
 ## Edge cases
 
-- **`from === to`** — zero-width style; valid but has no visible effect.
-- **`from > to`** — undefined behavior; always use `from < to`.
-- **`"selection"` with no active selection** — applies a zero-width style at the cursor position. Effectively a no-op in renderers.
-- **Multiple styles on the same range** — all accumulate; no deduplication is performed.
-- **Out-of-bounds range** — the style is stored with the given indices. Renderers clip to visible text length.
+- **`from === to`** - zero-width style; valid but has no visible effect.
+- **`from > to`** - undefined behavior; always use `from < to`.
+- **`"selection"` with no active selection** - applies a zero-width style at the cursor position. Effectively a no-op in renderers.
+- **Multiple styles on the same range** - all accumulate; no deduplication is performed.
+- **Out-of-bounds range** - the style is stored with the given indices. Renderers clip to visible text length.
 
 ## Type reference
 

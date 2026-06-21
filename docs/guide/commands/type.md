@@ -1,4 +1,4 @@
-# `.type()` — insert text
+# `.type()` - insert text
 
 Schedules text to be inserted into the document one step at a time.
 
@@ -50,7 +50,7 @@ The `by` option controls how the input text is split into steps. The default is 
 // One character at a time (default)
 tw.timeline.type("Hello", { by: "char", interval: 80 });
 
-// One grapheme cluster at a time — correct for emoji
+// One grapheme cluster at a time - correct for emoji
 tw.timeline.type("🇺🇸🇬🇧🇲🇦", { by: "grapheme", interval: 200 });
 
 // One word at a time
@@ -84,10 +84,10 @@ If the remaining text does not fill a full chunk, the last step types whatever i
 Use `"grapheme"` whenever the text contains multi-codepoint sequences. The `"char"` mode operates on JavaScript string indices (UTF-16 code units), which can split composite emoji or characters with combining marks.
 
 ```ts
-// ✅ Each flag emoji is one grapheme cluster — types cleanly
+// ✅ Each flag emoji is one grapheme cluster - types cleanly
 tw.timeline.type("🇺🇸🇬🇧🇲🇦", { by: "grapheme", interval: 200 });
 
-// ⚠️ This family emoji is a multi-codepoint sequence — use "grapheme"
+// ⚠️ This family emoji is a multi-codepoint sequence - use "grapheme"
 tw.timeline.type("👨‍👩‍👧‍👦", { by: "grapheme" });
 
 // ✅ Accented character with a combining mark
@@ -244,7 +244,7 @@ tw.timeline.type(
 await tw.play();
 ```
 
-### Typed with color — error message
+### Typed with color - error message
 
 ```ts
 tw.timeline
@@ -260,11 +260,11 @@ await tw.play();
 
 ## Edge cases
 
-- **Empty string** — `.type("")` produces no steps and does not advance the clock.
-- **Whitespace-only** — whitespace is typed character by character; it is not trimmed or collapsed.
-- **Newlines** — `\n` is inserted verbatim. Use `white-space: pre` or `<pre>` in the DOM for visual line breaks.
-- **Oversized `amount`** — if `amount` exceeds remaining units, the last step types whatever remains without error.
-- **Unknown `by` value** — passing an unrecognised string such as `"custom"` throws an error at compile time. Only `"char"`, `"grapheme"`, `"word"`, `"line"`, and `"whole"` are accepted.
+- **Empty string** - `.type("")` produces no steps and does not advance the clock.
+- **Whitespace-only** - whitespace is typed character by character; it is not trimmed or collapsed.
+- **Newlines** - `\n` is inserted verbatim. Use `white-space: pre` or `<pre>` in the DOM for visual line breaks.
+- **Oversized `amount`** - if `amount` exceeds remaining units, the last step types whatever remains without error.
+- **Unknown `by` value** - passing an unrecognised string such as `"custom"` throws an error at compile time. Only `"char"`, `"grapheme"`, `"word"`, `"line"`, and `"whole"` are accepted.
 
 ## Type reference
 

@@ -33,7 +33,7 @@ function assertInvariants(tw: ReturnType<typeof createTypewriter>): void {
 // style
 // ---------------------------------------------------------------------------
 
-describe("style — absolute range", () => {
+describe("style - absolute range", () => {
   it("appends a style entry", async () => {
     const r = stringRenderer();
     const tw = createTypewriter({ renderer: r });
@@ -88,7 +88,7 @@ describe("style — absolute range", () => {
   });
 });
 
-describe("style — selection-based range", () => {
+describe("style - selection-based range", () => {
   it("style('selection') applies style over active selection", async () => {
     const r = stringRenderer();
     const tw = createTypewriter({ renderer: r });
@@ -136,7 +136,7 @@ describe("style — selection-based range", () => {
   });
 });
 
-describe("style — multi-cursor", () => {
+describe("style - multi-cursor", () => {
   it("multi-cursor selection style applies per-cursor ranges", async () => {
     const r = stringRenderer();
     const tw = createTypewriter({ renderer: r });
@@ -151,7 +151,7 @@ describe("style — multi-cursor", () => {
   });
 });
 
-describe("style — before/after hooks", () => {
+describe("style - before/after hooks", () => {
   it("before fires before style is applied", async () => {
     const r = stringRenderer();
     const tw = createTypewriter({ renderer: r });
@@ -173,7 +173,7 @@ describe("style — before/after hooks", () => {
 // unstyle
 // ---------------------------------------------------------------------------
 
-describe("unstyle — absolute range", () => {
+describe("unstyle - absolute range", () => {
   it("removes a style entirely inside the unstyle range", async () => {
     const r = stringRenderer();
     const tw = createTypewriter({ renderer: r });
@@ -264,7 +264,7 @@ describe("unstyle — absolute range", () => {
   });
 });
 
-describe("unstyle — selection-based range", () => {
+describe("unstyle - selection-based range", () => {
   it("unstyle('selection') removes styles in selection range", async () => {
     const r = stringRenderer();
     const tw = createTypewriter({ renderer: r });
@@ -527,7 +527,7 @@ describe("call", () => {
 // mixed command chains (invariant checks)
 // ---------------------------------------------------------------------------
 
-describe("mixed chains — select → style → move", () => {
+describe("mixed chains - select → style → move", () => {
   it("select whole, style, then move clears selection", async () => {
     const r = stringRenderer();
     const tw = createTypewriter({ renderer: r });
@@ -545,7 +545,7 @@ describe("mixed chains — select → style → move", () => {
   });
 });
 
-describe("mixed chains — type → move → select → delete", () => {
+describe("mixed chains - type → move → select → delete", () => {
   it("selects a word mid-sentence and deletes it", async () => {
     const r = stringRenderer();
     const tw = createTypewriter({ renderer: r });
@@ -562,7 +562,7 @@ describe("mixed chains — type → move → select → delete", () => {
   });
 });
 
-describe("mixed chains — type → select → type (replacement) → type", () => {
+describe("mixed chains - type → select → type (replacement) → type", () => {
   it("replaces selected text and continues typing", async () => {
     const r = stringRenderer();
     const tw = createTypewriter({ renderer: r });
@@ -580,7 +580,7 @@ describe("mixed chains — type → select → type (replacement) → type", () 
   });
 });
 
-describe("mixed chains — type → style → unstyle → restyle", () => {
+describe("mixed chains - type → style → unstyle → restyle", () => {
   it("unstyle then restyle produces one style entry", async () => {
     const r = stringRenderer();
     const tw = createTypewriter({ renderer: r });
@@ -600,7 +600,7 @@ describe("mixed chains — type → style → unstyle → restyle", () => {
   });
 });
 
-describe("mixed chains — move by word → delete by word → type", () => {
+describe("mixed chains - move by word → delete by word → type", () => {
   it("corrects the second word in a sentence", async () => {
     const r = stringRenderer();
     const tw = createTypewriter({ renderer: r });
@@ -618,7 +618,7 @@ describe("mixed chains — move by word → delete by word → type", () => {
   });
 });
 
-describe("mixed chains — wait between operations", () => {
+describe("mixed chains - wait between operations", () => {
   it("wait between type and delete does not affect final output", async () => {
     const r = stringRenderer();
     const tw = createTypewriter({ renderer: r });
@@ -634,7 +634,7 @@ describe("mixed chains — wait between operations", () => {
   });
 });
 
-describe("mixed chains — call interleaved with type", () => {
+describe("mixed chains - call interleaved with type", () => {
   it("call fires between type steps with correct state", async () => {
     const r = stringRenderer();
     const tw = createTypewriter({ renderer: r });
@@ -652,7 +652,7 @@ describe("mixed chains — call interleaved with type", () => {
   });
 });
 
-describe("mixed chains — multi-cursor complex", () => {
+describe("mixed chains - multi-cursor complex", () => {
   it("two cursors type then one deletes and types", async () => {
     const r = stringRenderer();
     const tw = createTypewriter({ renderer: r });
@@ -668,7 +668,7 @@ describe("mixed chains — multi-cursor complex", () => {
   });
 });
 
-describe("mixed chains — playback status after complex flow", () => {
+describe("mixed chains - playback status after complex flow", () => {
   it("status is COMPLETED after a multi-command chain", async () => {
     const r = stringRenderer();
     const tw = createTypewriter({ renderer: r });

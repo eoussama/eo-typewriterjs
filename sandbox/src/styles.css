@@ -368,7 +368,7 @@ body {
   animation: blink 1s step-end infinite;
 }
 
-/* Accent colour for the cursor — bright, bold */
+/* Accent colour for the cursor, bright, bold */
 .tw-cursor-accent {
   color: #b47cf8;
   font-weight: 900;
@@ -376,7 +376,7 @@ body {
   vertical-align: -0.05em;
 }
 
-/* Neon glow effect — combine with .tw-cursor-accent */
+/* Neon glow effect, combine with .tw-cursor-accent */
 .tw-cursor-glow {
   text-shadow:
     0 0 6px #b47cf8,

@@ -30,7 +30,7 @@ function assertInvariants(tw: ReturnType<typeof createTypewriter>): void {
 }
 
 
-describe("type — all valid units produce full text", () => {
+describe("type - all valid units produce full text", () => {
   const CASES: Array<{ by: "char" | "grapheme" | "word" | "line" | "whole"; text: string }> = [
     { by: "char", text: "Hello world" },
     { by: "grapheme", text: "café 👨‍👩‍👧‍👦" },
@@ -54,7 +54,7 @@ describe("type — all valid units produce full text", () => {
 });
 
 
-describe("type — amount > 1", () => {
+describe("type - amount > 1", () => {
   it("amount:2 char produces ceil(n/2) events", () => {
     const events = compile([{ id: "t", kind: "type", cursor: "main", text: "ABCDE", by: { unit: "char", amount: 2 }, interval: 1 }]);
 
@@ -102,7 +102,7 @@ describe("type — amount > 1", () => {
 });
 
 
-describe("type — edge text", () => {
+describe("type - edge text", () => {
   it("empty string produces no events", () => {
     expect(compile([{ id: "t", kind: "type", cursor: "main", text: "" }])).toHaveLength(0);
   });
@@ -111,7 +111,7 @@ describe("type — edge text", () => {
     expect(compile([{ id: "t", kind: "type", cursor: "main", text: "X" }])).toHaveLength(1);
   });
 
-  it("multiline text by char — event count equals text.length", () => {
+  it("multiline text by char - event count equals text.length", () => {
     const text = "line1\nline2";
 
     expect(compile([{ id: "t", kind: "type", cursor: "main", text, by: "char" }])).toHaveLength(text.length);
@@ -154,7 +154,7 @@ describe("type — edge text", () => {
 });
 
 
-describe("type — before/after hooks", () => {
+describe("type - before/after hooks", () => {
   it("before fires once per char", async () => {
     const r = stringRenderer();
     const tw = createTypewriter({ renderer: r });
@@ -238,7 +238,7 @@ describe("type — before/after hooks", () => {
 });
 
 
-describe("type — selection replacement", () => {
+describe("type - selection replacement", () => {
   it("type over forward selection replaces selected text", async () => {
     const r = stringRenderer();
     const tw = createTypewriter({ renderer: r });
@@ -343,7 +343,7 @@ describe("type — selection replacement", () => {
 });
 
 
-describe("type — styled typing", () => {
+describe("type - styled typing", () => {
   it("inline string style appends style entries", async () => {
     const r = stringRenderer();
     const tw = createTypewriter({ renderer: r });
@@ -394,7 +394,7 @@ describe("type — styled typing", () => {
 });
 
 
-describe("type — multi-cursor", () => {
+describe("type - multi-cursor", () => {
   it("multi-cursor type appends text at both cursor positions", async () => {
     const r = stringRenderer();
     const tw = createTypewriter({ renderer: r });

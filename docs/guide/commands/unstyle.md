@@ -1,4 +1,4 @@
-# `.unstyle()` — remove styles from a range
+# `.unstyle()` - remove styles from a range
 
 Removes text styles that overlap a given document range or cursor selection.
 
@@ -9,13 +9,13 @@ tw.timeline.unstyle(
 ): TimelineBuilder
 ```
 
-`.unstyle()` is an **instant command**. It produces a single event at the current timeline clock position and does **not** advance the clock. Styles are never partially modified in-place — they are either removed entirely (if fully inside the range) or **clipped** to exclude the unstyle range (if they partially overlap).
+`.unstyle()` is an **instant command**. It produces a single event at the current timeline clock position and does **not** advance the clock. Styles are never partially modified in-place - they are either removed entirely (if fully inside the range) or **clipped** to exclude the unstyle range (if they partially overlap).
 
 ## Parameters
 
 | Parameter | Type | Description |
 |---|---|---|
-| `range` | `TStyleRange \| "selection"` | The range to clear — absolute `{ from, to }` indices or the cursor's current selection |
+| `range` | `TStyleRange \| "selection"` | The range to clear - absolute `{ from, to }` indices or the cursor's current selection |
 | `options` | `TUnstyleOptions` | Optional cursor targeting and lifecycle hooks |
 
 ## Options
@@ -32,9 +32,9 @@ type TUnstyleOptions = {
 | Option | Type | Default | Description |
 |---|---|---|---|
 | `cursor` | `TCursorSelector` | `"main"` | Whose selection to read when `range` is `"selection"` |
-| `before` | `TCallbackHook` | — | Hook fired before the styles are removed |
-| `after` | `TCallbackHook` | — | Hook fired after the styles are removed |
-| `audio` | `TAudioCommandOverride` | — | Per-command audio override |
+| `before` | `TCallbackHook` | - | Hook fired before the styles are removed |
+| `after` | `TCallbackHook` | - | Hook fired after the styles are removed |
+| `audio` | `TAudioCommandOverride` | - | Per-command audio override |
 
 ## Range (`TStyleRange`)
 
@@ -42,8 +42,8 @@ type TUnstyleOptions = {
 type TStyleRange = { from: number; to: number };
 ```
 
-- `from` — inclusive start index (0-based character position in the document text)
-- `to` — exclusive end index
+- `from` - inclusive start index (0-based character position in the document text)
+- `to` - exclusive end index
 
 ```ts
 // Removes styles that overlap characters 6–10 ("World" in "Hello World")
@@ -66,7 +66,7 @@ tw.timeline
 
 ## Clipping behavior
 
-Styles that partially overlap the unstyle range are clipped — not removed entirely. A style that spans the entire range is split into two fragments flanking the cleared area.
+Styles that partially overlap the unstyle range are clipped - not removed entirely. A style that spans the entire range is split into two fragments flanking the cleared area.
 
 | Style position relative to unstyle range | Result |
 |---|---|
@@ -105,7 +105,7 @@ await tw.play();
 // characters 3–7 are unstyled
 ```
 
-### Span split — both ends are preserved
+### Span split - both ends are preserved
 
 ```ts
 tw.timeline
@@ -195,10 +195,10 @@ await tw.play();
 
 ## Edge cases
 
-- **No styles in range** — no-op; the styles array is returned unchanged.
-- **`from === to`** — empty range; no styles are affected.
-- **`"selection"` with no active selection** — the state is returned unchanged; no styles removed, no error.
-- **Range exceeds document bounds** — styles are evaluated against the provided indices numerically; out-of-bounds values produce correct results.
+- **No styles in range** - no-op; the styles array is returned unchanged.
+- **`from === to`** - empty range; no styles are affected.
+- **`"selection"` with no active selection** - the state is returned unchanged; no styles removed, no error.
+- **Range exceeds document bounds** - styles are evaluated against the provided indices numerically; out-of-bounds values produce correct results.
 
 ## Type reference
 

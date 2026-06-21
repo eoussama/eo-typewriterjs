@@ -33,7 +33,7 @@ function assertInvariants(tw: ReturnType<typeof createTypewriter>): void {
 
 
 
-describe("insertTextAtCursor — selection replacement, other cursor shifting", () => {
+describe("insertTextAtCursor - selection replacement, other cursor shifting", () => {
   it("other cursor after removeEnd shifts by netDelta when selection is replaced", async () => {
     const renderer = stringRenderer();
     const tw = createTypewriter({ renderer });
@@ -133,7 +133,7 @@ describe("insertTextAtCursor — selection replacement, other cursor shifting", 
 });
 
 
-describe("insertTextAtCursor — selection replacement, style handling", () => {
+describe("insertTextAtCursor - selection replacement, style handling", () => {
   it("styles overlapping the selection are adjusted when selection is replaced by typing", async () => {
     const renderer = stringRenderer();
     const tw = createTypewriter({ renderer });
@@ -172,7 +172,7 @@ describe("insertTextAtCursor — selection replacement, style handling", () => {
   });
 });
 
-describe("applySelectionDelete — other cursor and style branches", () => {
+describe("applySelectionDelete - other cursor and style branches", () => {
   it("styles are trimmed when deleting a selected range that overlaps them", async () => {
     const renderer = stringRenderer();
     const tw = createTypewriter({ renderer });
@@ -273,7 +273,7 @@ describe("applySelectionDelete — other cursor and style branches", () => {
 // Direct reducer tests to cover specific uncovered branches
 // ---------------------------------------------------------------------------
 
-describe("insertTextAtCursor — direct reducer, selection-replacement style/selection branches", () => {
+describe("insertTextAtCursor - direct reducer, selection-replacement style/selection branches", () => {
   const baseEvent = { id: "e", kind: "insert" as const, time: 0, sourceCommandId: "c" };
 
   it("style point after removeEnd is shifted by netDelta (line 99 shiftPoint branch)", () => {
@@ -324,7 +324,7 @@ describe("insertTextAtCursor — direct reducer, selection-replacement style/sel
   });
 });
 
-describe("deleteTextAtCursor — direct reducer, applySelectionDelete style/selection branches", () => {
+describe("deleteTextAtCursor - direct reducer, applySelectionDelete style/selection branches", () => {
   const baseEvent = {
     id: "e",
     kind: "delete" as const,

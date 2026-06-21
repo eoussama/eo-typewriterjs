@@ -52,7 +52,7 @@ When a `TStyleObject` is applied to a segment, the renderer maps its fields onto
 | `ansi` | Ignored by `DomRenderer` (terminal-only) |
 | `meta` | Ignored by `DomRenderer` |
 
-Multiple styles can overlap. Their properties are **merged** — later styles in document order win on conflicting keys.
+Multiple styles can overlap. Their properties are **merged** - later styles in document order win on conflicting keys.
 
 #### Cursor rendering
 

@@ -9,7 +9,7 @@ import type { TAdvanceModeInput, TCursorSelector } from "./type-command.type";
  * - `"start"`: delete from the cursor back to the start of the document
  * - `"end"`: delete from the cursor forward to the end of the document
  * - `"whole"`: delete the entire document text
- * - `number`: signed count — positive = forward, negative = backward
+ * - `number`: signed count - positive = forward, negative = backward
  */
 export type TDeleteValue = number | "start" | "end" | "whole";
 

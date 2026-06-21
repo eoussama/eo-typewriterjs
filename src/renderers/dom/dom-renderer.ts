@@ -21,7 +21,7 @@ const BLINK_CLASS = "typewriter-cursor--blink";
 
 /**
  * @description
- * id of the injected <style> element — ensures it is injected only once
+ * id of the injected <style> element - ensures it is injected only once
  */
 const BLINK_STYLE_ID = "typewriter-blink-style";
 
@@ -80,7 +80,7 @@ type TBoundary = {
  * All active cursors are rendered as inline elements at their correct document positions.
  * All active per-cursor selections are rendered as highlighted spans.
  * Text styles from the rich-text document are applied as span attributes, CSS classes,
- * and/or inline styles — renderer-agnostic style objects are fully honoured.
+ * and/or inline styles - renderer-agnostic style objects are fully honoured.
  *
  * The target may be specified as a CSS selector string or a direct element reference.
  */

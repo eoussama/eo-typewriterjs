@@ -14,7 +14,7 @@ import type { TBaseEvent } from "./base-event.type";
  * When `boundary` is absent the reducer moves by `offset` units using `by`:
  * - positive offset moves right, negative offset moves left
  *
- * This event is instant — it does not consume any timeline duration.
+ * This event is instant - it does not consume any timeline duration.
  */
 export type TMoveEvent = TBaseEvent & {
   readonly time: number;

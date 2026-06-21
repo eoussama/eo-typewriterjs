@@ -1,4 +1,4 @@
-# `.wait()` — pause the timeline
+# `.wait()` - pause the timeline
 
 Inserts a timed gap before the next command starts.
 
@@ -32,7 +32,7 @@ type TWaitOptions = {
 - Does not affect the document text, cursor positions, selections, or styles.
 - Any command placed after `.wait()` begins `duration` ms later than it otherwise would.
 - A duration of `0` is valid; the clock does not move and the command is a no-op.
-- Negative durations are not meaningful — use only non-negative values.
+- Negative durations are not meaningful - use only non-negative values.
 - Multiple consecutive `.wait()` calls are additive: `.wait(300).wait(200)` is equivalent to `.wait(500)`.
 
 ## Examples
@@ -116,7 +116,7 @@ tw.timeline
     before: () => console.log("Pause starting"),
     after: () => console.log("Pause ended"),
   })
-  .type(" — after the pause", { by: "char", interval: 60 });
+  .type(" - after the pause", { by: "char", interval: 60 });
 
 await tw.play();
 ```
@@ -141,10 +141,10 @@ await tw.play();
 
 ## Edge cases
 
-- **`duration = 0`** — valid no-op. The clock does not move.
-- **`duration < 0`** — behavior is undefined. Use only non-negative values.
-- **Multiple consecutive waits** — durations accumulate: `.wait(200).wait(300)` produces a 500 ms pause.
-- **Wait followed by instant commands** — instant commands all fire at the same timestamp as the wait's end.
+- **`duration = 0`** - valid no-op. The clock does not move.
+- **`duration < 0`** - behavior is undefined. Use only non-negative values.
+- **Multiple consecutive waits** - durations accumulate: `.wait(200).wait(300)` produces a 500 ms pause.
+- **Wait followed by instant commands** - instant commands all fire at the same timestamp as the wait's end.
 
 ## Type reference
 

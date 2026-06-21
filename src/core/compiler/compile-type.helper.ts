@@ -44,7 +44,7 @@ function resolveAdvanceMode(input: TAdvanceModeInput | undefined): TAdvanceMode 
  * Compile a single TTypeCommand into a sequence of TInsertEvents with
  * absolute timestamps relative to the provided start time.
  * When the command targets multiple cursors, one set of events is produced per cursor
- * at the same timestamps — the clock advances only once.
+ * at the same timestamps - the clock advances only once.
  *
  * @param command - The type command to compile
  * @param startTime - The absolute time offset at which this command begins

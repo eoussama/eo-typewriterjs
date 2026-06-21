@@ -1,4 +1,4 @@
-# `.select()` — create a text selection
+# `.select()` - create a text selection
 
 Creates a text selection on a cursor.
 
@@ -14,9 +14,9 @@ tw.timeline.select(count: TSelectValue, options?: TSelectOptions): TimelineBuild
 |---|---|
 | Positive number (`count > 0`) | Select `count` units **forward** from the cursor |
 | Negative number (`count < 0`) | Select `count` units **backward** from the cursor |
-| `"start"` | Select from the cursor back to document **start** — range `[0, cursorIndex]` |
-| `"end"` | Select from the cursor forward to document **end** — range `[cursorIndex, text.length]` |
-| `"whole"` | Select the **entire document** — range `[0, text.length]` |
+| `"start"` | Select from the cursor back to document **start** - range `[0, cursorIndex]` |
+| `"end"` | Select from the cursor forward to document **end** - range `[cursorIndex, text.length]` |
+| `"whole"` | Select the **entire document** - range `[0, text.length]` |
 
 ## Options
 
@@ -34,16 +34,16 @@ type TSelectOptions = {
 |---|---|---|---|
 | `by` | `TAdvanceModeInput` | `"char"` | Unit used to measure the selection span (numeric counts only) |
 | `cursor` | `TCursorSelector` | `"main"` | Which cursor creates the selection |
-| `before` | `TCallbackHook` | — | Hook fired before the selection is applied |
-| `after` | `TCallbackHook` | — | Hook fired after the selection is applied |
-| `audio` | `TAudioCommandOverride` | — | Per-command audio override |
+| `before` | `TCallbackHook` | - | Hook fired before the selection is applied |
+| `after` | `TCallbackHook` | - | Hook fired after the selection is applied |
+| `audio` | `TAudioCommandOverride` | - | Per-command audio override |
 
 ## Behavior
 
 - The selection stores a `from` and `to` index. The cursor's text position itself is **not** changed.
 - A new `.select()` replaces any existing selection on the same cursor.
 - The selection is cleared by any subsequent `.type()`, `.delete()`, or `.move()` targeting the same cursor.
-- `.style("...", "selection")` and `.unstyle("selection")` read the selection range without clearing it — use `.move()` or `.unselect()` to dismiss the visual highlight afterward.
+- `.style("...", "selection")` and `.unstyle("selection")` read the selection range without clearing it - use `.move()` or `.unselect()` to dismiss the visual highlight afterward.
 - Numeric counts that exceed the document boundaries are **clamped** to the document edges.
 
 ## Advance modes (`by`)
@@ -162,7 +162,7 @@ tw.timeline
   .wait(400)
   .move(-5)
   .select(5)                // selects "World"
-  .type("TypewriterJS");    // replaces "World" — selection is consumed and cleared
+  .type("TypewriterJS");    // replaces "World" - selection is consumed and cleared
 
 await tw.play();
 // result: "Hello TypewriterJS"
@@ -216,17 +216,17 @@ The **DOM renderer** wraps the active selection in a `<span>` with class `typewr
 }
 ```
 
-The **string renderer**'s `toString()` returns plain text without selection markers. Use `toAnsiString()` for terminal output — it renders the selection range with ANSI highlight codes.
+The **string renderer**'s `toString()` returns plain text without selection markers. Use `toAnsiString()` for terminal output - it renders the selection range with ANSI highlight codes.
 
 ## Edge cases
 
-- **`"start"` when cursor is at 0** — produces a zero-width selection `[0, 0]`, which is immediately cleared.
-- **`"end"` when cursor is at the end** — produces a zero-width selection, which is immediately cleared.
-- **Numeric count that exceeds document bounds** — clamped to the document boundary.
-- **Empty document** — any selection resolves to `[0, 0]` and is immediately cleared.
-- **`.select()` called twice** — the second call replaces the first selection entirely.
-- **Unknown boundary string** — passing a string operand other than `"start"`, `"end"`, or `"whole"` throws an error at compile time.
-- **Unknown `by` unit** — passing an unrecognised advance unit for the `by` option throws an error at compile time. Only `"char"`, `"grapheme"`, `"word"`, and `"line"` are accepted. `"whole"` is not valid for `by` — use `.select("whole")` instead.
+- **`"start"` when cursor is at 0** - produces a zero-width selection `[0, 0]`, which is immediately cleared.
+- **`"end"` when cursor is at the end** - produces a zero-width selection, which is immediately cleared.
+- **Numeric count that exceeds document bounds** - clamped to the document boundary.
+- **Empty document** - any selection resolves to `[0, 0]` and is immediately cleared.
+- **`.select()` called twice** - the second call replaces the first selection entirely.
+- **Unknown boundary string** - passing a string operand other than `"start"`, `"end"`, or `"whole"` throws an error at compile time.
+- **Unknown `by` unit** - passing an unrecognised advance unit for the `by` option throws an error at compile time. Only `"char"`, `"grapheme"`, `"word"`, and `"line"` are accepted. `"whole"` is not valid for `by` - use `.select("whole")` instead.
 
 ## Type reference
 

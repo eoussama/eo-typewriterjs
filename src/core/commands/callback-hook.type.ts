@@ -41,7 +41,7 @@ export type TCallbackContext = {
 
 /**
  * @description
- * Callback function signature — may return a promise for async support
+ * Callback function signature - may return a promise for async support
  */
 export type TCallbackFn = (context: TCallbackContext) => void | Promise<void>;
 

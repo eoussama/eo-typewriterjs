@@ -22,7 +22,7 @@ import { unselect } from "./unselect.helper";
 /**
  * @description
  * Apply a single timeline event to the current typewriter state and return
- * the next state. The reducer is pure — no DOM access, no timers, no side effects.
+ * the next state. The reducer is pure - no DOM access, no timers, no side effects.
  *
  * @param state - The current typewriter state
  * @param event - The event to apply

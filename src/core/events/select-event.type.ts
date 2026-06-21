@@ -15,7 +15,7 @@ import type { TBaseEvent } from "./base-event.type";
  * When `boundary` is absent the reducer uses `count` and `by`:
  * - positive `count` selects forward; negative `count` selects backward
  *
- * This event is instant — it does not consume any timeline duration.
+ * This event is instant - it does not consume any timeline duration.
  */
 export type TSelectEvent = TBaseEvent & {
   readonly time: number;

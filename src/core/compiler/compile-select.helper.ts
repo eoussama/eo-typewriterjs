@@ -17,9 +17,9 @@ const VALID_BOUNDARIES: ReadonlySet<string> = new Set(["start", "end", "whole"])
  * Compile a single TSelectCommand into TSelectEvents, one per targeted cursor.
  *
  * String operand semantics:
- * - `"start"`: select from cursor to document start — one event with boundary="start"
- * - `"end"`: select from cursor to document end — one event with boundary="end"
- * - `"whole"`: select entire document — one event with boundary="whole"
+ * - `"start"`: select from cursor to document start - one event with boundary="start"
+ * - `"end"`: select from cursor to document end - one event with boundary="end"
+ * - `"whole"`: select entire document - one event with boundary="whole"
  *
  * Numeric count semantics:
  * - positive: select forward from cursor

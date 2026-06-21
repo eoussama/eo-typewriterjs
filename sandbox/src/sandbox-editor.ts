@@ -62,11 +62,11 @@ const GLOBAL_COMPLETIONS: Completion[] = [
     "const tw = createTypewriter({ renderer });\nawait tw.timeline\n  .type(\"${1:Hello, World!}\")\n  .build();\nawait tw.play();",
     "function",
     "(opts) => TTypewriter",
-    "Scaffold a full typewriter — inserts complete boilerplate.",
+    "Scaffold a full typewriter - inserts complete boilerplate.",
   ),
   { label: "renderer", type: "variable", detail: "IRenderer", info: "The active sandbox renderer (DOM or String)." },
   { label: "domRenderer", type: "function", detail: "(el) => IRenderer", info: "Create a DOM renderer targeting an HTML element." },
-  { label: "StringRenderer", type: "class", detail: "class StringRenderer", info: "Headless renderer — new StringRenderer(). Use .toString() for output." },
+  { label: "StringRenderer", type: "class", detail: "class StringRenderer", info: "Headless renderer - new StringRenderer(). Use .toString() for output." },
   { label: "TimelineBuilder", type: "class", detail: "class TimelineBuilder", info: "Fluent builder for constructing command timelines." },
   { label: "ECommandKind", type: "constant", detail: "enum-like object", info: "Contains all command kind string values." },
   { label: "EPlaybackStatus", type: "constant", detail: "enum-like object", info: "Contains all playback status string values." },
@@ -82,7 +82,7 @@ const TW_MEMBERS: Completion[] = [
   snip("pause", "pause()", "method", "() => void", "Pause at current position."),
   snip("stop", "stop()", "method", "() => void", "Stop and reset to blank state."),
   snip("replay", "replay()", "method", "() => Promise<void>", "Restart from the beginning."),
-  snip("cancel", "cancel()", "method", "() => void", "Stop preserving current output — status → CANCELLED."),
+  snip("cancel", "cancel()", "method", "() => void", "Stop preserving current output - status → CANCELLED."),
   snip("seek", "seek(${1:ms})", "method", "(ms: number) => void", "Jump to an absolute timeline position in ms."),
   snip("stepForward", "stepForward()", "method", "() => void", "Apply the next event group and pause."),
   snip("stepBackward", "stepBackward()", "method", "() => void", "Undo the last event group and pause."),
@@ -103,7 +103,7 @@ const TIMELINE_METHODS: Completion[] = [
   snip("wait", "wait(${1:500})", "method", "(ms, opts?) => TimelineBuilder", "Pause without changing the document."),
   snip("move", "move(${1:0})", "method", "(index, opts?) => TimelineBuilder", "Move cursor to an absolute index."),
   snip("select", "select(${1:5})", "method", "(delta, opts?) => TimelineBuilder", "Extend selection. Negative = backward."),
-  snip("unselect", "unselect()", "method", "(opts?) => TimelineBuilder", "Remove the active selection from the cursor. Instant — no clock advance."),
+  snip("unselect", "unselect()", "method", "(opts?) => TimelineBuilder", "Remove the active selection from the cursor. Instant - no clock advance."),
   snip("style", "style(\"${1:tw-accent}\", { from: ${2:0}, to: ${3:5} })", "method", "(cls, range, opts?) => TimelineBuilder", "Apply a CSS class to a text range."),
   snip("unstyle", "unstyle({ from: ${1:0}, to: ${2:5} })", "method", "(range, opts?) => TimelineBuilder", "Remove styles overlapping the given range. Partial overlaps are clipped."),
   snip("call", "call(async ({ signal }) => {\n  ${1:// your code here}\n})", "method", "(fn, opts?) => TimelineBuilder", "Schedule an inline async callback."),
@@ -179,7 +179,7 @@ const SELECT_OPTS: Completion[] = [
  * Options for style()
  */
 const MARK_OPTS: Completion[] = [
-  { label: "cursor", type: "property", detail: "\"main\" | string[]", info: "Required when range is \"selection\" — which cursor's selection to use." },
+  { label: "cursor", type: "property", detail: "\"main\" | string[]", info: "Required when range is \"selection\" - which cursor's selection to use." },
   ...WAIT_OPTS,
 ];
 

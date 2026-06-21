@@ -12,7 +12,7 @@ let styleEventCounter = 0;
  * @description
  * Compile a single TStyleCommand into TStyleEvents scheduled at the given start time.
  * When the range is `"selection"`, one event per cursor is emitted using a placeholder
- * range of `{ from: -1, to: -1 }` — the reducer resolves the actual selection at play time.
+ * range of `{ from: -1, to: -1 }` - the reducer resolves the actual selection at play time.
  * When the range is a fixed `TStyleRange`, a single event is emitted regardless of cursors.
  *
  * @param command - The style command to compile

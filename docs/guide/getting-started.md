@@ -87,7 +87,7 @@ await tw.play(); // plays both in sequence
 `tw.play()` returns a `Promise<void>` that resolves when all events finish. The same instance also exposes pause, stop, and replay:
 
 ```ts
-await tw.play();    // start — resolves on completion
+await tw.play();    // start - resolves on completion
 tw.pause();         // pause at the current position
 tw.stop();          // stop and reset to blank
 await tw.replay();  // restart from the beginning

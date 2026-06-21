@@ -119,7 +119,7 @@ let commandCounter = 0;
 /**
  * @description
  * Fluent builder that accumulates user commands into an ordered command list.
- * Commands are not executed immediately — they are compiled and played by the player.
+ * Commands are not executed immediately - they are compiled and played by the player.
  *
  * A monotonic `version` counter is incremented whenever commands are appended,
  * allowing playback controllers to detect when their compiled cache is stale.
@@ -306,7 +306,7 @@ export class TimelineBuilder {
    * This command is instant and does not advance the timeline clock.
    *
    * @param styleRef - The style reference to apply (class name string or TStyleObject)
-   * @param range - The target range — either absolute `{ from, to }` indices or `"selection"`
+   * @param range - The target range - either absolute `{ from, to }` indices or `"selection"`
    * @param options - Optional configuration (cursor id, lifecycle hooks)
    * @returns This builder instance for future chaining
    */
@@ -382,7 +382,7 @@ export class TimelineBuilder {
   /**
    * @description
    * Schedule a call command that invokes a callback function as a named step in the timeline.
-   * The callback may be async — playback waits for the returned promise to settle before
+   * The callback may be async - playback waits for the returned promise to settle before
    * advancing to the next command.
    *
    * @param callback - The function to invoke

@@ -12,7 +12,7 @@ export type TSandboxRecipe = {
 
 /**
  * @description
- * Recipe category — matches the filter chip order in the UI
+ * Recipe category - matches the filter chip order in the UI
  */
 export type TSandboxCategory
   = | "all"
@@ -38,7 +38,7 @@ export const SANDBOX_RECIPES: readonly TSandboxRecipe[] = [
   {
     id: "hello-world",
     title: "Hello World",
-    description: "The classic first animation — type a greeting one character at a time.",
+    description: "The classic first animation - type a greeting one character at a time.",
     category: "basics",
     code: `const tw = createTypewriter({ renderer });
 
@@ -147,7 +147,7 @@ await tw.play();`,
   {
     id: "fast-slow",
     title: "Fast → Slow",
-    description: "Demonstrate interval variation — start fast, end slow.",
+    description: "Demonstrate interval variation - start fast, end slow.",
     category: "timing",
     code: `const tw = createTypewriter({ renderer });
 
@@ -196,13 +196,13 @@ await tw.play();`,
   {
     id: "word-vs-char",
     title: "Word vs Character Pacing",
-    description: "Compare typing by word against typing by character — same text, different feel.",
+    description: "Compare typing by word against typing by character - same text, different feel.",
     category: "timing",
     code: `const tw = createTypewriter({ renderer });
 
 // By character feels like real typing.
 // By word feels like fast pasting.
-// "the quick brown fox" = 19 chars — deleted char by char before the second pass.
+// "the quick brown fox" = 19 chars - deleted char by char before the second pass.
 tw.timeline
   .type("By character: ", { by: "char", interval: 40 })
   .type("the quick brown fox", { by: "char", interval: 60 })
@@ -220,7 +220,7 @@ await tw.play();`,
   {
     id: "accelerating-reveal",
     title: "Accelerating Reveal",
-    description: "Each word in the sequence types faster than the last — building momentum.",
+    description: "Each word in the sequence types faster than the last - building momentum.",
     category: "timing",
     code: `const tw = createTypewriter({ renderer });
 
@@ -275,7 +275,7 @@ while (true) {
   {
     id: "delete-by-word",
     title: "Delete by Word",
-    description: "Erase a sentence word by word — each delete step removes one full word.",
+    description: "Erase a sentence word by word - each delete step removes one full word.",
     category: "editing",
     code: `const tw = createTypewriter({ renderer });
 
@@ -301,7 +301,7 @@ await tw.play();`,
     category: "editing",
     code: `const tw = createTypewriter({ renderer });
 
-// "I love TypewriterJS" — move to index 7 (after "I love ") to insert "using "
+// "I love TypewriterJS" - move to index 7 (after "I love ") to insert "using "
 tw.timeline
   .type("I love TypewriterJS", { by: "char", interval: 70 })
   .wait(600)
@@ -346,7 +346,7 @@ await tw.play();`,
     category: "editing",
     code: `const tw = createTypewriter({ renderer });
 
-// Line format: "SVC    PENDING\\n" — 15 chars per line.
+// Line format: "SVC    PENDING\\n" - 15 chars per line.
 // "SVC    " = 7 chars prefix, "PENDING" = 7 chars status, "\\n" = 1 char.
 // To update a status: move cursor to end of status field (prefix + 7),
 // delete 7 chars backward, then type the new 7-char status.
@@ -412,7 +412,7 @@ tw.timeline
   .type("Cursor is hidden while typing...", { by: "char", interval: 60 })
   .wait(400)
   .call(() => {
-    // Reveal the cursor — it will appear at the end of the text
+    // Reveal the cursor - it will appear at the end of the text
     tw.setCursorVisible(true);
   })
   .wait(1200);
@@ -453,19 +453,19 @@ await tw.play();`,
     title: "Cursor Animation",
     description: "Control cursor animation: built-in blink, static (no animation), and a fully custom CSS animation.",
     category: "cursor",
-    code: `// Three typewriters — each demonstrating a different animation setting.
+    code: `// Three typewriters - each demonstrating a different animation setting.
 
 // 1. Built-in blink (default)
 const twBlink = createTypewriter({ renderer, cursor: { kind: ECursorKind.PIPE, animation: "blink" } });
 twBlink.timeline.type("Blinking cursor...", { by: "char", interval: 40 }).wait(2000);
 await twBlink.play();
 
-// 2. Static — no animation at all
+// 2. Static - no animation at all
 const twNone = createTypewriter({ renderer, cursor: { kind: ECursorKind.BLOCK, animation: "none" } });
 twNone.timeline.type("Static cursor...", { by: "char", interval: 40 }).wait(2000);
 await twNone.play();
 
-// 3. Custom animation — use a @keyframes name defined in the sandbox stylesheet
+// 3. Custom animation - use a @keyframes name defined in the sandbox stylesheet
 // (tw-cursor-pulse fades the cursor opacity in and out smoothly)
 const twCustom = createTypewriter({
   renderer,
@@ -587,7 +587,7 @@ tw.timeline
   .delete(4, { cursor: "b", by: "char", interval: 60 })
   .type("quick", { cursor: "b", by: "char", interval: 70 })
   .wait(300)
-  // Fix typo 2 with main — position after "jumpd".
+  // Fix typo 2 with main - position after "jumpd".
   // After fixing "qick"(4 chars) -> "quick"(5 chars), main has shifted by 1 to 44.
   // "jumpd" now ends at index 25. Move main there.
   .move(25)
@@ -604,7 +604,7 @@ await tw.play();`,
   {
     id: "style-while-typing",
     title: "Style While Typing",
-    description: "Pass style on type() so each character appears styled as it is typed — no separate style step needed.",
+    description: "Pass style on type() so each character appears styled as it is typed - no separate style step needed.",
     category: "styling",
     code: `const tw = createTypewriter({ renderer });
 
@@ -622,7 +622,7 @@ await tw.play();`,
   {
     id: "multi-style-inline",
     title: "Multiple Inline Styles",
-    description: "Type separate segments each with a different inline style — no style() calls required.",
+    description: "Type separate segments each with a different inline style - no style() calls required.",
     category: "styling",
     code: `const tw = createTypewriter({ renderer });
 
@@ -660,7 +660,7 @@ await tw.play();`,
   {
     id: "marketing-slogan",
     title: "Slogan Rotator",
-    description: "A word cycles through styled alternatives — each replacement appears styled as it is typed.",
+    description: "A word cycles through styled alternatives - each replacement appears styled as it is typed.",
     category: "styling",
     code: `const tw = createTypewriter({ renderer });
 
@@ -708,7 +708,7 @@ await tw.play();`,
     category: "styling",
     code: `const tw = createTypewriter({ renderer });
 
-// All styles are applied after typing — style() stamps a style onto an existing range.
+// All styles are applied after typing - style() stamps a style onto an existing range.
 // "Deleted text | Added text | Keyword"
 //   danger: 0-12   success:15-25   pill:28-35
 tw.timeline
@@ -730,7 +730,7 @@ await tw.play();`,
     code: `const tw = createTypewriter({ renderer });
 
 // Characters are typed without styling. style() highlights each token in sequence.
-// "render(scene, camera)" — fn: 0-5, arg1: 7-11, arg2: 14-19
+// "render(scene, camera)" - fn: 0-5, arg1: 7-11, arg2: 14-19
 tw.timeline
   .type("render(scene, camera)", { by: "char", interval: 70 })
   .wait(400)
@@ -752,7 +752,7 @@ await tw.play();`,
     code: `const tw = createTypewriter({ renderer });
 
 // Text is typed plain. The selection is made and the style applied after the fact.
-// "Make this word pop." — "word" starts at index 10 (4 chars).
+// "Make this word pop." - "word" starts at index 10 (4 chars).
 tw.timeline
   .type("Make this word pop.", { by: "char", interval: 70 })
   .wait(500)
@@ -774,7 +774,7 @@ await tw.play();`,
     code: `const tw = createTypewriter({ renderer });
 
 // select() creates the selection; unselect() removes it.
-// The cursor stays at index 6 — only the highlight disappears.
+// The cursor stays at index 6 - only the highlight disappears.
 tw.timeline
   .type("Hello World", { by: "char", interval: 70 })
   .wait(400)
@@ -790,12 +790,12 @@ await tw.play();`,
   {
     id: "unstyle-range",
     title: "Unstyle by Range",
-    description: "Style the full text, then unstyle a specific range — the unstyled region loses its style while the rest keeps it.",
+    description: "Style the full text, then unstyle a specific range - the unstyled region loses its style while the rest keeps it.",
     category: "styling",
     code: `const tw = createTypewriter({ renderer });
 
 // Style everything, then unstyle "World" (indices 6-11).
-// Marks that partially overlap are clipped — "Hello " keeps its style.
+// Marks that partially overlap are clipped - "Hello " keeps its style.
 tw.timeline
   .type("Hello World", { by: "char", interval: 70 })
   .wait(400)
@@ -833,7 +833,7 @@ await tw.play();`,
   {
     id: "unstyle-split",
     title: "Unstyle Split",
-    description: "Unstyle the middle of a styled range — the style is split into two fragments covering the regions outside the unstyle range.",
+    description: "Unstyle the middle of a styled range - the style is split into two fragments covering the regions outside the unstyle range.",
     category: "styling",
     code: `const tw = createTypewriter({ renderer });
 
@@ -903,7 +903,7 @@ await tw.play();`,
   {
     id: "async-call",
     title: "Async Call",
-    description: "call() supports async callbacks — playback is suspended until the returned Promise resolves.",
+    description: "call() supports async callbacks - playback is suspended until the returned Promise resolves.",
     category: "callbacks",
     code: `const tw = createTypewriter({ renderer });
 
@@ -950,7 +950,7 @@ await tw.play();`,
   {
     id: "per-unit-hook",
     title: "Per-Character Hook",
-    description: "The after hook fires once per step — once per character when by is 'char'. Use stepIndex and stepCount to track progress.",
+    description: "The after hook fires once per step - once per character when by is 'char'. Use stepIndex and stepCount to track progress.",
     category: "callbacks",
     code: `const tw = createTypewriter({ renderer });
 
@@ -979,10 +979,10 @@ tw.timeline
   .type("Chapter One", { by: "char", interval: 70 })
   .wait(400)
   .call(() => {
-    // Stop here — everything typed so far stays on screen.
+    // Stop here - everything typed so far stays on screen.
     tw.cancel();
   })
-  .type(" — continued...", { by: "char", interval: 70 });
+  .type(" - continued...", { by: "char", interval: 70 });
 
 // play() resolves as soon as cancel() is called.
 await tw.play();
@@ -992,7 +992,7 @@ console.log("Status:", tw.getState().status); // CANCELLED`,
   {
     id: "conditional-branch",
     title: "Conditional Branch",
-    description: "Use call() to inspect state mid-animation and branch — typing different endings based on text length.",
+    description: "Use call() to inspect state mid-animation and branch - typing different endings based on text length.",
     category: "callbacks",
     code: `const tw = createTypewriter({ renderer });
 let branch = "short";
@@ -1020,7 +1020,7 @@ await tw2.play();`,
   {
     id: "cancel-after-delay",
     title: "Auto-Cancel After Delay",
-    description: "Cancel a slow-typing animation from outside after a fixed time — like a timeout guard.",
+    description: "Cancel a slow-typing animation from outside after a fixed time - like a timeout guard.",
     category: "callbacks",
     code: `const tw = createTypewriter({ renderer });
 
@@ -1030,7 +1030,7 @@ tw.timeline
     { by: "char", interval: 120 },
   );
 
-// Cancel after 600 ms — whatever was typed stays on screen.
+// Cancel after 600 ms - whatever was typed stays on screen.
 setTimeout(() => {
   if (tw.getState().status === EPlaybackStatus.PLAYING) {
     tw.cancel();
@@ -1076,7 +1076,7 @@ await tw.play();`,
 const tw = createTypewriter({ renderer });
 
 tw.timeline
-  .type("Silent mode — no sounds.", { by: "char", interval: 70 })
+  .type("Silent mode - no sounds.", { by: "char", interval: 70 })
   .wait(400)
   .type("\\nCall tw.setAudioEnabled(true) to turn on.", { by: "char", interval: 60 });
 
@@ -1110,7 +1110,7 @@ await tw.play();`,
     category: "audio",
     code: `const tw = createTypewriter({ renderer, audio: { enabled: true, volume: 1 } });
 
-// The second block types at 20% of the master volume — noticeably softer.
+// The second block types at 20% of the master volume - noticeably softer.
 tw.timeline
   .type("Full volume: ", { by: "char", interval: 70 })
   .type("LOUD!", { by: "char", interval: 80 })
@@ -1140,7 +1140,7 @@ await tw.play();`,
 });
 
 tw.timeline
-  .type("Round-robin sampling — 1, 2, 3, 1, 2, 3\u2026", { by: "char", interval: 75 });
+  .type("Round-robin sampling - 1, 2, 3, 1, 2, 3\u2026", { by: "char", interval: 75 });
 
 await tw.play();`,
   },

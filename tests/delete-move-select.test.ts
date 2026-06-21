@@ -33,7 +33,7 @@ function assertInvariants(tw: ReturnType<typeof createTypewriter>): void {
 // delete
 // ---------------------------------------------------------------------------
 
-describe("delete — forward, all valid units", () => {
+describe("delete - forward, all valid units", () => {
   const UNITS = ["char", "grapheme", "word", "line"] as const;
 
   for (const unit of UNITS) {
@@ -54,7 +54,7 @@ describe("delete — forward, all valid units", () => {
   }
 });
 
-describe("delete — backward, all valid units", () => {
+describe("delete - backward, all valid units", () => {
   const UNITS = ["char", "grapheme", "word", "line"] as const;
 
   for (const unit of UNITS) {
@@ -74,7 +74,7 @@ describe("delete — backward, all valid units", () => {
   }
 });
 
-describe("delete — boundary operands", () => {
+describe("delete - boundary operands", () => {
   it("delete('start') removes text from cursor to start", async () => {
     const r = stringRenderer();
     const tw = createTypewriter({ renderer: r });
@@ -155,7 +155,7 @@ describe("delete — boundary operands", () => {
   });
 });
 
-describe("delete — amount > 1", () => {
+describe("delete - amount > 1", () => {
   it("backward amount:2 removes 2 words per step", async () => {
     const r = stringRenderer();
     const tw = createTypewriter({ renderer: r });
@@ -184,7 +184,7 @@ describe("delete — amount > 1", () => {
   });
 });
 
-describe("delete — with active selection", () => {
+describe("delete - with active selection", () => {
   it("delete(-1) with selection removes selected range", async () => {
     const r = stringRenderer();
     const tw = createTypewriter({ renderer: r });
@@ -264,7 +264,7 @@ describe("delete — with active selection", () => {
   });
 });
 
-describe("delete — before/after hooks", () => {
+describe("delete - before/after hooks", () => {
   it("before fires once per backward step", async () => {
     const r = stringRenderer();
     const tw = createTypewriter({ renderer: r });
@@ -306,7 +306,7 @@ describe("delete — before/after hooks", () => {
   });
 });
 
-describe("delete — clamping", () => {
+describe("delete - clamping", () => {
   it("backward delete clamped at document start", async () => {
     const r = stringRenderer();
     const tw = createTypewriter({ renderer: r });
@@ -335,7 +335,7 @@ describe("delete — clamping", () => {
   });
 });
 
-describe("delete — style range interactions", () => {
+describe("delete - style range interactions", () => {
   it("delete inside styled range trims the style", async () => {
     const r = stringRenderer();
     const tw = createTypewriter({ renderer: r });
@@ -370,7 +370,7 @@ describe("delete — style range interactions", () => {
 // move
 // ---------------------------------------------------------------------------
 
-describe("move — all valid units forward", () => {
+describe("move - all valid units forward", () => {
   const UNITS = ["char", "grapheme", "word", "line"] as const;
 
   for (const unit of UNITS) {
@@ -391,7 +391,7 @@ describe("move — all valid units forward", () => {
   }
 });
 
-describe("move — all valid units backward", () => {
+describe("move - all valid units backward", () => {
   const UNITS = ["char", "grapheme", "word", "line"] as const;
 
   for (const unit of UNITS) {
@@ -411,7 +411,7 @@ describe("move — all valid units backward", () => {
   }
 });
 
-describe("move — boundary operands", () => {
+describe("move - boundary operands", () => {
   it("move('start') jumps to index 0", async () => {
     const r = stringRenderer();
     const tw = createTypewriter({ renderer: r });
@@ -456,7 +456,7 @@ describe("move — boundary operands", () => {
   });
 });
 
-describe("move — clamping", () => {
+describe("move - clamping", () => {
   it("large positive offset clamps to document end", async () => {
     const r = stringRenderer();
     const tw = createTypewriter({ renderer: r });
@@ -486,7 +486,7 @@ describe("move — clamping", () => {
   });
 });
 
-describe("move — clears selection", () => {
+describe("move - clears selection", () => {
   it("any move clears the active selection", async () => {
     const r = stringRenderer();
     const tw = createTypewriter({ renderer: r });
@@ -517,7 +517,7 @@ describe("move — clears selection", () => {
   });
 });
 
-describe("move — before/after hooks", () => {
+describe("move - before/after hooks", () => {
   it("before fires before cursor moves, after fires after", async () => {
     const r = stringRenderer();
     const tw = createTypewriter({ renderer: r });
@@ -536,7 +536,7 @@ describe("move — before/after hooks", () => {
   });
 });
 
-describe("move — multi-cursor", () => {
+describe("move - multi-cursor", () => {
   it("move targets only the specified cursor", async () => {
     const r = stringRenderer();
     const tw = createTypewriter({ renderer: r });
@@ -557,7 +557,7 @@ describe("move — multi-cursor", () => {
 // select
 // ---------------------------------------------------------------------------
 
-describe("select — all valid units forward", () => {
+describe("select - all valid units forward", () => {
   const UNITS = ["char", "grapheme", "word", "line"] as const;
 
   for (const unit of UNITS) {
@@ -580,7 +580,7 @@ describe("select — all valid units forward", () => {
   }
 });
 
-describe("select — all valid units backward", () => {
+describe("select - all valid units backward", () => {
   const UNITS = ["char", "grapheme", "word", "line"] as const;
 
   for (const unit of UNITS) {
@@ -602,7 +602,7 @@ describe("select — all valid units backward", () => {
   }
 });
 
-describe("select — boundary operands", () => {
+describe("select - boundary operands", () => {
   it("select('start') selects from cursor to document start", async () => {
     const r = stringRenderer();
     const tw = createTypewriter({ renderer: r });
@@ -673,7 +673,7 @@ describe("select — boundary operands", () => {
   });
 });
 
-describe("select — replaces previous selection", () => {
+describe("select - replaces previous selection", () => {
   it("second select replaces first", async () => {
     const r = stringRenderer();
     const tw = createTypewriter({ renderer: r });
@@ -689,7 +689,7 @@ describe("select — replaces previous selection", () => {
   });
 });
 
-describe("select — amount > 1", () => {
+describe("select - amount > 1", () => {
   it("amount:2 word selects two words forward", async () => {
     const r = stringRenderer();
     const tw = createTypewriter({ renderer: r });
@@ -707,7 +707,7 @@ describe("select — amount > 1", () => {
   });
 });
 
-describe("select — before/after hooks", () => {
+describe("select - before/after hooks", () => {
   it("before fires before selection, after fires after", async () => {
     const r = stringRenderer();
     const tw = createTypewriter({ renderer: r });
@@ -725,7 +725,7 @@ describe("select — before/after hooks", () => {
   });
 });
 
-describe("select — multi-cursor", () => {
+describe("select - multi-cursor", () => {
   it("select targets only the specified cursor", async () => {
     const r = stringRenderer();
     const tw = createTypewriter({ renderer: r });

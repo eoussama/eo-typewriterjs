@@ -1,4 +1,4 @@
-# `.move()` — reposition the cursor
+# `.move()` - reposition the cursor
 
 Moves a cursor to a new position in the document.
 
@@ -14,13 +14,13 @@ tw.timeline.move(offset: TMoveValue, options?: TMoveOptions): TimelineBuilder
 |---|---|
 | Positive number (`offset > 0`) | Move **forward** (right) from the current position |
 | Negative number (`offset < 0`) | Move **backward** (left) from the current position |
-| Zero (`offset === 0`) | No-op — cursor stays in place |
+| Zero (`offset === 0`) | No-op - cursor stays in place |
 | `"start"` | Jump to absolute document **start** (index 0) |
 | `"end"` | Jump to absolute document **end** (index `text.length`) |
 
 `"start"` and `"end"` are absolute: they jump to the document boundaries regardless of where the cursor currently is. Numeric offsets are relative to the cursor's current position.
 
-The resulting position is always **clamped** to `[0, text.length]` — the cursor never moves past document boundaries.
+The resulting position is always **clamped** to `[0, text.length]` - the cursor never moves past document boundaries.
 
 ## Options
 
@@ -38,9 +38,9 @@ type TMoveOptions = {
 |---|---|---|---|
 | `by` | `TAdvanceModeInput` | `"char"` | Unit granularity for the offset (numeric offsets only) |
 | `cursor` | `TCursorSelector` | `"main"` | Which cursor(s) to reposition |
-| `before` | `TCallbackHook` | — | Hook fired before the cursor moves |
-| `after` | `TCallbackHook` | — | Hook fired after the cursor has moved |
-| `audio` | `TAudioCommandOverride` | — | Per-command audio override |
+| `before` | `TCallbackHook` | - | Hook fired before the cursor moves |
+| `after` | `TCallbackHook` | - | Hook fired after the cursor has moved |
+| `audio` | `TAudioCommandOverride` | - | Per-command audio override |
 
 ## Behavior
 
@@ -48,7 +48,7 @@ type TMoveOptions = {
 - Subsequent `.type()` calls insert at the new cursor position.
 - Subsequent `.delete(-n)` calls delete backward from the new cursor position.
 - Subsequent `.delete(n)` calls delete forward from the new cursor position.
-- `.move()` does not fire intermediate steps — it is a single atomic jump.
+- `.move()` does not fire intermediate steps - it is a single atomic jump.
 
 ## Advance modes (`by`)
 
@@ -68,7 +68,7 @@ tw.timeline.move(-2, { by: "word" });
 tw.timeline.move(-1, { by: "line" });
 ```
 
-Note: `"line"` splits on `\n` characters in the document text. There is no concept of visual rows — movement is purely character-based.
+Note: `"line"` splits on `\n` characters in the document text. There is no concept of visual rows - movement is purely character-based.
 
 ## Examples
 
@@ -127,7 +127,7 @@ await tw.play();
 tw.timeline
   .type("The brown fox", { by: "char", interval: 70 })
   .wait(400)
-  .move(-2, { by: "word" }) // move back 2 words — cursor before "brown"
+  .move(-2, { by: "word" }) // move back 2 words - cursor before "brown"
   .type("quick ", { by: "char", interval: 70 });
 
 await tw.play();
@@ -195,14 +195,14 @@ await tw.play();
 
 ## Edge cases
 
-- **`offset = 0`** — no-op; cursor stays in place; selection is still cleared.
-- **`"start"` when cursor is already at 0** — selection is cleared; position unchanged.
-- **`"end"` when cursor is already at `text.length`** — selection is cleared; position unchanged.
-- **Large positive offset** — clamped to `text.length`.
-- **Large negative offset** — clamped to `0`.
-- **Empty document** — any move clamps to `0`.
-- **Unknown boundary string** — passing a string operand other than `"start"` or `"end"` throws an error at compile time.
-- **Unknown `by` unit** — passing an unrecognised advance unit for the `by` option throws an error at compile time. Only `"char"`, `"grapheme"`, `"word"`, and `"line"` are accepted. `"whole"` is not valid for `by`.
+- **`offset = 0`** - no-op; cursor stays in place; selection is still cleared.
+- **`"start"` when cursor is already at 0** - selection is cleared; position unchanged.
+- **`"end"` when cursor is already at `text.length`** - selection is cleared; position unchanged.
+- **Large positive offset** - clamped to `text.length`.
+- **Large negative offset** - clamped to `0`.
+- **Empty document** - any move clamps to `0`.
+- **Unknown boundary string** - passing a string operand other than `"start"` or `"end"` throws an error at compile time.
+- **Unknown `by` unit** - passing an unrecognised advance unit for the `by` option throws an error at compile time. Only `"char"`, `"grapheme"`, `"word"`, and `"line"` are accepted. `"whole"` is not valid for `by`.
 
 ## Type reference
 

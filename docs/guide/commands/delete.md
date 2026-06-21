@@ -1,4 +1,4 @@
-# `.delete()` — remove text
+# `.delete()` - remove text
 
 Removes text relative to the cursor position, one step at a time.
 
@@ -18,7 +18,7 @@ The first argument determines both **how much** to delete and **in which directi
 | `"end"` | Delete from cursor forward to document **end** | 1 (instant) |
 | `"whole"` | Delete the **entire document** | 1 (instant) |
 
-Numeric counts advance the timeline clock by `steps × interval` ms. Boundary strings (`"start"`, `"end"`, `"whole"`) are instant — they do not advance the clock.
+Numeric counts advance the timeline clock by `steps × interval` ms. Boundary strings (`"start"`, `"end"`, `"whole"`) are instant - they do not advance the clock.
 
 ## Options
 
@@ -38,9 +38,9 @@ type TDeleteOptions = {
 | `by` | `TAdvanceModeInput` | `"char"` | Unit used to measure and chunk the deletion (numeric counts only) |
 | `interval` | `number` | `50` | Milliseconds between each deletion step (numeric counts only) |
 | `cursor` | `TCursorSelector` | `"main"` | Which cursor(s) to delete from |
-| `before` | `TCallbackHook` | — | Hook fired before each step (or once for boundary operands) |
-| `after` | `TCallbackHook` | — | Hook fired after each step (or once for boundary operands) |
-| `audio` | `TAudioCommandOverride` | — | Per-command audio override |
+| `before` | `TCallbackHook` | - | Hook fired before each step (or once for boundary operands) |
+| `after` | `TCallbackHook` | - | Hook fired after each step (or once for boundary operands) |
+| `audio` | `TAudioCommandOverride` | - | Per-command audio override |
 
 ## Behavior
 
@@ -49,7 +49,7 @@ type TDeleteOptions = {
 - **`"start"`**: deletes all text from the cursor's current position back to index 0 in one step.
 - **`"end"`**: deletes all text from the cursor's current position forward to the end of the document in one step.
 - **`"whole"`**: clears the entire document in one step regardless of cursor position.
-- All deletions are **clamped** — the operation never exceeds the document boundaries.
+- All deletions are **clamped** - the operation never exceeds the document boundaries.
 - When a selection is active on the targeted cursor, the selection range is deleted in one step (regardless of `count` or `by`), then the selection is cleared.
 - Styles that overlap the deleted range are automatically adjusted: styles fully inside the range are removed, styles partially overlapping are trimmed, and styles entirely outside the range are preserved and shifted as needed.
 
@@ -58,10 +58,10 @@ type TDeleteOptions = {
 Applies to numeric counts only. The unit controls how the deleted amount is measured and chunked:
 
 ```ts
-// Delete 5 characters one at a time — backward
+// Delete 5 characters one at a time - backward
 tw.timeline.delete(-5, { by: "char", interval: 60 });
 
-// Delete 3 characters at a time — forward
+// Delete 3 characters at a time - forward
 tw.timeline.delete(6, { by: { unit: "char", amount: 3 }, interval: 80 });
 // 2 steps, each removes 3 chars
 
@@ -116,9 +116,9 @@ await tw.play();
 
 ```ts
 tw.timeline
-  .type("Preamble — Hello world", { by: "char", interval: 60 })
+  .type("Preamble - Hello world", { by: "char", interval: 60 })
   .move(-11)        // cursor is now before "Hello world"
-  .delete("start"); // removes "Preamble — " in one step
+  .delete("start"); // removes "Preamble - " in one step
 
 await tw.play();
 // result: "Hello world"
@@ -128,9 +128,9 @@ await tw.play();
 
 ```ts
 tw.timeline
-  .type("Hello world — Epilogue", { by: "char", interval: 60 })
+  .type("Hello world - Epilogue", { by: "char", interval: 60 })
   .move(11)         // cursor right after "Hello world"
-  .delete("end");   // removes " — Epilogue" in one step
+  .delete("end");   // removes " - Epilogue" in one step
 
 await tw.play();
 // result: "Hello world"
@@ -217,15 +217,15 @@ await tw.play();
 
 ## Edge cases
 
-- **Cursor at position 0 with backward deletion** — no-op; there is nothing before the cursor.
-- **Cursor at the end with forward deletion** — no-op; there is nothing after the cursor.
-- **`|count|` larger than available text** — deletion stops at the document boundary without error.
-- **`"whole"` on an empty document** — no-op.
-- **`"start"` with cursor at 0** — no-op.
-- **`"end"` with cursor at the end** — no-op.
-- **Active selection** — the entire selected range is deleted in one step; `count` and `by` are ignored.
-- **Unknown `by` value** — passing an unrecognised advance unit such as `"custom"` throws an error at compile time. Only `"char"`, `"grapheme"`, `"word"`, and `"line"` are accepted for `by`. `"whole"` is not a valid `by` unit — use `.delete("whole")` instead.
-- **Unknown boundary string** — passing a string operand other than `"whole"`, `"start"`, or `"end"` throws an error at compile time.
+- **Cursor at position 0 with backward deletion** - no-op; there is nothing before the cursor.
+- **Cursor at the end with forward deletion** - no-op; there is nothing after the cursor.
+- **`|count|` larger than available text** - deletion stops at the document boundary without error.
+- **`"whole"` on an empty document** - no-op.
+- **`"start"` with cursor at 0** - no-op.
+- **`"end"` with cursor at the end** - no-op.
+- **Active selection** - the entire selected range is deleted in one step; `count` and `by` are ignored.
+- **Unknown `by` value** - passing an unrecognised advance unit such as `"custom"` throws an error at compile time. Only `"char"`, `"grapheme"`, `"word"`, and `"line"` are accepted for `by`. `"whole"` is not a valid `by` unit - use `.delete("whole")` instead.
+- **Unknown boundary string** - passing a string operand other than `"whole"`, `"start"`, or `"end"` throws an error at compile time.
 
 ## Type reference
 

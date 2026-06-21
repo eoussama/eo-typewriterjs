@@ -12,7 +12,7 @@ export type TStyleObject = {
 
 /**
  * @description
- * Style reference — either a CSS class name string or a full style object
+ * Style reference - either a CSS class name string or a full style object
  */
 export type TStyleRef = string | TStyleObject;
 

@@ -251,7 +251,7 @@ describe("seek from paused state to non-end position", () => {
 
     expect(tw.getState().status).toBe(EPlaybackStatus.PAUSED);
 
-    // Seek to time 0 (before first char) — state is well-defined
+    // Seek to time 0 (before first char) - state is well-defined
     tw.seek(0);
 
     // After seek to t=0 from PAUSED, no events at t<0 → empty text

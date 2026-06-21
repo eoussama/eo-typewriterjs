@@ -1,4 +1,4 @@
-# `.unselect()` — dismiss the active text selection
+# `.unselect()` - dismiss the active text selection
 
 Removes the active text selection from one or more cursors without moving the cursor or mutating the document.
 
@@ -22,23 +22,23 @@ type TUnselectOptions = {
 | Option | Type | Default | Description |
 |---|---|---|---|
 | `cursor` | `TCursorSelector` | `"main"` | Which cursor(s) to clear the selection on |
-| `before` | `TCallbackHook` | — | Hook fired before the selection is cleared |
-| `after` | `TCallbackHook` | — | Hook fired after the selection is cleared |
-| `audio` | `TAudioCommandOverride` | — | Per-command audio override |
+| `before` | `TCallbackHook` | - | Hook fired before the selection is cleared |
+| `after` | `TCallbackHook` | - | Hook fired after the selection is cleared |
+| `audio` | `TAudioCommandOverride` | - | Per-command audio override |
 
 ## Behavior
 
 - Removes the selection from each targeted cursor's state.
 - The cursor's **text position is not changed**.
 - If a targeted cursor has no active selection, that cursor is unaffected and no error is raised.
-- Unlike `.move()`, `.unselect()` does not reposition the cursor — it only clears the selection metadata.
+- Unlike `.move()`, `.unselect()` does not reposition the cursor - it only clears the selection metadata.
 
 ## When to use
 
-Most of the time a selection is cleared automatically — `.type()`, `.delete()`, and `.move()` all discard it as a side effect. Use `.unselect()` when you need to remove a selection **without** any of those side effects:
+Most of the time a selection is cleared automatically - `.type()`, `.delete()`, and `.move()` all discard it as a side effect. Use `.unselect()` when you need to remove a selection **without** any of those side effects:
 
-- After `.style("...", "selection")` — to dismiss the visual highlight while leaving the cursor in place.
-- After `.unstyle("selection")` — same reason.
+- After `.style("...", "selection")` - to dismiss the visual highlight while leaving the cursor in place.
+- After `.unstyle("selection")` - same reason.
 - To reset a cursor's selection state mid-animation as a pure visual cleanup step.
 
 ## Examples
@@ -127,9 +127,9 @@ await tw.play();
 
 ## Edge cases
 
-- **No active selection** — `.unselect()` is a no-op; state is returned unchanged.
-- **Unknown cursor ID** — the event is compiled for that cursor ID; if no such cursor exists in state at playback time, the event is a no-op.
-- **Called before `.select()`** — no effect; there is nothing to clear.
+- **No active selection** - `.unselect()` is a no-op; state is returned unchanged.
+- **Unknown cursor ID** - the event is compiled for that cursor ID; if no such cursor exists in state at playback time, the event is a no-op.
+- **Called before `.select()`** - no effect; there is nothing to clear.
 
 ## Type reference
 

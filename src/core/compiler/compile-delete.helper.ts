@@ -44,9 +44,9 @@ function resolveAdvanceMode(input: TAdvanceModeInput | undefined): TAdvanceMode 
  * absolute timestamps relative to the provided start time.
  *
  * String operand semantics:
- * - `"whole"`: delete the entire document — one event with boundary="whole"
- * - `"start"`: delete from cursor to document start — one event with boundary="start"
- * - `"end"`: delete from cursor to document end — one event with boundary="end"
+ * - `"whole"`: delete the entire document - one event with boundary="whole"
+ * - `"start"`: delete from cursor to document start - one event with boundary="start"
+ * - `"end"`: delete from cursor to document end - one event with boundary="end"
  *
  * Numeric count semantics:
  * - positive: delete forward from the cursor
@@ -55,7 +55,7 @@ function resolveAdvanceMode(input: TAdvanceModeInput | undefined): TAdvanceMode 
  * Each event carries the logical unit and a per-step count in that unit;
  * the reducer resolves the actual character span at apply time.
  * When the command targets multiple cursors, one set of events is produced per cursor
- * at the same timestamps — the clock advances only once.
+ * at the same timestamps - the clock advances only once.
  *
  * @param command - The delete command to compile
  * @param startTime - The absolute time offset at which this command begins

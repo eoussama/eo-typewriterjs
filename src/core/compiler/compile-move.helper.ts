@@ -17,8 +17,8 @@ const VALID_BOUNDARIES: ReadonlySet<string> = new Set(["start", "end"]);
  * Compile a single TMoveCommand into TMoveEvents, one per targeted cursor.
  *
  * String operand semantics:
- * - `"start"`: jump to absolute document start — emits one event with boundary="start"
- * - `"end"`: jump to absolute document end — emits one event with boundary="end"
+ * - `"start"`: jump to absolute document start - emits one event with boundary="start"
+ * - `"end"`: jump to absolute document end - emits one event with boundary="end"
  *
  * Numeric operand semantics:
  * - zero offset produces no events (no-op) and does not advance the clock

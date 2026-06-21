@@ -61,9 +61,9 @@ export type TCursorAnimationOptions = {
 /**
  * @description
  * Cursor animation setting.
- * - "blink"  — built-in opacity-blink animation injected by the DOM renderer
- * - "none"   — no animation; cursor is fully static
- * - object   — fully custom CSS animation via TCursorAnimationOptions
+ * - "blink"  - built-in opacity-blink animation injected by the DOM renderer
+ * - "none"   - no animation; cursor is fully static
+ * - object   - fully custom CSS animation via TCursorAnimationOptions
  */
 export type TCursorAnimation = "blink" | "none" | TCursorAnimationOptions;
 
@@ -85,7 +85,7 @@ export const CURSOR_KIND_CONTENT: Readonly<Record<TCursorKind, string>> = {
 /**
  * @description
  * Render configuration for a cursor.
- * All properties are optional — any omitted value falls back to the instance default
+ * All properties are optional - any omitted value falls back to the instance default
  * set at createTypewriter() time, or the library default if none was provided.
  */
 export type TCursorRenderOptions = {
@@ -129,9 +129,9 @@ export type TCursorRenderOptions = {
   /**
    * @description
    * Animation to apply to the cursor element.
-   * - "blink"  — built-in opacity blink (default)
-   * - "none"   — static cursor, no animation
-   * - object   — fully custom CSS animation (see TCursorAnimationOptions)
+   * - "blink"  - built-in opacity blink (default)
+   * - "none"   - static cursor, no animation
+   * - object   - fully custom CSS animation (see TCursorAnimationOptions)
    * Default: "blink"
    */
   readonly animation?: TCursorAnimation;
@@ -139,7 +139,7 @@ export type TCursorRenderOptions = {
 
 /**
  * @description
- * Fully resolved cursor render options — all fields present.
+ * Fully resolved cursor render options - all fields present.
  * Produced by merging per-cursor options with instance defaults and library defaults.
  */
 export type TResolvedCursorRenderOptions = Required<Omit<TCursorRenderOptions, "attrs">> & {

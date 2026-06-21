@@ -8,7 +8,7 @@ import type { TBaseEvent } from "./base-event.type";
  * @description
  * A low-level scheduled event that applies a style to a document range.
  * When `from` and `to` are both `-1`, the event is selection-based and `cursorId`
- * must be present — the reducer resolves the actual range from the cursor's selection.
+ * must be present - the reducer resolves the actual range from the cursor's selection.
  */
 export type TStyleEvent = TBaseEvent & {
   readonly time: number;

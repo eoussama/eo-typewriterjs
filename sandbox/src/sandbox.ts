@@ -62,8 +62,8 @@ let runToken = 0;
 
 /**
  * The TTypewriter instance created inside the currently in-flight runUserCode call.
- * Set via the onCreated callback the instant createTypewriter() is called — before any
- * play() resolves — so that a subsequent recipe click can stop it immediately.
+ * Set via the onCreated callback the instant createTypewriter() is called - before any
+ * play() resolves - so that a subsequent recipe click can stop it immediately.
  */
 let pendingTw: TTypewriter | null = null;
 
@@ -179,7 +179,7 @@ function stopTick(): void {
 
 /**
  * @description
- * Single tick — syncs transport state and loops while playing
+ * Single tick - syncs transport state and loops while playing
  */
 function tick(): void {
   syncTransportState();
@@ -231,7 +231,7 @@ function getEditorCode(): string {
  * Uses a monotonic token to discard results from stale runs superseded by a
  * newer recipe selection. Also passes an onCreated callback to runUserCode so
  * that the TTypewriter is bound to activeTw the instant createTypewriter() is
- * called — before any await tw.play() — making transport buttons responsive
+ * called - before any await tw.play() - making transport buttons responsive
  * immediately and allowing a subsequent recipe click to cancel any ongoing
  * animation without waiting for play() to resolve.
  *
@@ -436,12 +436,12 @@ const HELP_SECTIONS: readonly THelpSection[] = [
     id: "globals",
     label: "Globals",
     title: "Sandbox Globals",
-    desc: "Available automatically in every snippet — no imports needed.",
+    desc: "Available automatically in every snippet - no imports needed.",
     rows: [
       ["createTypewriter({ renderer })", "Create a typewriter instance"],
       ["renderer", "The active sandbox renderer (DOM or String)"],
       ["domRenderer(el)", "Create a DOM renderer targeting an element"],
-      ["StringRenderer", "Headless renderer — new StringRenderer()"],
+      ["StringRenderer", "Headless renderer - new StringRenderer()"],
       ["TimelineBuilder", "Fluent builder, normally used via tw.timeline"],
       ["ECommandKind", "Enum-like object of command kind values"],
       ["EPlaybackStatus", "Enum-like object of playback status values"],
@@ -456,12 +456,12 @@ const HELP_SECTIONS: readonly THelpSection[] = [
     desc: "Type a string step by step. Each step inserts one unit (char/word/line) and renders.",
     rows: [
       ["text", "The string to type"],
-      ["by", "\"char\" | \"word\" | \"line\" | \"grapheme\" | \"whole\" — advance unit (default: \"char\")"],
+      ["by", "\"char\" | \"word\" | \"line\" | \"grapheme\" | \"whole\" - advance unit (default: \"char\")"],
       ["interval", "Delay in ms between each step (default: 50)"],
       ["cursor", "\"main\" or an array of cursor IDs to type on simultaneously"],
       ["style", "CSS class or TStyleObject applied to every inserted character"],
-      ["before", "Hook — fires once before typing starts, or per step when unit is set"],
-      ["after", "Hook — fires once after typing ends, or per step when unit is set"],
+      ["before", "Hook - fires once before typing starts, or per step when unit is set"],
+      ["after", "Hook - fires once after typing ends, or per step when unit is set"],
       ["audio", "false to silence, or { volume, voice } to override audio for this command"],
     ],
   },
@@ -472,16 +472,16 @@ const HELP_SECTIONS: readonly THelpSection[] = [
     desc: "Delete text relative to the cursor. Use a number (positive = forward, negative = backward) or a boundary string (\"start\", \"end\", \"whole\").",
     rows: [
       ["count", "Number, or \"start\" | \"end\" | \"whole\" boundary string"],
-      ["— number > 0", "Delete forward from cursor"],
-      ["— number < 0", "Delete backward from cursor"],
-      ["— \"start\"", "Delete from cursor back to document start"],
-      ["— \"end\"", "Delete from cursor forward to document end"],
-      ["— \"whole\"", "Delete the entire document"],
-      ["by", "\"char\" | \"word\" | \"line\" | \"grapheme\" — unit per step (numeric counts only, default: \"char\")"],
+      ["- number > 0", "Delete forward from cursor"],
+      ["- number < 0", "Delete backward from cursor"],
+      ["- \"start\"", "Delete from cursor back to document start"],
+      ["- \"end\"", "Delete from cursor forward to document end"],
+      ["- \"whole\"", "Delete the entire document"],
+      ["by", "\"char\" | \"word\" | \"line\" | \"grapheme\" - unit per step (numeric counts only, default: \"char\")"],
       ["interval", "Delay in ms between each deletion step (numeric counts only, default: 50)"],
       ["cursor", "\"main\" or an array of cursor IDs"],
-      ["before", "Hook — fires once before deletion starts, or per step when unit is set"],
-      ["after", "Hook — fires once after deletion ends, or per step when unit is set"],
+      ["before", "Hook - fires once before deletion starts, or per step when unit is set"],
+      ["after", "Hook - fires once after deletion ends, or per step when unit is set"],
       ["audio", "false to silence, or { volume, voice } to override audio for this command"],
     ],
   },
@@ -504,12 +504,12 @@ const HELP_SECTIONS: readonly THelpSection[] = [
     desc: "Reposition a cursor. Use a number (positive = right, negative = left, 0 = no-op) or a boundary string (\"start\", \"end\").",
     rows: [
       ["offset", "Number or boundary string \"start\" | \"end\""],
-      ["— number > 0", "Move right (forward)"],
-      ["— number < 0", "Move left (backward)"],
-      ["— 0", "No-op — cursor stays in place"],
-      ["— \"start\"", "Jump to absolute document start (index 0)"],
-      ["— \"end\"", "Jump to absolute document end"],
-      ["by", "\"char\" | \"word\" | \"line\" | \"grapheme\" — unit (numeric offsets only, default: \"char\")"],
+      ["- number > 0", "Move right (forward)"],
+      ["- number < 0", "Move left (backward)"],
+      ["- 0", "No-op - cursor stays in place"],
+      ["- \"start\"", "Jump to absolute document start (index 0)"],
+      ["- \"end\"", "Jump to absolute document end"],
+      ["by", "\"char\" | \"word\" | \"line\" | \"grapheme\" - unit (numeric offsets only, default: \"char\")"],
       ["cursor", "\"main\" or an array of cursor IDs to move (default: \"main\")"],
       ["before", "Hook fired before the cursor moves"],
       ["after", "Hook fired after the cursor has moved"],
@@ -523,12 +523,12 @@ const HELP_SECTIONS: readonly THelpSection[] = [
     desc: "Create a text selection. Use a number (positive = forward, negative = backward) or a boundary string (\"start\", \"end\", \"whole\").",
     rows: [
       ["count", "Number or boundary string \"start\" | \"end\" | \"whole\""],
-      ["— number > 0", "Select forward from cursor"],
-      ["— number < 0", "Select backward from cursor"],
-      ["— \"start\"", "Select from cursor to document start"],
-      ["— \"end\"", "Select from cursor to document end"],
-      ["— \"whole\"", "Select the entire document"],
-      ["by", "\"char\" | \"word\" | \"line\" | \"grapheme\" — selection unit (numeric counts only, default: \"char\")"],
+      ["- number > 0", "Select forward from cursor"],
+      ["- number < 0", "Select backward from cursor"],
+      ["- \"start\"", "Select from cursor to document start"],
+      ["- \"end\"", "Select from cursor to document end"],
+      ["- \"whole\"", "Select the entire document"],
+      ["by", "\"char\" | \"word\" | \"line\" | \"grapheme\" - selection unit (numeric counts only, default: \"char\")"],
       ["cursor", "\"main\" or an array of cursor IDs"],
       ["before", "Hook fired before the selection is applied"],
       ["after", "Hook fired after the selection is applied"],
@@ -539,7 +539,7 @@ const HELP_SECTIONS: readonly THelpSection[] = [
     id: "unselect",
     label: "unselect()",
     title: ".unselect(opts?)",
-    desc: "Remove the active text selection from one or more cursors. If the cursor has no selection the state is left unchanged. Instant command — does not advance the clock.",
+    desc: "Remove the active text selection from one or more cursors. If the cursor has no selection the state is left unchanged. Instant command - does not advance the clock.",
     rows: [
       ["cursor", "\"main\" or an array of cursor IDs (default: \"main\")"],
       ["before", "Hook fired before the selection is cleared"],
@@ -554,7 +554,7 @@ const HELP_SECTIONS: readonly THelpSection[] = [
     desc: "Apply a style to a range of text. style is a CSS class name or a TStyleObject. range is { from, to } or \"selection\".",
     rows: [
       ["style", "CSS class string or TStyleObject { className, css, attrs, ansi, meta }"],
-      ["range", "{ from, to } — absolute indices, or \"selection\" to use the current selection"],
+      ["range", "{ from, to } - absolute indices, or \"selection\" to use the current selection"],
       ["cursor", "Whose selection to use when range is \"selection\" (default: \"main\")"],
       ["before", "Hook fired before the style is applied"],
       ["after", "Hook fired after the style is applied"],
@@ -565,25 +565,25 @@ const HELP_SECTIONS: readonly THelpSection[] = [
     id: "unstyle",
     label: "unstyle()",
     title: ".unstyle(range, opts?)",
-    desc: "Remove text styles that overlap a range. Styles partially overlapping the range are clipped rather than fully removed. range is { from, to } or \"selection\". Instant command — does not advance the clock.",
+    desc: "Remove text styles that overlap a range. Styles partially overlapping the range are clipped rather than fully removed. range is { from, to } or \"selection\". Instant command - does not advance the clock.",
     rows: [
-      ["range", "{ from, to } — absolute indices, or \"selection\" to unstyle the cursor's active selection"],
+      ["range", "{ from, to } - absolute indices, or \"selection\" to unstyle the cursor's active selection"],
       ["cursor", "Whose selection to use when range is \"selection\" (default: \"main\")"],
       ["before", "Hook fired before the styles are removed"],
       ["after", "Hook fired after the styles are removed"],
       ["audio", "Per-command audio override"],
-      ["— clipping behavior", "Outside range: preserved. Inside range: removed. Partial overlap: clipped. Spanning range: split into two fragments."],
+      ["- clipping behavior", "Outside range: preserved. Inside range: removed. Partial overlap: clipped. Spanning range: split into two fragments."],
     ],
   },
   {
     id: "call",
     label: "call()",
     title: ".call(fn, opts?)",
-    desc: "Schedule an inline callback. The callback receives a context object and may return a Promise — playback suspends until it settles.",
+    desc: "Schedule an inline callback. The callback receives a context object and may return a Promise - playback suspends until it settles.",
     rows: [
       ["fn", "The callback: ({ state, signal }) => void | Promise<void>"],
-      ["— context: state", "Current TTypewriterState snapshot"],
-      ["— context: signal", "AbortSignal — aborted when tw.cancel() is called"],
+      ["- context: state", "Current TTypewriterState snapshot"],
+      ["- context: signal", "AbortSignal - aborted when tw.cancel() is called"],
       ["before", "Hook fired before the callback runs"],
       ["after", "Hook fired after the callback completes"],
     ],
@@ -596,11 +596,11 @@ const HELP_SECTIONS: readonly THelpSection[] = [
     rows: [
       ["before", "Fires before each step (or once for instant commands)"],
       ["after", "Fires after each step (or once for instant commands)"],
-      ["— context: state", "Current TTypewriterState snapshot"],
-      ["— context: stepIndex", "Zero-based index of the current step"],
-      ["— context: stepCount", "Total step count for the command"],
-      ["— context: unit", "\"char\" | \"word\" | ... or null for instant commands"],
-      ["— context: signal", "AbortSignal — aborted when tw.cancel() is called"],
+      ["- context: state", "Current TTypewriterState snapshot"],
+      ["- context: stepIndex", "Zero-based index of the current step"],
+      ["- context: stepCount", "Total step count for the command"],
+      ["- context: unit", "\"char\" | \"word\" | ... or null for instant commands"],
+      ["- context: signal", "AbortSignal - aborted when tw.cancel() is called"],
     ],
   },
   {
@@ -609,11 +609,11 @@ const HELP_SECTIONS: readonly THelpSection[] = [
     title: "Playback Methods",
     desc: "All playback methods are available on the TTypewriter instance returned by createTypewriter().",
     rows: [
-      ["tw.play()", "Start or resume playback — returns Promise<void>"],
+      ["tw.play()", "Start or resume playback - returns Promise<void>"],
       ["tw.pause()", "Pause at the current position; call play() to resume"],
       ["tw.stop()", "Stop and reset to blank state"],
-      ["tw.replay()", "Restart from the beginning — returns Promise<void>"],
-      ["tw.cancel()", "Stop preserving current output — status → CANCELLED"],
+      ["tw.replay()", "Restart from the beginning - returns Promise<void>"],
+      ["tw.cancel()", "Stop preserving current output - status → CANCELLED"],
       ["tw.seek(ms)", "Jump to an absolute timeline position in milliseconds"],
       ["tw.stepForward()", "Apply the next event group and pause"],
       ["tw.stepBackward()", "Undo the last event group and pause"],

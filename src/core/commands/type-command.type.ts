@@ -22,7 +22,7 @@ export type TAdvanceMode = {
 
 /**
  * @description
- * Public input for advance mode — either a shorthand string or an explicit object
+ * Public input for advance mode - either a shorthand string or an explicit object
  */
 export type TAdvanceModeInput = TAdvanceUnit | TAdvanceMode;
 
@@ -30,7 +30,7 @@ export type TAdvanceModeInput = TAdvanceUnit | TAdvanceMode;
  * @description
  * Selects which cursor or cursors the command targets.
  * Pass a single string id or an array of ids to target multiple cursors simultaneously.
- * When an array is given the command is applied to each cursor in parallel —
+ * When an array is given the command is applied to each cursor in parallel -
  * the timeline clock advances only once.
  */
 export type TCursorSelector = string | readonly string[];

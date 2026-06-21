@@ -7,7 +7,7 @@ import type { ECommandKind } from "./command-kind.enum";
 /**
  * @description
  * A command that invokes a callback function as a named step in the timeline.
- * The callback may be async — playback waits for the returned promise to settle
+ * The callback may be async - playback waits for the returned promise to settle
  * before advancing to the next command.
  */
 export type TCallCommand = TBaseCommand & {

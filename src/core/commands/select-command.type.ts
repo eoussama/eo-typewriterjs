@@ -10,7 +10,7 @@ import type { TAdvanceModeInput, TCursorSelector } from "./type-command.type";
  * - `"start"`: select from current cursor position to document start
  * - `"end"`: select from current cursor position to document end
  * - `"whole"`: select the entire document
- * - `number`: signed count — positive = forward, negative = backward
+ * - `number`: signed count - positive = forward, negative = backward
  */
 export type TSelectValue = number | "start" | "end" | "whole";
 
