@@ -211,4 +211,10 @@ test.describe("editing", () => {
 
     expect(await getOutputText(page)).toBe("");
   });
+
+  test("move step-by-step inserts at intermediate cursor position", async ({ page }) => {
+    await gotoScenario(page, "move-step-by-step");
+
+    expect(await getOutputText(page)).toBe("Hello! cruel world");
+  });
 });

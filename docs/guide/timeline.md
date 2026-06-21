@@ -45,7 +45,7 @@ Commands are appended in the order they are called.
 |---|---|---|
 | [Type](/guide/commands/type) | `.type(text, options?)` | One event per step, advances clock |
 | [Delete](/guide/commands/delete) | `.delete(value, options?)` | One event per step for numeric counts; one instant event for boundary strings |
-| [Move](/guide/commands/move) | `.move(value, options?)` | One event per cursor, advances clock |
+| [Move](/guide/commands/move) | `.move(value, options?)` | One event per step per cursor for numeric offsets; one event per cursor for boundaries; advances clock |
 | [Wait](/guide/commands/wait) | `.wait(duration)` | No events, advances clock |
 | [Select](/guide/commands/select) | `.select(value, options?)` | One event per cursor, advances clock |
 | [Unselect](/guide/commands/unselect) | `.unselect(options?)` | One instant event per cursor, does not advance clock |
@@ -60,9 +60,10 @@ See the [Commands overview](/guide/commands/) for the full reference.
 The compiler maintains an internal clock cursor starting at `0 ms`. Each command is placed relative to that cursor:
 
 - `type` advances the clock by the total duration of all its steps.
-- `delete` advances the clock when given a numeric count (`steps × interval`). When given a boundary string (`"start"`, `"end"`, `"whole"`), it compiles to a single instant event and does not advance the clock.
+- `delete` advances the clock when given a numeric count (`steps × interval`). When given a boundary string (`"start"`, `"end"`, `"whole"`), it compiles to a single event and advances the clock by the default interval (50 ms).
+- `move` with a string boundary (`"start"` or `"end"`) compiles to one event per cursor and advances the clock by `interval` (or the default 50 ms). With a numeric offset it compiles to `ceil(|offset| / amount)` events per cursor and advances the clock by `steps × interval`. A zero offset emits no events and does not advance the clock.
 - `wait` advances the clock by its `duration` without producing any state-changing events.
-- `move` and `select` each compile to one event per targeted cursor and advance the clock by `interval` (or the default 50 ms) once per command.
+- `select` compiles to one event per cursor and advances the clock by `interval` (or the default 50 ms).
 - `unselect`, `style`, and `unstyle` are compiled at the current clock position without advancing it. If one of these follows a timed command, its compiled event is placed at that command's ending timestamp.
 - `call` has no compiled representation at all. It does not appear in the event stream and does not affect the clock.
 
@@ -99,7 +100,7 @@ console.log(tw.timeline.commands); // ReadonlyArray<TCommand>
 
 ## Lifecycle hooks
 
-Every command accepts optional `before` and `after` hooks. For segmented commands (`type`, `delete`) they fire once per step. For all other commands they fire once around the single operation.
+Every command accepts optional `before` and `after` hooks. For segmented commands (`type`, `delete`, and `move` with a numeric offset) they fire once per step. For all other commands they fire once around the single operation. `.move(0)` is a special case: no state change occurs and no clock advance happens, but hooks still fire once during sequential playback.
 
 These hooks only execute during sequential playback (`play()`, `replay()`). They are not invoked during `seek()` or stepping.
 

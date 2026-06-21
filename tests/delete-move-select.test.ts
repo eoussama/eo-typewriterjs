@@ -540,7 +540,7 @@ describe("move - clamping", () => {
 
     tw.timeline
       .type("Hi", { by: "char", interval: 1 })
-      .move(9999)
+      .move(100, { interval: 1 })
       .type("!", { by: "char", interval: 1 });
     await tw.play();
 
@@ -554,11 +554,54 @@ describe("move - clamping", () => {
 
     tw.timeline
       .type("Hi", { by: "char", interval: 1 })
-      .move(-9999)
+      .move(-100, { interval: 1 })
       .type(">", { by: "char", interval: 1 });
     await tw.play();
 
     expect(r.toString()).toBe(">Hi");
+    assertInvariants(tw);
+  });
+
+  it("overlarge negative move completes without iterating 999 times", async () => {
+    const r = stringRenderer();
+    const tw = createTypewriter({ renderer: r });
+    let beforeCount = 0;
+    let afterCount = 0;
+
+    tw.timeline
+      .type("world", { by: "char", interval: 1 })
+      .move(-999, {
+        interval: 1,
+        before: () => { beforeCount++; },
+        after: () => { afterCount++; },
+      })
+      .type("Hello ", { by: "char", interval: 1 });
+    await tw.play();
+
+    expect(r.toString()).toBe("Hello world");
+    expect(tw.getLiveState().cursors.main?.index).toBe(6);
+    expect(beforeCount).toBeLessThan(20);
+    expect(afterCount).toBeLessThan(20);
+    assertInvariants(tw);
+  });
+
+  it("overlarge positive move completes without iterating 999 times", async () => {
+    const r = stringRenderer();
+    const tw = createTypewriter({ renderer: r });
+    let hookCount = 0;
+
+    tw.timeline
+      .type("Hi", { by: "char", interval: 1 })
+      .move("start")
+      .move(999, {
+        interval: 1,
+        after: () => { hookCount++; },
+      })
+      .type("!", { by: "char", interval: 1 });
+    await tw.play();
+
+    expect(r.toString()).toBe("Hi!");
+    expect(hookCount).toBeLessThan(20);
     assertInvariants(tw);
   });
 });
@@ -595,7 +638,7 @@ describe("move - clears selection", () => {
 });
 
 describe("move - before/after hooks", () => {
-  it("before fires before cursor moves, after fires after", async () => {
+  it("before fires before each step, after fires after each step", async () => {
     const r = stringRenderer();
     const tw = createTypewriter({ renderer: r });
     const log: number[] = [];
@@ -603,13 +646,176 @@ describe("move - before/after hooks", () => {
     tw.timeline
       .type("hello", { by: "char", interval: 1 })
       .move(-2, {
+        interval: 1,
         before: () => { log.push(tw.getLiveState().cursors.main?.index ?? -1); },
         after: () => { log.push(tw.getLiveState().cursors.main?.index ?? -1); },
       });
     await tw.play();
 
-    expect(log[0]).toBe(5);
-    expect(log[1]).toBe(3);
+    // step 1: before at 5, after at 4; step 2: before at 4, after at 3
+    expect(log).toStrictEqual([5, 4, 4, 3]);
+  });
+});
+
+describe("move - step-by-step semantics", () => {
+  it("move(-3) fires before and after hooks once per step", async () => {
+    const r = stringRenderer();
+    const tw = createTypewriter({ renderer: r });
+    let beforeCount = 0;
+    let afterCount = 0;
+
+    tw.timeline
+      .type("Hello", { by: "char", interval: 1 })
+      .move(-3, {
+        interval: 1,
+        before: () => { beforeCount++; },
+        after: () => { afterCount++; },
+      });
+    await tw.play();
+
+    expect(beforeCount).toBe(3);
+    expect(afterCount).toBe(3);
+    assertInvariants(tw);
+  });
+
+  it("move(5, { amount: 2 }) uses a partial final step", async () => {
+    const r = stringRenderer();
+    const tw = createTypewriter({ renderer: r });
+    const positions: number[] = [];
+
+    tw.timeline
+      .type("abcdef", { by: "char", interval: 1 })
+      .move("start")
+      .move(5, {
+        by: { unit: "char", amount: 2 },
+        interval: 1,
+        after: () => { positions.push(tw.getLiveState().cursors.main?.index ?? -1); },
+      });
+    await tw.play();
+
+    expect(positions).toStrictEqual([2, 4, 5]);
+    expect(tw.getLiveState().cursors.main?.index).toBe(5);
+    assertInvariants(tw);
+  });
+
+  it("move(-12) advances cursor one step at a time through intermediate positions", async () => {
+    const r = stringRenderer();
+    const tw = createTypewriter({ renderer: r });
+    const afterPositions: number[] = [];
+
+    tw.timeline
+      .type("Hello cruel world", { by: "char", interval: 1 })
+      .move(-12, {
+        by: "char",
+        interval: 1,
+        after: () => { afterPositions.push(tw.getLiveState().cursors.main?.index ?? -1); },
+      });
+    await tw.play();
+
+    expect(afterPositions).toHaveLength(12);
+    expect(afterPositions[0]).toBe(16); // first step: 17→16
+    expect(afterPositions[11]).toBe(5); // last step: 6→5
+    assertInvariants(tw);
+  });
+
+  it("move(-12) lands cursor at correct final position", async () => {
+    const r = stringRenderer();
+    const tw = createTypewriter({ renderer: r });
+
+    tw.timeline
+      .type("Hello cruel world", { by: "char", interval: 1 })
+      .move(-12, { by: "char", interval: 1 });
+    await tw.play();
+
+    expect(tw.getLiveState().cursors.main?.index).toBe(5);
+    assertInvariants(tw);
+  });
+
+  it("move(-2, { by: 'word' }) fires hooks exactly twice", async () => {
+    const r = stringRenderer();
+    const tw = createTypewriter({ renderer: r });
+    let hookFireCount = 0;
+
+    tw.timeline
+      .type("one two three four five", { by: "char", interval: 1 })
+      .move(-2, {
+        by: "word",
+        interval: 1,
+        after: () => { hookFireCount++; },
+      });
+    await tw.play();
+
+    expect(hookFireCount).toBe(2);
+    assertInvariants(tw);
+  });
+
+  it("move(3) advances cursor forward one step at a time", async () => {
+    const r = stringRenderer();
+    const tw = createTypewriter({ renderer: r });
+    let hookFireCount = 0;
+
+    tw.timeline
+      .type("Hello", { by: "char", interval: 1 })
+      .move("start")
+      .move(3, {
+        interval: 1,
+        after: () => { hookFireCount++; },
+      });
+    await tw.play();
+
+    expect(hookFireCount).toBe(3);
+    expect(tw.getLiveState().cursors.main?.index).toBe(3);
+    assertInvariants(tw);
+  });
+
+  it("move(0) still fires hooks once", async () => {
+    const r = stringRenderer();
+    const tw = createTypewriter({ renderer: r });
+    const log: Array<string> = [];
+
+    tw.timeline
+      .type("Hello", { by: "char", interval: 1 })
+      .move(0, {
+        interval: 1,
+        before: () => { log.push("before"); },
+        after: () => { log.push("after"); },
+      });
+    await tw.play();
+
+    expect(log).toStrictEqual(["before", "after"]);
+    expect(tw.getLiveState().cursors.main?.index).toBe(5);
+    assertInvariants(tw);
+  });
+
+  it("move can target multiple cursors step-by-step at the same timestamps", async () => {
+    const r = stringRenderer();
+    const tw = createTypewriter({ renderer: r });
+    const snapshots: Array<{ readonly a: number; readonly b: number; readonly text: string }> = [];
+
+    tw.timeline
+      .type("abcdef", { by: "char", interval: 1, cursor: ["a", "b"] })
+      .move("start", { cursor: ["a", "b"] })
+      .move(3, {
+        cursor: ["a", "b"],
+        interval: 1,
+        after: () => {
+          const state = tw.getLiveState();
+
+          snapshots.push({
+            a: state.cursors.a?.index ?? -1,
+            b: state.cursors.b?.index ?? -1,
+            text: state.document.text,
+          });
+        },
+      });
+    await tw.play();
+
+    expect(snapshots).toStrictEqual([
+      { a: 1, b: 1, text: "abcdefabcdef" },
+      { a: 2, b: 2, text: "abcdefabcdef" },
+      { a: 3, b: 3, text: "abcdefabcdef" },
+    ]);
+    assertInvariants(tw);
   });
 });
 

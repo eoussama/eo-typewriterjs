@@ -112,6 +112,49 @@ describe("resolveAdvanceMode undefined branch and default interval (play without
 });
 
 
+describe("abort inside before/after hooks of numeric move", () => {
+  it("cancelling inside before hook of numeric move aborts mid-move", async () => {
+    const renderer = stringRenderer();
+    const tw = createTypewriter({ renderer });
+    let stepsFired = 0;
+
+    tw.timeline
+      .type("Hello", { by: "char", interval: 1 })
+      .move(-3, {
+        interval: 1,
+        before: () => {
+          stepsFired++;
+          tw.cancel();
+        },
+      });
+    await tw.play();
+
+    expect(stepsFired).toBe(1);
+    expect(tw.getLiveState().cursors.main?.index).toBe(5);
+  });
+
+  it("cancelling inside after hook of numeric move aborts after first step", async () => {
+    const renderer = stringRenderer();
+    const tw = createTypewriter({ renderer });
+    let stepsFired = 0;
+
+    tw.timeline
+      .type("Hello", { by: "char", interval: 1 })
+      .move(-3, {
+        interval: 1,
+        after: () => {
+          stepsFired++;
+          tw.cancel();
+        },
+      });
+    await tw.play();
+
+    expect(stepsFired).toBe(1);
+    expect(tw.getLiveState().cursors.main?.index).toBe(4);
+  });
+});
+
+
 describe("abort inside whole-command before hook of type", () => {
   it("cancelling inside type whole-command before hook skips all typing", async () => {
     const renderer = stringRenderer();

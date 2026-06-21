@@ -6,17 +6,19 @@ Moves a cursor to a new position in the document.
 tw.timeline.move(offset: TMoveValue, options?: TMoveOptions): TimelineBuilder
 ```
 
-`.move()` is an **instant command**. It produces a single event at the current timeline clock position and does **not** advance the clock. If placed after a timed command, it fires at the exact moment the previous command finishes.
+`.move()` works like `.type()` and `.delete()`: it splits the offset into steps, emitting one event per unit (or per `amount` units), and advances the timeline clock by `interval` with each step. The cursor moves one step at a time, visiting every intermediate position.
+
+String boundaries (`"start"` and `"end"`) remain a single event — they are still instant jumps.
 
 ## Operand semantics
 
-| `offset` | Behavior |
-|---|---|
-| Positive number (`offset > 0`) | Move **forward** (right) from the current position |
-| Negative number (`offset < 0`) | Move **backward** (left) from the current position |
-| Zero (`offset === 0`) | No-op - cursor stays in place |
-| `"start"` | Jump to absolute document **start** (index 0) |
-| `"end"` | Jump to absolute document **end** (index `text.length`) |
+| `offset` | Behavior | Steps |
+|---|---|---|
+| Positive number (`offset > 0`) | Move **forward** (right) one unit at a time | `ceil(offset / amount)` |
+| Negative number (`offset < 0`) | Move **backward** (left) one unit at a time | `ceil(\|offset\| / amount)` |
+| Zero (`offset === 0`) | Cursor stays in place, clock does not advance; hooks still fire once during sequential playback | 0 |
+| `"start"` | Jump to absolute document **start** (index 0) | 1 |
+| `"end"` | Jump to absolute document **end** (index `text.length`) | 1 |
 
 `"start"` and `"end"` are absolute: they jump to the document boundaries regardless of where the cursor currently is. Numeric offsets are relative to the cursor's current position.
 
@@ -27,6 +29,7 @@ The resulting position is always **clamped** to `[0, text.length]` - the cursor 
 ```ts
 type TMoveOptions = {
   by?: TAdvanceModeInput;   // default: "char" (numeric offsets only)
+  interval?: number;        // default: 50 (ms)
   cursor?: TCursorSelector; // default: "main"
   before?: TCallbackHook;
   after?: TCallbackHook;
@@ -37,6 +40,7 @@ type TMoveOptions = {
 | Option | Type | Default | Description |
 |---|---|---|---|
 | `by` | `TAdvanceModeInput` | `"char"` | Unit granularity for the offset (numeric offsets only) |
+| `interval` | `number` | `50` | Duration in ms the move occupies on the timeline |
 | `cursor` | `TCursorSelector` | `"main"` | Which cursor(s) to reposition |
 | `before` | `TCallbackHook` | - | Hook fired before the cursor moves |
 | `after` | `TCallbackHook` | - | Hook fired after the cursor has moved |
@@ -44,11 +48,12 @@ type TMoveOptions = {
 
 ## Behavior
 
-- The cursor's current **selection is cleared** when `.move()` fires.
+- The cursor's current **selection is cleared** at every step.
 - Subsequent `.type()` calls insert at the new cursor position.
 - Subsequent `.delete(-n)` calls delete backward from the new cursor position.
 - Subsequent `.delete(n)` calls delete forward from the new cursor position.
-- `.move()` does not fire intermediate steps - it is a single atomic jump.
+- **Numeric offset**: the cursor moves one unit (or `amount` units) per step. `before` and `after` fire once per step, not once per command.
+- **String boundary**: `"start"` and `"end"` are single-step jumps. `before` and `after` each fire once.
 
 ## Advance modes (`by`)
 
@@ -68,7 +73,7 @@ tw.timeline.move(-2, { by: "word" });
 tw.timeline.move(-1, { by: "line" });
 ```
 
-Note: `"line"` splits on `\n` characters in the document text. There is no concept of visual rows - movement is purely character-based.
+> Note: `"line"` splits on `\n` characters in the document text. There is no concept of visual rows - movement is purely character-based.
 
 ## Examples
 
@@ -121,6 +126,19 @@ await tw.play();
 // result: "Hello world"
 ```
 
+### Move step by step with a custom interval
+
+```ts
+tw.timeline
+  .type("Hello cruel world", { by: "char", interval: 60 })
+  .move(-12, { by: "char", interval: 300 }) // 12 steps × 300 ms; cursor moves one char per step
+  .type("!", { by: "char", interval: 60 });
+
+await tw.play();
+// cursor visits 17→16→...→5 before "!" is inserted
+// result: "Hello! cruel world"
+```
+
 ### Move by word to insert before a specific word
 
 ```ts
@@ -142,7 +160,7 @@ tw.timeline
   .wait(600)
   .move("end")
   .move(-5, { by: "char" }) // cursor before "plane"
-  .delete(-5, { by: "char", interval: 50 })
+  .delete(5, { by: "char", interval: 50 })
   .type("plain", { by: "char", interval: 70 });
 
 await tw.play();
@@ -179,23 +197,31 @@ await tw.play();
 
 ## Clock behavior
 
-Because `.move()` does not advance the clock, a chain of instant commands all fire at the same timestamp as the preceding timed command's last event:
+`.move()` advances the timeline clock by `interval` for every emitted step event. A zero offset produces no events and does not advance the clock.
+
+For a numeric offset of magnitude `N` with unit amount `A`:
+- Steps = `ceil(N / A)`
+- Total duration = `steps × interval`
+
+String boundaries (`"start"`, `"end"`) always produce exactly one step, so they consume exactly one `interval`.
 
 ```ts
 tw.timeline
   .type("Hello", { interval: 80 })  // ends at 400 ms
-  .move("start")                    // fires at 400 ms
-  .select("whole")                  // fires at 400 ms
-  .style("faded", "selection")      // fires at 400 ms
-  .move("end")                      // fires at 400 ms
-  .type("?", { interval: 80 });     // starts at 400 ms
+  .move("start")                    // 1 step at 400 ms, ends at 450 ms
+  .select("whole")                  // fires at 450 ms, ends at 500 ms
+  .style("faded", "selection")      // fires at 500 ms, ends at 550 ms
+  .move("end")                      // 1 step at 550 ms, ends at 600 ms
+  .type("?", { interval: 80 });     // starts at 600 ms
 
 await tw.play();
 ```
 
+A move like `.move(-5, { by: "char", interval: 100 })` occupies `5 × 100 = 500 ms` and visits 5 intermediate cursor positions.
+
 ## Edge cases
 
-- **`offset = 0`** - no-op; cursor stays in place; selection is still cleared.
+- **`offset = 0`** - no events emitted; clock does not advance; cursor position is unchanged. `before` and `after` hooks still fire once during sequential playback (`play()`/`replay()`).
 - **`"start"` when cursor is already at 0** - selection is cleared; position unchanged.
 - **`"end"` when cursor is already at `text.length`** - selection is cleared; position unchanged.
 - **Large positive offset** - clamped to `text.length`.

@@ -117,7 +117,7 @@ describe("domRenderer", () => {
     // Type text, move cursor back, and select forward to create an active selection
     tw.timeline
       .type("Hello", { by: "char", interval: 1 })
-      .move(-999)
+      .move(-999, { interval: 1 })
       .select(3);
     await tw.play();
 

@@ -25,16 +25,21 @@ Timing-only commands produce **no events** and do not mutate the document. They 
 |---|---|
 | [wait](/guide/commands/wait) | Exactly `duration` ms |
 
-### Single-step commands
+### Multi-step movement commands
 
-Single-step commands produce **one event per targeted cursor** at the current clock position, then advance the clock by `interval` (default `50 ms`). Unlike timed commands, they always resolve to a single event regardless of how large the offset or selection is — the `by` unit and `amount` are carried as metadata on that event and resolved by the reducer at apply time.
+`.move()` with a numeric offset behaves like a timed command: it splits the offset into `ceil(|offset| / amount)` steps, emits one event per step per cursor, and advances the clock by `steps × interval`. With a string boundary (`"start"` or `"end"`) it emits one event per cursor and advances the clock by `interval`. A zero offset emits no events, does not advance the clock, but still fires lifecycle hooks once during sequential playback.
 
 | Command | Mutates document? |
 |---|---|
 | [move](/guide/commands/move) | No, repositions the cursor only |
-| [select](/guide/commands/select) | No, sets the cursor's selection range |
 
-> **Special case:** a `move` with a numeric offset of `0` is a no-op. It emits no events and does not advance the clock.
+### Single-step commands
+
+Single-step commands produce **one event per targeted cursor** at the current clock position, then advance the clock by `interval` (default `50 ms`). The `by` unit and `amount` are carried as metadata on the event and resolved by the reducer at apply time — no matter how large the selection count is, exactly one event is emitted.
+
+| Command | Mutates document? |
+|---|---|
+| [select](/guide/commands/select) | No, sets the cursor's selection range |
 
 ### Instant commands
 
@@ -55,7 +60,7 @@ Instant commands produce **one event per targeted cursor** at the current clock 
 |---|---|---|---|
 | [type](/guide/commands/type) | `.type(text, options?)` | ✅ yes | ✅ yes, inserts text |
 | [delete](/guide/commands/delete) | `.delete(count, options?)` | ✅ yes | ✅ yes, removes text |
-| [move](/guide/commands/move) | `.move(offset, options?)` | ✅ yes, `interval` ms | ❌ no |
+| [move](/guide/commands/move) | `.move(offset, options?)` | ✅ yes, `steps × interval` ms (numeric) / `interval` ms (boundary) | ❌ no |
 | [wait](/guide/commands/wait) | `.wait(duration, options?)` | ✅ yes | ❌ no |
 | [select](/guide/commands/select) | `.select(count, options?)` | ✅ yes, `interval` ms | ❌ no |
 | [unselect](/guide/commands/unselect) | `.unselect(options?)` | ❌ instant | ❌ no |
@@ -125,16 +130,16 @@ tw.timeline.type("one two three four", { by: { unit: "word", amount: 2 } });
 
 ## Composition patterns
 
-Commands compose by chaining. `move` and `select` each advance the clock by `interval` (default `50 ms`). `style`, `unstyle`, and `unselect` are instant and do not advance the clock, so multiple instant operations stack at the same timestamp:
+Commands compose by chaining. `select` advances the clock by `interval` (default `50 ms`). `move` advances the clock by `steps × interval` for numeric offsets, or `interval` for string boundaries. `style`, `unstyle`, and `unselect` are instant and do not advance the clock, so multiple instant operations stack at the same timestamp:
 
 ```ts
 tw.timeline
   .type("Hello World", { by: "char", interval: 80 }) // timed: ~880 ms
   .wait(600)                                          // pause 600 ms
-  .move(-5)                                           // single-step: advances clock 50 ms
+  .move(-5)                                           // 5 steps: advances clock 5 × 50 ms = 250 ms
   .select(5)                                          // single-step: advances clock 50 ms
   .style("highlight", "selection")                   // instant (fires at same moment as previous end)
-  .move("end")                                        // single-step: advances clock 50 ms
+  .move("end")                                        // boundary: advances clock 50 ms
   .type("!", { by: "char", interval: 80 });           // timed: 80 ms
 
 await tw.play();
@@ -176,9 +181,9 @@ await tw.play();
 
 Every command accepts optional `before` and `after` lifecycle hooks. They share the same `TCallbackFn` signature, which receives a `TCallbackContext`.
 
-**For timed commands** (`type`, `delete`), both hooks fire once per step, before and after each individual insertion or deletion.
+**For timed and multi-step commands** (`type`, `delete`, and `move` with a numeric offset), both hooks fire once per step, before and after each individual operation.
 
-**For single-step and instant commands** (`move`, `select`, `style`, `unselect`, `unstyle`, `wait`, `call`, etc.), they fire once total.
+**For single-step and instant commands** (`select`, `style`, `unselect`, `unstyle`, `wait`, `call`, and `move` with a string boundary or zero offset), they fire once total.
 
 ```ts
 tw.timeline.type("Hello world", {

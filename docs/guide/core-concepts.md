@@ -35,8 +35,8 @@ You add **commands** to the timeline using the fluent builder methods:
 When `play()` is called, the timeline is compiled into a flat array of **timeline events**, one event per step, each stamped with an absolute timestamp. The timeline is compiled once when `play()` is first called, and the result is cached. Recompilation only happens when commands are added to the timeline. `replay()` reuses the same compiled output unless the timeline has changed since the last compile.
 
 `wait`, `move`, `select`, `unselect`, `style`, `unstyle`, and `call` are special:
+- `move` with a string boundary (`"start"` or `"end"`) generates one event per cursor and advances the clock by `interval` (or the default 50 ms); with a numeric offset it generates `ceil(|offset| / amount)` events per cursor and advances the clock by `steps × interval`; a zero offset generates no events and does not advance the clock
 - `wait` generates no events but advances the internal clock
-- `move` generates a single event per cursor and advances the clock by `interval` (or the default 50 ms)
 - `select` generates a single event per cursor and advances the clock by `interval` (or the default 50 ms)
 - `unselect` generates a single instant event and does not advance the clock
 - `style` generates one or more instant style events (one per cursor when `range` is `"selection"`) and does not advance the clock
@@ -53,7 +53,7 @@ After each state update, the **renderer** is called with the new state. The buil
 
 ### Lifecycle hooks
 
-Every command accepts optional `before` and `after` hooks. Both are plain callback functions that receive a `TCallbackContext`. For segmented commands (`.type()`, `.delete()`) they fire once per step; for instant commands (`.move()`, `.wait()`, etc.) they fire once around the whole command:
+Every command accepts optional `before` and `after` hooks. Both are plain callback functions that receive a `TCallbackContext`. For segmented commands (`.type()`, `.delete()`, and `.move()` with a numeric offset) they fire once per step; for all other commands they fire once around the whole operation:
 
 ```ts
 tw.timeline.type("Hello", {

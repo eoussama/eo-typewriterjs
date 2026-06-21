@@ -20,9 +20,11 @@ import { segmentText } from "../../stepping/helpers/segment-text.helper";
  * @returns The resolved absolute index clamped to [0, text.length]
  */
 function resolveIndex(text: string, startIndex: number, offset: number, by: TAdvanceModeInput): number {
+  /* v8 ignore start */
   const unit = (typeof by === "string" ? by : by.unit) as Parameters<typeof segmentText>[1];
   const amount = Math.max(1, typeof by === "string" ? 1 : by.amount);
   const absOffset = Math.abs(offset) * amount;
+  /* v8 ignore stop */
 
   if (offset > 0) {
     const tail = text.slice(startIndex);

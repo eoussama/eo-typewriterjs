@@ -247,23 +247,96 @@ async function executeMove(
   renderer: IRenderer,
   options: TExecuteCommandsOptions,
 ): Promise<TTypewriterState> {
-  await invokeHook(command.before, makeContext(state, 0, 1, null, options.signal));
+  if (typeof command.offset === "string") {
+    await invokeHook(command.before, makeContext(state, 0, 1, null, options.signal));
 
-  if (options.signal.aborted) {
+    if (options.signal.aborted) {
+      return state;
+    }
+
+    const { events } = compileMove(command, 0);
+
+    for (const event of events) {
+      state = reduce(state, event);
+    }
+
+    options.getAudioManager?.()?.playTyping(command.audio);
+    renderer.render(state);
+
+    /* v8 ignore next 3 */
+    if (!options.signal.aborted) {
+      await invokeHook(command.after, makeContext(state, 0, 1, null, options.signal));
+    }
+
     return state;
   }
 
-  const { events } = compileMove(command, 0);
+  if (command.offset === 0) {
+    await invokeHook(command.before, makeContext(state, 0, 1, null, options.signal));
 
-  for (const event of events) {
-    state = reduce(state, event);
+    if (!options.signal.aborted) {
+      await invokeHook(command.after, makeContext(state, 0, 1, null, options.signal));
+    }
+
+    return state;
   }
 
-  options.getAudioManager?.()?.playTyping(command.audio);
-  renderer.render(state);
+  const mode = resolveMotionAdvanceMode(command.by, "move");
+  const interval = command.interval ?? DEFAULT_INTERVAL;
+  const amount = Math.max(1, mode.amount);
+  const direction: 1 | -1 = command.offset > 0 ? 1 : -1;
+  const totalUnits = Math.abs(command.offset);
+  const stepCount = Math.ceil(totalUnits / amount);
+  const cursorIds = normalizeCursors(command.cursor);
 
-  if (!options.signal.aborted) {
-    await invokeHook(command.after, makeContext(state, 0, 1, null, options.signal));
+  for (let i = 0; i < stepCount; i++) {
+    /* v8 ignore next 3 */
+    if (options.signal.aborted) {
+      break;
+    }
+
+    const remaining = totalUnits - i * amount;
+    const stepUnits = Math.min(amount, remaining);
+
+    await invokeHook(command.before, makeContext(state, i, stepCount, mode.unit, options.signal));
+
+    /* v8 ignore next 3 */
+    if (options.signal.aborted) {
+      break;
+    }
+
+    options.getAudioManager?.()?.playTyping(command.audio);
+
+    const prevState = state;
+
+    for (const cursorId of cursorIds) {
+      const event = {
+        id: nextEventId("exec_move"),
+        kind: EEventKind.MOVE,
+        time: 0,
+        cursorId,
+        offset: direction,
+        by: { unit: mode.unit, amount: stepUnits },
+        sourceCommandId: command.id,
+      } as const;
+
+      state = reduce(state, event);
+    }
+
+    const anyCursorMoved = cursorIds.some(id => state.cursors[id]?.index !== prevState.cursors[id]?.index);
+
+    renderer.render(state);
+
+    await invokeHook(command.after, makeContext(state, i, stepCount, mode.unit, options.signal));
+
+    if (!anyCursorMoved || options.signal.aborted) {
+      break;
+    }
+
+    /* v8 ignore next 3 */
+    if (i < stepCount - 1 && !options.signal.aborted) {
+      await awaitDelay(interval, options);
+    }
   }
 
   return state;

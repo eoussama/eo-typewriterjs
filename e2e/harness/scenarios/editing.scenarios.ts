@@ -367,6 +367,18 @@ export const EDITING_SCENARIOS: readonly TScenario[] = [
     },
   },
   {
+    id: "move-step-by-step",
+    async run({ el }) {
+      const tw = createTypewriter({ renderer: domRenderer(el) });
+
+      tw.timeline
+        .type("Hello cruel world", { by: "char", interval: 1 })
+        .move(-12, { by: "char", interval: 1 })
+        .type("!", { by: "char", interval: 1 });
+      await tw.play();
+    },
+  },
+  {
     id: "delete-then-type",
     async run({ el }) {
       const tw = createTypewriter({ renderer: domRenderer(el) });

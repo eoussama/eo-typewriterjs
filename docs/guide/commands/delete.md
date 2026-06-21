@@ -211,8 +211,8 @@ await tw.play();
 
 ## Edge cases
 
-- **Cursor at position 0 with backward deletion** - no-op for `char`, `grapheme`, and `word`; for `by: "line"` the forward content of the current line is consumed instead.
-- **Cursor at the end with forward deletion** - no-op for `char`, `grapheme`, and `word`; for `by: "line"` the content of the current line up to the cursor is consumed instead.
+- **Cursor at position 0 with backward deletion** - no-op for `char`, `grapheme`, and `word`; for `by: "line"` the current line's content is consumed, which deletes the whole line on single-line text.
+- **Cursor at the end with forward deletion** - no-op for `char`, `grapheme`, and `word`; for `by: "line"` the current line's content is consumed, which deletes the whole line on single-line text.
 - **`|count|` larger than available text** - deletion stops at the document boundary without error.
 - **`"whole"` on an empty document** - no-op.
 - **`"start"` with cursor at 0** - no-op.

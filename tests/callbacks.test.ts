@@ -678,6 +678,22 @@ describe("abort inside before hook of instant commands", () => {
     expect(renderer.toString()).toBe("ab");
   });
 
+  it("aborting inside boundary move before hook skips the move", async () => {
+    const renderer = stringRenderer();
+    const tw = createTypewriter({ renderer });
+
+    tw.timeline
+      .type("hello", { by: "char", interval: 1 })
+      .move("start", {
+        before: () => { tw.cancel(); },
+      })
+      .type("X", { by: "char", interval: 1 });
+    await tw.play();
+
+    expect(renderer.toString()).toBe("hello");
+    expect(tw.getLiveState().cursors.main?.index).toBe(5);
+  });
+
   it("aborting inside select before hook skips the selection", async () => {
     const renderer = stringRenderer();
     const tw = createTypewriter({ renderer });

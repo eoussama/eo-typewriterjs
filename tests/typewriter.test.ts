@@ -219,11 +219,11 @@ describe("compile (delete)", () => {
 
 
 describe("compile (move)", () => {
-  it("compiles a move command into a single event", () => {
+  it("compiles a numeric move command into one event per step", () => {
     const events = compile([{ id: "mc1", kind: "move", cursor: "main", offset: 3 }]);
 
-    expect(events).toHaveLength(1);
-    expect(events[0]?.kind).toBe("move");
+    expect(events).toHaveLength(3); // 3 steps × 1 cursor
+    expect(events.every(e => e.kind === "move")).toBe(true);
   });
 
   it("zero offset is a no-op and does not advance the clock", () => {
@@ -472,14 +472,20 @@ describe("compile (multi-cursor)", () => {
     expect(mainEvents[0]?.time).toBe(200);
   });
 
-  it("fans out move events for each cursor", () => {
+  it("fans out move events for each cursor at each step", () => {
     const events = compile([
       { id: "mcc", kind: "move", cursor: ["x", "y"], offset: 5 },
     ]);
 
-    expect(events).toHaveLength(2);
+    // 5 steps × 2 cursors = 10 events
+    expect(events).toHaveLength(10);
     expect(events.every(e => e.kind === "move")).toBe(true);
-    expect(events.map(e => e.cursorId).sort()).toEqual(["x", "y"]);
+    // every cursor should appear at every step
+    const xEvents = events.filter(e => e.cursorId === "x");
+    const yEvents = events.filter(e => e.cursorId === "y");
+
+    expect(xEvents).toHaveLength(5);
+    expect(yEvents).toHaveLength(5);
   });
 
   it("fans out select events for each cursor", () => {
@@ -1178,7 +1184,7 @@ describe("createTypewriter", () => {
     const renderer = stringRenderer();
     const tw = createTypewriter({ renderer });
 
-    tw.timeline.type("world", { by: "char", interval: 1 }).move(-999).type("Hello ", { by: "char", interval: 1 });
+    tw.timeline.type("world", { by: "char", interval: 1 }).move(-999, { interval: 1 }).type("Hello ", { by: "char", interval: 1 });
     await tw.play();
 
     expect(renderer.toString()).toBe("Hello world");
@@ -1188,7 +1194,7 @@ describe("createTypewriter", () => {
     const renderer = stringRenderer();
     const tw = createTypewriter({ renderer });
 
-    tw.timeline.type("Hi", { by: "char", interval: 1 }).move(-99).type("!", { by: "char", interval: 1 });
+    tw.timeline.type("Hi", { by: "char", interval: 1 }).move(-99, { interval: 1 }).type("!", { by: "char", interval: 1 });
     await tw.play();
 
     expect(renderer.toString()).toBe("!Hi");
@@ -1198,7 +1204,7 @@ describe("createTypewriter", () => {
     const renderer = stringRenderer();
     const tw = createTypewriter({ renderer });
 
-    tw.timeline.type("Hi", { by: "char", interval: 1 }).move(999).type("!", { by: "char", interval: 1 });
+    tw.timeline.type("Hi", { by: "char", interval: 1 }).move(999, { interval: 1 }).type("!", { by: "char", interval: 1 });
     await tw.play();
 
     expect(renderer.toString()).toBe("Hi!");
@@ -1669,7 +1675,7 @@ describe("delete (unit handling)", () => {
     // Move cursor to beginning then forward-delete 3 chars
     tw.timeline
       .type("abcde", { by: "char", interval: 1 })
-      .move(-999)
+      .move(-999, { interval: 1 })
       .delete(3, { by: "char", interval: 1 });
     await tw.play();
 
@@ -1705,7 +1711,7 @@ describe("delete (unit handling)", () => {
 
     tw.timeline
       .type("hi", { by: "char", interval: 1 })
-      .move(-999)
+      .move(-999, { interval: 1 })
       .delete(-1, { by: "word", interval: 1 });
     await tw.play();
 
@@ -1760,7 +1766,7 @@ describe("delete (unit handling)", () => {
     // Move to start then forward-delete 1 word
     tw.timeline
       .type("hello world", { by: "char", interval: 1 })
-      .move(-999)
+      .move(-999, { interval: 1 })
       .delete(1, { by: "word", interval: 1 });
     await tw.play();
 
@@ -1773,7 +1779,7 @@ describe("delete (unit handling)", () => {
 
     tw.timeline
       .type("line1\nline2", { by: "char", interval: 1 })
-      .move(-999)
+      .move(-999, { interval: 1 })
       .delete(1, { by: "line", interval: 1 });
     await tw.play();
 
@@ -2099,8 +2105,8 @@ describe("move (unit handling)", () => {
     // Type "abcde", move cursor to start, then move +2 forward, then type "X"
     tw.timeline
       .type("abcde", { by: "char", interval: 1 })
-      .move(-999)
-      .move(2)
+      .move(-999, { interval: 1 })
+      .move(2, { interval: 1 })
       .type("X", { by: "char", interval: 1 });
     await tw.play();
 
@@ -2114,8 +2120,8 @@ describe("move (unit handling)", () => {
 
     tw.timeline
       .type("hello world", { by: "char", interval: 1 })
-      .move(-999)
-      .move(1, { by: "word" })
+      .move(-999, { interval: 1 })
+      .move(1, { by: "word", interval: 1 })
       .type("X", { by: "char", interval: 1 });
     await tw.play();
 
@@ -2129,8 +2135,8 @@ describe("move (unit handling)", () => {
 
     tw.timeline
       .type("abcde", { by: "char", interval: 1 })
-      .move(-999)
-      .move(3, { by: { unit: "char", amount: 1 } })
+      .move(-999, { interval: 1 })
+      .move(3, { by: { unit: "char", amount: 1 }, interval: 1 })
       .type("X", { by: "char", interval: 1 });
     await tw.play();
 
@@ -2143,7 +2149,7 @@ describe("select (unit handling)", () => {
   it("select forward by word covers one full word", () => {
     const commands = [
       { id: "c1", kind: "type" as const, cursor: "main", text: "hello world", by: "char" as const, interval: 1 },
-      { id: "c2", kind: "move" as const, cursor: "main", offset: -999 },
+      { id: "c2", kind: "move" as const, cursor: "main", offset: -999, interval: 1 },
       { id: "c3", kind: "select" as const, cursor: "main", count: 1, by: "word" as const },
     ];
 
@@ -2178,7 +2184,7 @@ describe("select (unit handling)", () => {
   it("select forward by line covers one full line including newline", () => {
     const commands = [
       { id: "c1", kind: "type" as const, cursor: "main", text: "line1\nline2", by: "char" as const, interval: 1 },
-      { id: "c2", kind: "move" as const, cursor: "main", offset: -999 },
+      { id: "c2", kind: "move" as const, cursor: "main", offset: -999, interval: 1 },
       { id: "c3", kind: "select" as const, cursor: "main", count: 1, by: "line" as const },
     ];
 
