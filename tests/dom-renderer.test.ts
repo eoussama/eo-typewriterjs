@@ -1,9 +1,9 @@
 // @vitest-environment happy-dom
 import { describe, expect, it } from "vitest";
-import { DEFAULT_CURSOR_RENDER_OPTIONS } from "../core/cursor/cursor-render-options.type";
+import { DEFAULT_CURSOR_RENDER_OPTIONS } from "../src/core/cursor/cursor-render-options.type";
 
-import { createTypewriter } from "../index";
-import { DomRenderer, domRenderer } from "../renderers/dom/dom-renderer";
+import { createTypewriter } from "../src/index";
+import { DomRenderer, domRenderer } from "../src/renderers/dom/dom-renderer";
 
 
 

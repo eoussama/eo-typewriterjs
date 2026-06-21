@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
-import { createTypewriter, stringRenderer } from "../index";
-import { StringRenderer } from "../renderers/string/string-renderer";
+import { createTypewriter, stringRenderer } from "../src/index";
+import { StringRenderer } from "../src/renderers/string/string-renderer";
 
 
 

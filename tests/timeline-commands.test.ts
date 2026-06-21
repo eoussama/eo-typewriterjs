@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { createTypewriter, EPlaybackStatus, stringRenderer } from "../index";
+import { createTypewriter, EPlaybackStatus, stringRenderer } from "../src/index";
 
 
 

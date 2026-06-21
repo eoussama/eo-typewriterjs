@@ -1,20 +1,20 @@
-import type { TDeleteEvent } from "../core/events/delete-event.type";
-import type { TInsertEvent } from "../core/events/insert-event.type";
-import type { TStyleEvent } from "../core/events/style-event.type";
-import type { TUnstyleEvent } from "../core/events/unstyle-event.type";
+import type { TDeleteEvent } from "../src/core/events/delete-event.type";
+import type { TInsertEvent } from "../src/core/events/insert-event.type";
+import type { TStyleEvent } from "../src/core/events/style-event.type";
+import type { TUnstyleEvent } from "../src/core/events/unstyle-event.type";
 import { describe, expect, it } from "vitest";
-import { compile } from "../core/compiler/compile.helper";
-import { play } from "../core/player/player.helper";
-import { applyStyle } from "../core/reducer/apply-style.helper";
-import { reduce } from "../core/reducer/reduce.helper";
-import { removeStyles } from "../core/reducer/remove-styles.helper";
-import { unselect as unselectReducer } from "../core/reducer/unselect.helper";
-import { createInitialState, getSelection, withSelection, withSelectionCleared } from "../core/state/index";
-import { mergeStyles, resolveStyleRef, segmentRichText } from "../core/state/segment-rich-text.helper";
-import { chunkSteps } from "../core/stepping/chunk-steps.helper";
-import { segmentText } from "../core/stepping/segment-text.helper";
+import { compile } from "../src/core/compiler/compile.helper";
+import { play } from "../src/core/player/player.helper";
+import { applyStyle } from "../src/core/reducer/apply-style.helper";
+import { reduce } from "../src/core/reducer/reduce.helper";
+import { removeStyles } from "../src/core/reducer/remove-styles.helper";
+import { unselect as unselectReducer } from "../src/core/reducer/unselect.helper";
+import { createInitialState, getSelection, withSelection, withSelectionCleared } from "../src/core/state/index";
+import { mergeStyles, resolveStyleRef, segmentRichText } from "../src/core/state/segment-rich-text.helper";
+import { chunkSteps } from "../src/core/stepping/chunk-steps.helper";
+import { segmentText } from "../src/core/stepping/segment-text.helper";
 
-import { createTypewriter, EPlaybackStatus, stringRenderer, StringRenderer } from "../index";
+import { createTypewriter, EPlaybackStatus, stringRenderer, StringRenderer } from "../src/index";
 
 
 

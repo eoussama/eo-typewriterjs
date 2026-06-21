@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
-import { compile } from "../core/compiler/compile.helper";
-import { createTypewriter, stringRenderer } from "../index";
+import { compile } from "../src/core/compiler/compile.helper";
+import { createTypewriter, stringRenderer } from "../src/index";
 
 
 

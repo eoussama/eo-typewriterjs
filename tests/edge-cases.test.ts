@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { compile } from "../core/compiler/compile.helper";
-import { createInitialState } from "../core/state/index";
-import { withCursor } from "../core/state/typewriter-state.type";
-import { segmentText } from "../core/stepping/segment-text.helper";
-import { createTypewriter, EPlaybackStatus, stringRenderer } from "../index";
+import { compile } from "../src/core/compiler/compile.helper";
+import { createInitialState } from "../src/core/state/index";
+import { withCursor } from "../src/core/state/typewriter-state.type";
+import { segmentText } from "../src/core/stepping/segment-text.helper";
+import { createTypewriter, EPlaybackStatus, stringRenderer } from "../src/index";
 
 
 

@@ -23,7 +23,7 @@ export default defineConfig({
     emptyOutDir: true,
   },
   test: {
-    include: ["src/**/*.test.ts"],
+    include: ["tests/**/*.test.ts"],
     environment: "node",
     coverage: {
       provider: "v8",

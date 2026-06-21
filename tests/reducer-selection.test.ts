@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import { deleteTextAtCursor } from "../core/reducer/delete-text-at-cursor.helper";
-import { insertTextAtCursor } from "../core/reducer/insert.helper";
-import { createInitialState, withSelection } from "../core/state/index";
-import { createTypewriter, stringRenderer } from "../index";
+import { deleteTextAtCursor } from "../src/core/reducer/delete-text-at-cursor.helper";
+import { insertTextAtCursor } from "../src/core/reducer/insert.helper";
+import { createInitialState, withSelection } from "../src/core/state/index";
+import { createTypewriter, stringRenderer } from "../src/index";
 
 
 
