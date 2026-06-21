@@ -6,7 +6,7 @@ Commands are the building blocks of a typewriter animation. They are scheduled o
 
 The typewriter maintains an internal **timeline clock** that tracks how many milliseconds have elapsed since the animation started. Each timed command advances this clock; instant and timing-only commands do not. Every event is scheduled at a precise timestamp relative to that clock.
 
-There are three categories:
+There are four categories:
 
 ### Timed commands
 
@@ -25,16 +25,25 @@ Timing-only commands produce **no events** and do not mutate the document. They 
 |---|---|
 | [wait](/guide/commands/wait) | Exactly `duration` ms |
 
-### Instant commands
+### Single-step commands
 
-Instant commands produce **a single event** at the current clock position. They do not advance the clock. If they follow a timed command, they fire at the exact moment that command finishes.
-
-`.call()` is a special case: it produces **no timeline events** and does not appear in the compiled event list. It is executed purely at runtime by the executor, between the commands that surround it.
+Single-step commands produce **one event per targeted cursor** at the current clock position, then advance the clock by `interval` (default `50 ms`). Unlike timed commands, they always resolve to a single event regardless of how large the offset or selection is — the `by` unit and `amount` are carried as metadata on that event and resolved by the reducer at apply time.
 
 | Command | Mutates document? |
 |---|---|
 | [move](/guide/commands/move) | No, repositions the cursor only |
 | [select](/guide/commands/select) | No, sets the cursor's selection range |
+
+> **Special case:** a `move` with a numeric offset of `0` is a no-op. It emits no events and does not advance the clock.
+
+### Instant commands
+
+Instant commands produce **one event per targeted cursor** at the current clock position. They do not advance the clock. If they follow a timed or single-step command, they fire at the exact moment that command finishes.
+
+`.call()` is a special case: it produces **no timeline events** and does not appear in the compiled event list. It is executed purely at runtime by the executor, between the commands that surround it.
+
+| Command | Mutates document? |
+|---|---|
 | [unselect](/guide/commands/unselect) | No, clears the cursor's selection |
 | [style](/guide/commands/style) | Yes, adds a style to a document range |
 | [unstyle](/guide/commands/unstyle) | Yes, removes styles from a document range |
@@ -46,9 +55,9 @@ Instant commands produce **a single event** at the current clock position. They 
 |---|---|---|---|
 | [type](/guide/commands/type) | `.type(text, options?)` | ✅ yes | ✅ yes, inserts text |
 | [delete](/guide/commands/delete) | `.delete(count, options?)` | ✅ yes | ✅ yes, removes text |
-| [move](/guide/commands/move) | `.move(offset, options?)` | ❌ instant | ❌ no |
+| [move](/guide/commands/move) | `.move(offset, options?)` | ✅ yes, `interval` ms | ❌ no |
 | [wait](/guide/commands/wait) | `.wait(duration, options?)` | ✅ yes | ❌ no |
-| [select](/guide/commands/select) | `.select(count, options?)` | ❌ instant | ❌ no |
+| [select](/guide/commands/select) | `.select(count, options?)` | ✅ yes, `interval` ms | ❌ no |
 | [unselect](/guide/commands/unselect) | `.unselect(options?)` | ❌ instant | ❌ no |
 | [style](/guide/commands/style) | `.style(style, range, options?)` | ❌ instant | ✅ yes, applies style |
 | [unstyle](/guide/commands/unstyle) | `.unstyle(range, options?)` | ❌ instant | ✅ yes, removes style |
@@ -116,16 +125,16 @@ tw.timeline.type("one two three four", { by: { unit: "word", amount: 2 } });
 
 ## Composition patterns
 
-Commands compose by chaining. Because instant commands do not advance the clock, you can attach multiple instant operations between timed ones without any perceived gap in the animation:
+Commands compose by chaining. `move` and `select` each advance the clock by `interval` (default `50 ms`). `style`, `unstyle`, and `unselect` are instant and do not advance the clock, so multiple instant operations stack at the same timestamp:
 
 ```ts
 tw.timeline
   .type("Hello World", { by: "char", interval: 80 }) // timed: ~880 ms
   .wait(600)                                          // pause 600 ms
-  .move(-5)                                           // instant
-  .select(5)                                          // instant (fires at same moment)
-  .style("highlight", "selection")                   // instant (fires at same moment)
-  .move("end")                                        // instant (fires at same moment)
+  .move(-5)                                           // single-step: advances clock 50 ms
+  .select(5)                                          // single-step: advances clock 50 ms
+  .style("highlight", "selection")                   // instant (fires at same moment as previous end)
+  .move("end")                                        // single-step: advances clock 50 ms
   .type("!", { by: "char", interval: 80 });           // timed: 80 ms
 
 await tw.play();
@@ -169,7 +178,7 @@ Every command accepts optional `before` and `after` lifecycle hooks. They share 
 
 **For timed commands** (`type`, `delete`), both hooks fire once per step, before and after each individual insertion or deletion.
 
-**For instant and timing-only commands** (`move`, `select`, `style`, `wait`, `call`, etc.), they fire once total.
+**For single-step and instant commands** (`move`, `select`, `style`, `unselect`, `unstyle`, `wait`, `call`, etc.), they fire once total.
 
 ```ts
 tw.timeline.type("Hello world", {
