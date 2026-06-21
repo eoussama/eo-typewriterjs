@@ -63,7 +63,7 @@ tw.timeline.delete(6, { by: { unit: "char", amount: 3 }, interval: 80 });
 // Delete 2 words backward
 tw.timeline.delete(-2, { by: "word", interval: 100 });
 
-// Delete whole lines forward
+// Delete 2 lines forward
 tw.timeline.delete(2, { by: "line", interval: 150 });
 ```
 
@@ -168,6 +168,18 @@ tw.timeline
 await tw.play();
 ```
 
+### Delete a single-line string by line
+
+```ts
+tw.timeline
+  .type("Loading fffff", { by: "line", interval: 80 })
+  .delete(-2, { by: "line", interval: 150 });
+
+await tw.play();
+// cursor is at end after typing; line delete falls back to the current line's content
+// result: ""
+```
+
 ### Delete a selection
 
 ```ts
@@ -199,14 +211,15 @@ await tw.play();
 
 ## Edge cases
 
-- **Cursor at position 0 with backward deletion** - no-op; there is nothing before the cursor.
-- **Cursor at the end with forward deletion** - no-op; there is nothing after the cursor.
+- **Cursor at position 0 with backward deletion** - no-op for `char`, `grapheme`, and `word`; for `by: "line"` the forward content of the current line is consumed instead.
+- **Cursor at the end with forward deletion** - no-op for `char`, `grapheme`, and `word`; for `by: "line"` the content of the current line up to the cursor is consumed instead.
 - **`|count|` larger than available text** - deletion stops at the document boundary without error.
 - **`"whole"` on an empty document** - no-op.
 - **`"start"` with cursor at 0** - no-op.
 - **`"end"` with cursor at the end** - no-op.
 - **Active selection** - for numeric and `"start"`/`"end"` operands, the entire selected range is deleted in one step; `count` and `by` are ignored. `"whole"` always deletes the entire document regardless of any active selection.
 - **Unknown `by` value** - passing an unrecognised advance unit such as `"custom"` throws an error at compile time. Only `"char"`, `"grapheme"`, `"word"`, and `"line"` are accepted for `by`. `"whole"` is not a valid `by` unit - use `.delete("whole")` instead.
+- **`by: "line"` on text without newlines** - the whole text is treated as a single line. Forward delete from the end (or backward delete from the start) consumes the entire line's content.
 - **Unknown boundary string** - passing a string operand other than `"whole"`, `"start"`, or `"end"` throws an error at compile time.
 
 ## Type reference

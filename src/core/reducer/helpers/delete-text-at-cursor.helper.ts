@@ -192,40 +192,58 @@ export function deleteTextAtCursor(state: TTypewriterState, event: TDeleteEvent)
   let removeEnd: number;
 
   if (event.direction === -1) {
-    const charCount = (() => {
-      const unit = event.unit;
+    const unit = event.unit;
 
-      if (unit === "char" || unit === "grapheme") {
-        return event.count;
-      }
-
+    if (unit === "char" || unit === "grapheme") {
+      removeEnd = cursorIndex;
+      removeStart = Math.max(0, cursorIndex - event.count);
+    }
+    else {
       const head = text.slice(0, cursorIndex);
       const segments = segmentText(head, unit);
-      const taken = segments.slice(Math.max(0, segments.length - event.count));
 
-      return taken.join("").length;
-    })();
+      if (unit === "line" && segments.length === 0 && cursorIndex < text.length) {
+        // Cursor is at document start on a line with no preceding newline; consume forward.
+        const tail = text.slice(cursorIndex);
+        const fwdSegments = segmentText(tail, "line");
+        const taken = fwdSegments.slice(0, event.count);
 
-    removeEnd = cursorIndex;
-    removeStart = Math.max(0, cursorIndex - charCount);
+        removeStart = cursorIndex;
+        removeEnd = Math.min(text.length, cursorIndex + taken.join("").length);
+      }
+      else {
+        const taken = segments.slice(Math.max(0, segments.length - event.count));
+
+        removeEnd = cursorIndex;
+        removeStart = Math.max(0, cursorIndex - taken.join("").length);
+      }
+    }
   }
   else {
-    const charCount = (() => {
-      const unit = event.unit;
+    const unit = event.unit;
 
-      if (unit === "char" || unit === "grapheme") {
-        return event.count;
-      }
-
+    if (unit === "char" || unit === "grapheme") {
+      removeStart = cursorIndex;
+      removeEnd = Math.min(text.length, cursorIndex + event.count);
+    }
+    else {
       const tail = text.slice(cursorIndex);
       const segments = segmentText(tail, unit);
-      const taken = segments.slice(0, event.count);
 
-      return taken.join("").length;
-    })();
+      if (unit === "line" && segments.length === 0 && cursorIndex > 0) {
+        // Cursor is at end of a line with no trailing newline; consume backward to line start.
+        const lineStart = text.lastIndexOf("\n", cursorIndex - 1) + 1;
 
-    removeStart = cursorIndex;
-    removeEnd = Math.min(text.length, cursorIndex + charCount);
+        removeStart = lineStart;
+        removeEnd = cursorIndex;
+      }
+      else {
+        const taken = segments.slice(0, event.count);
+
+        removeStart = cursorIndex;
+        removeEnd = Math.min(text.length, cursorIndex + taken.join("").length);
+      }
+    }
   }
 
   if (removeStart === removeEnd) {

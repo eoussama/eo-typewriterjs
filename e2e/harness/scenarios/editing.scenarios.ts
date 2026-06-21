@@ -344,6 +344,29 @@ export const EDITING_SCENARIOS: readonly TScenario[] = [
     },
   },
   {
+    id: "delete-by-line-single-line-forward",
+    async run({ el }) {
+      const tw = createTypewriter({ renderer: domRenderer(el) });
+
+      tw.timeline
+        .type("Loading fffff", { by: "char", interval: 1 })
+        .delete(2, { by: "line", interval: 1 });
+      await tw.play();
+    },
+  },
+  {
+    id: "delete-by-line-single-line-backward",
+    async run({ el }) {
+      const tw = createTypewriter({ renderer: domRenderer(el) });
+
+      tw.timeline
+        .type("Loading fffff", { by: "char", interval: 1 })
+        .move("start")
+        .delete(-2, { by: "line", interval: 1 });
+      await tw.play();
+    },
+  },
+  {
     id: "delete-then-type",
     async run({ el }) {
       const tw = createTypewriter({ renderer: domRenderer(el) });

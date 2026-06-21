@@ -199,4 +199,16 @@ test.describe("editing", () => {
 
     expect(await getOutputText(page)).toBe("Fresh start");
   });
+
+  test("forward delete by line on single-line text clears the document", async ({ page }) => {
+    await gotoScenario(page, "delete-by-line-single-line-forward");
+
+    expect(await getOutputText(page)).toBe("");
+  });
+
+  test("backward delete by line from start on single-line text clears the document", async ({ page }) => {
+    await gotoScenario(page, "delete-by-line-single-line-backward");
+
+    expect(await getOutputText(page)).toBe("");
+  });
 });

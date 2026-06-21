@@ -335,6 +335,83 @@ describe("delete - clamping", () => {
   });
 });
 
+describe("delete - by line on single-line text", () => {
+  it("forward delete by line from end removes the entire single line", async () => {
+    const r = stringRenderer();
+    const tw = createTypewriter({ renderer: r });
+
+    tw.timeline
+      .type("Loading fffff", { by: "char", interval: 1 })
+      .delete(1, { by: "line", interval: 1 });
+    await tw.play();
+
+    expect(r.toString()).toBe("");
+  });
+
+  it("forward delete by line count>1 on single-line text clamps cleanly", async () => {
+    const r = stringRenderer();
+    const tw = createTypewriter({ renderer: r });
+
+    tw.timeline
+      .type("Loading fffff", { by: "char", interval: 1 })
+      .delete(2, { by: "line", interval: 1 });
+    await tw.play();
+
+    expect(r.toString()).toBe("");
+  });
+
+  it("backward delete by line from start removes the entire single line", async () => {
+    const r = stringRenderer();
+    const tw = createTypewriter({ renderer: r });
+
+    tw.timeline
+      .type("Loading fffff", { by: "char", interval: 1 })
+      .move("start")
+      .delete(-1, { by: "line", interval: 1 });
+    await tw.play();
+
+    expect(r.toString()).toBe("");
+  });
+
+  it("forward delete by line from middle of single-line text removes tail", async () => {
+    const r = stringRenderer();
+    const tw = createTypewriter({ renderer: r });
+
+    tw.timeline
+      .type("abcdef", { by: "char", interval: 1 })
+      .move(-3)
+      .delete(1, { by: "line", interval: 1 });
+    await tw.play();
+
+    expect(r.toString()).toBe("abc");
+  });
+
+  it("forward delete by line on multi-line text still removes only the forward segment", async () => {
+    const r = stringRenderer();
+    const tw = createTypewriter({ renderer: r });
+
+    tw.timeline
+      .type("line1\nline2", { by: "char", interval: 1 })
+      .move("start")
+      .delete(1, { by: "line", interval: 1 });
+    await tw.play();
+
+    expect(r.toString()).toBe("line2");
+  });
+
+  it("backward delete by line on multi-line text still removes only the backward segment", async () => {
+    const r = stringRenderer();
+    const tw = createTypewriter({ renderer: r });
+
+    tw.timeline
+      .type("line1\nline2", { by: "char", interval: 1 })
+      .delete(-1, { by: "line", interval: 1 });
+    await tw.play();
+
+    expect(r.toString()).toBe("line1\n");
+  });
+});
+
 describe("delete - style range interactions", () => {
   it("delete inside styled range trims the style", async () => {
     const r = stringRenderer();
