@@ -126,4 +126,77 @@ test.describe("editing", () => {
 
     expect(await getOutputText(page)).toBe("HelloHi World");
   });
+
+  test("type by word renders full text", async ({ page }) => {
+    await gotoScenario(page, "editing-type-by-word");
+
+    expect(await getOutputText(page)).toBe("one two three");
+  });
+
+  test("type by line renders full multiline text", async ({ page }) => {
+    await gotoScenario(page, "type-by-line");
+
+    expect(await getOutputText(page)).toBe("line1\nline2\nline3");
+  });
+
+  test("type by whole renders full text in one step", async ({ page }) => {
+    await gotoScenario(page, "type-by-whole");
+
+    expect(await getOutputText(page)).toBe("all at once");
+  });
+
+  test("delete by line removes last line", async ({ page }) => {
+    await gotoScenario(page, "delete-by-line");
+
+    expect(await getOutputText(page)).toBe("line1\n");
+  });
+
+  test("forward delete by char removes characters after cursor", async ({ page }) => {
+    await gotoScenario(page, "delete-forward-char");
+
+    expect(await getOutputText(page)).toBe("World");
+  });
+
+  test("forward delete by word removes first word", async ({ page }) => {
+    await gotoScenario(page, "delete-forward-word");
+
+    expect(await getOutputText(page)).toBe("two three");
+  });
+
+  test("select then type replaces selected text", async ({ page }) => {
+    await gotoScenario(page, "select-and-type-replacement");
+
+    expect(await getOutputText(page)).toBe("Hello TypewriterJS");
+  });
+
+  test("select then delete removes selected range", async ({ page }) => {
+    await gotoScenario(page, "select-and-delete");
+
+    expect(await getOutputText(page)).toBe("Hello World");
+  });
+
+  test("move by word inserts at word boundary", async ({ page }) => {
+    await gotoScenario(page, "move-by-word");
+
+    expect(await getOutputText(page)).toBe("hello Xworld");
+  });
+
+  test("select whole then retype replaces entire content", async ({ page }) => {
+    await gotoScenario(page, "select-whole-then-retype");
+
+    expect(await getOutputText(page)).toBe("new text");
+  });
+
+  test("unstyle by selection removes only the selected span of styles", async ({ page }) => {
+    await gotoScenario(page, "type-move-select-unstyle");
+
+    await expect(page.locator(".typewriter-selection")).toHaveCount(0);
+    expect(await getOutputText(page)).toBe("Hello World");
+  });
+
+  test("delete whole then type produces only new text", async ({ page }) => {
+    await gotoScenario(page, "delete-then-type");
+
+    expect(await getOutputText(page)).toBe("Fresh start");
+  });
 });

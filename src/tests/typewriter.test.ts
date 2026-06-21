@@ -2223,39 +2223,61 @@ describe("command × unit × by-shape matrix", () => {
   // --- delete command ---
   for (const unit of UNITS) {
     for (const by of toByShapes(unit)) {
-      it(`delete by ${unit} (by=${JSON.stringify(by)}) removes text without throwing`, async () => {
-        const renderer = stringRenderer();
-        const tw = createTypewriter({ renderer });
+      if (unit === "whole") {
+        it(`delete by ${unit} (by=${JSON.stringify(by)}) throws because "whole" is not a valid delete unit`, () => {
+          expect(() =>
+            compile([
+              { id: "d-setup", kind: "type" as const, cursor: "main", text: TEXT, by: "char" as const, interval: 1 },
+              { id: "d-del", kind: "delete" as const, cursor: "main", count: -1, by: by as "char", interval: 1 },
+            ]),
+          ).toThrow(/Valid units for delete are/);
+        });
+      }
+      else {
+        it(`delete by ${unit} (by=${JSON.stringify(by)}) removes text without throwing`, async () => {
+          const renderer = stringRenderer();
+          const tw = createTypewriter({ renderer });
 
-        tw.timeline
-          .type(TEXT, { by: "char", interval: 1 })
-          .delete(-1, { by: by as "char", interval: 1 });
-        await tw.play();
+          tw.timeline
+            .type(TEXT, { by: "char", interval: 1 })
+            .delete(-1, { by: by as "char", interval: 1 });
+          await tw.play();
 
-        // Result is shorter than the original TEXT
-        expect(renderer.toString().length).toBeLessThan(TEXT.length);
-      });
+          expect(renderer.toString().length).toBeLessThan(TEXT.length);
+        });
+      }
     }
   }
 
   // --- select command ---
   for (const unit of UNITS) {
     for (const by of toByShapes(unit)) {
-      it(`select by ${unit} (by=${JSON.stringify(by)}) sets a selection without throwing`, () => {
-        const commands = [
-          { id: "s-setup", kind: "type" as const, cursor: "main", text: TEXT, by: "char" as const, interval: 1 },
-          { id: "s-select", kind: "select" as const, cursor: "main", count: -1, by: by as "char" },
-        ];
-        const events = compile(commands);
-        let state = createInitialState();
+      if (unit === "whole") {
+        it(`select by ${unit} (by=${JSON.stringify(by)}) throws because "whole" is not a valid select unit`, () => {
+          expect(() =>
+            compile([
+              { id: "s-setup", kind: "type" as const, cursor: "main", text: TEXT, by: "char" as const, interval: 1 },
+              { id: "s-sel", kind: "select" as const, cursor: "main", count: -1, by: by as "char" },
+            ]),
+          ).toThrow(/Valid units for select are/);
+        });
+      }
+      else {
+        it(`select by ${unit} (by=${JSON.stringify(by)}) sets a selection without throwing`, () => {
+          const commands = [
+            { id: "s-setup", kind: "type" as const, cursor: "main", text: TEXT, by: "char" as const, interval: 1 },
+            { id: "s-select", kind: "select" as const, cursor: "main", count: -1, by: by as "char" },
+          ];
+          const events = compile(commands);
+          let state = createInitialState();
 
-        // Should not throw for any unit
-        expect(() => {
-          for (const event of events) {
-            state = reduce(state, event);
-          }
-        }).not.toThrow();
-      });
+          expect(() => {
+            for (const event of events) {
+              state = reduce(state, event);
+            }
+          }).not.toThrow();
+        });
+      }
     }
   }
 });

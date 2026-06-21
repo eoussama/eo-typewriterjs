@@ -9,6 +9,9 @@ import { EEventKind } from "../events/event-kind.enum";
 const DEFAULT_INTERVAL = 50;
 let moveEventCounter = 0;
 
+const VALID_UNITS: ReadonlySet<string> = new Set(["char", "grapheme", "word", "line"]);
+const VALID_BOUNDARIES: ReadonlySet<string> = new Set(["start", "end"]);
+
 /**
  * @description
  * Compile a single TMoveCommand into TMoveEvents, one per targeted cursor.
@@ -38,6 +41,11 @@ export function compileMove(
 
   if (typeof command.offset === "string") {
     const boundary = command.offset;
+
+    if (!VALID_BOUNDARIES.has(boundary)) {
+      throw new Error(`Unknown move boundary: "${boundary}". Valid boundaries are: start, end.`);
+    }
+
     const events: TMoveEvent[] = cursorIds.map(cursorId => ({
       id: `move_event_${++moveEventCounter}`,
       kind: EEventKind.MOVE,
@@ -54,6 +62,12 @@ export function compileMove(
 
   if (command.offset === 0) {
     return { events: [], endTime: startTime };
+  }
+
+  const byUnit = typeof command.by === "string" ? command.by : command.by?.unit ?? "char";
+
+  if (!VALID_UNITS.has(byUnit)) {
+    throw new Error(`Unknown advance unit: "${byUnit}". Valid units for move are: char, grapheme, word, line.`);
   }
 
   const events: TMoveEvent[] = cursorIds.map(cursorId => ({

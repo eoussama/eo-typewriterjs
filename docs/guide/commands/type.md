@@ -264,6 +264,7 @@ await tw.play();
 - **Whitespace-only** — whitespace is typed character by character; it is not trimmed or collapsed.
 - **Newlines** — `\n` is inserted verbatim. Use `white-space: pre` or `<pre>` in the DOM for visual line breaks.
 - **Oversized `amount`** — if `amount` exceeds remaining units, the last step types whatever remains without error.
+- **Unknown `by` value** — passing an unrecognised string such as `"custom"` throws an error at compile time. Only `"char"`, `"grapheme"`, `"word"`, `"line"`, and `"whole"` are accepted.
 
 ## Type reference
 

@@ -225,6 +225,8 @@ The **string renderer**'s `toString()` returns plain text without selection mark
 - **Numeric count that exceeds document bounds** — clamped to the document boundary.
 - **Empty document** — any selection resolves to `[0, 0]` and is immediately cleared.
 - **`.select()` called twice** — the second call replaces the first selection entirely.
+- **Unknown boundary string** — passing a string operand other than `"start"`, `"end"`, or `"whole"` throws an error at compile time.
+- **Unknown `by` unit** — passing an unrecognised advance unit for the `by` option throws an error at compile time. Only `"char"`, `"grapheme"`, `"word"`, and `"line"` are accepted. `"whole"` is not valid for `by` — use `.select("whole")` instead.
 
 ## Type reference
 

@@ -104,8 +104,7 @@ export function segmentText(text: string, unit: TAdvanceUnit): string[] {
     case "whole":
       return [text];
 
-    /* v8 ignore next */
     default:
-      return segmentGraphemes(text);
+      throw new Error(`Unknown advance unit: "${unit as string}". Valid units are: char, grapheme, word, line, whole.`);
   }
 }

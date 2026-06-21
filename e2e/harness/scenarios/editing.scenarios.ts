@@ -216,4 +216,143 @@ export const EDITING_SCENARIOS: readonly TScenario[] = [
       await tw.play();
     },
   },
+  {
+    id: "editing-type-by-word",
+    async run({ el }) {
+      const tw = createTypewriter({ renderer: domRenderer(el) });
+
+      tw.timeline.type("one two three", { by: "word", interval: 1 });
+      await tw.play();
+    },
+  },
+  {
+    id: "type-by-line",
+    async run({ el }) {
+      const tw = createTypewriter({ renderer: domRenderer(el) });
+
+      tw.timeline.type("line1\nline2\nline3", { by: "line", interval: 1 });
+      await tw.play();
+    },
+  },
+  {
+    id: "type-by-whole",
+    async run({ el }) {
+      const tw = createTypewriter({ renderer: domRenderer(el) });
+
+      tw.timeline.type("all at once", { by: "whole", interval: 1 });
+      await tw.play();
+    },
+  },
+  {
+    id: "delete-by-line",
+    async run({ el }) {
+      const tw = createTypewriter({ renderer: domRenderer(el) });
+
+      tw.timeline
+        .type("line1\nline2", { by: "char", interval: 1 })
+        .delete(-1, { by: "line", interval: 1 });
+      await tw.play();
+    },
+  },
+  {
+    id: "delete-forward-char",
+    async run({ el }) {
+      const tw = createTypewriter({ renderer: domRenderer(el) });
+
+      tw.timeline
+        .type("Hello World", { by: "char", interval: 1 })
+        .move("start")
+        .delete(6, { by: "char", interval: 1 });
+      await tw.play();
+    },
+  },
+  {
+    id: "delete-forward-word",
+    async run({ el }) {
+      const tw = createTypewriter({ renderer: domRenderer(el) });
+
+      tw.timeline
+        .type("one two three", { by: "char", interval: 1 })
+        .move("start")
+        .delete(1, { by: "word", interval: 1 });
+      await tw.play();
+    },
+  },
+  {
+    id: "select-and-type-replacement",
+    async run({ el }) {
+      const tw = createTypewriter({ renderer: domRenderer(el) });
+
+      tw.timeline
+        .type("Hello World", { by: "char", interval: 1 })
+        .move(-5)
+        .select(5)
+        .type("TypewriterJS", { by: "char", interval: 1 });
+      await tw.play();
+    },
+  },
+  {
+    id: "select-and-delete",
+    async run({ el }) {
+      const tw = createTypewriter({ renderer: domRenderer(el) });
+
+      tw.timeline
+        .type("Hello cruel World", { by: "char", interval: 1 })
+        .move(-11)
+        .select(6)
+        .delete(1);
+      await tw.play();
+    },
+  },
+  {
+    id: "move-by-word",
+    async run({ el }) {
+      const tw = createTypewriter({ renderer: domRenderer(el) });
+
+      tw.timeline
+        .type("hello world", { by: "char", interval: 1 })
+        .move("start")
+        .move(1, { by: "word" })
+        .type("X", { by: "char", interval: 1 });
+      await tw.play();
+    },
+  },
+  {
+    id: "select-whole-then-retype",
+    async run({ el }) {
+      const tw = createTypewriter({ renderer: domRenderer(el) });
+
+      tw.timeline
+        .type("old text", { by: "char", interval: 1 })
+        .select("whole")
+        .type("new text", { by: "whole", interval: 1 });
+      await tw.play();
+    },
+  },
+  {
+    id: "type-move-select-unstyle",
+    async run({ el }) {
+      const tw = createTypewriter({ renderer: domRenderer(el) });
+
+      tw.timeline
+        .type("Hello World", { by: "char", interval: 1 })
+        .style("tw-bold", { from: 0, to: 11 })
+        .move(-5)
+        .select(5)
+        .unstyle("selection");
+      await tw.play();
+    },
+  },
+  {
+    id: "delete-then-type",
+    async run({ el }) {
+      const tw = createTypewriter({ renderer: domRenderer(el) });
+
+      tw.timeline
+        .type("Hello World", { by: "char", interval: 1 })
+        .delete("whole")
+        .type("Fresh start", { by: "char", interval: 1 });
+      await tw.play();
+    },
+  },
 ];

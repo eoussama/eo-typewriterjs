@@ -9,6 +9,9 @@ import { EEventKind } from "../events/event-kind.enum";
 const DEFAULT_INTERVAL = 50;
 let selectEventCounter = 0;
 
+const VALID_UNITS: ReadonlySet<string> = new Set(["char", "grapheme", "word", "line"]);
+const VALID_BOUNDARIES: ReadonlySet<string> = new Set(["start", "end", "whole"]);
+
 /**
  * @description
  * Compile a single TSelectCommand into TSelectEvents, one per targeted cursor.
@@ -40,6 +43,11 @@ export function compileSelect(
 
   if (typeof command.count === "string") {
     const boundary = command.count;
+
+    if (!VALID_BOUNDARIES.has(boundary)) {
+      throw new Error(`Unknown select boundary: "${boundary}". Valid boundaries are: start, end, whole.`);
+    }
+
     const events: TSelectEvent[] = cursorIds.map(cursorId => ({
       id: `select_event_${++selectEventCounter}`,
       kind: EEventKind.SELECT,
@@ -52,6 +60,12 @@ export function compileSelect(
     }));
 
     return { events, endTime: startTime + interval };
+  }
+
+  const byUnit = typeof command.by === "string" ? command.by : command.by?.unit ?? "char";
+
+  if (!VALID_UNITS.has(byUnit)) {
+    throw new Error(`Unknown advance unit: "${byUnit}". Valid units for select are: char, grapheme, word, line.`);
   }
 
   const events: TSelectEvent[] = cursorIds.map(cursorId => ({

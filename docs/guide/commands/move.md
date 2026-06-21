@@ -201,6 +201,8 @@ await tw.play();
 - **Large positive offset** — clamped to `text.length`.
 - **Large negative offset** — clamped to `0`.
 - **Empty document** — any move clamps to `0`.
+- **Unknown boundary string** — passing a string operand other than `"start"` or `"end"` throws an error at compile time.
+- **Unknown `by` unit** — passing an unrecognised advance unit for the `by` option throws an error at compile time. Only `"char"`, `"grapheme"`, `"word"`, and `"line"` are accepted. `"whole"` is not valid for `by`.
 
 ## Type reference
 

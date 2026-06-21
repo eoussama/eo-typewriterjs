@@ -224,6 +224,8 @@ await tw.play();
 - **`"start"` with cursor at 0** — no-op.
 - **`"end"` with cursor at the end** — no-op.
 - **Active selection** — the entire selected range is deleted in one step; `count` and `by` are ignored.
+- **Unknown `by` value** — passing an unrecognised advance unit such as `"custom"` throws an error at compile time. Only `"char"`, `"grapheme"`, `"word"`, and `"line"` are accepted for `by`. `"whole"` is not a valid `by` unit — use `.delete("whole")` instead.
+- **Unknown boundary string** — passing a string operand other than `"whole"`, `"start"`, or `"end"` throws an error at compile time.
 
 ## Type reference
 

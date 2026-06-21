@@ -1,9 +1,90 @@
 import { describe, expect, it } from "vitest";
 
+import { compile } from "../core/compiler/compile.helper";
 import { createInitialState } from "../core/state/index";
 import { withCursor } from "../core/state/typewriter-state.type";
+import { segmentText } from "../core/stepping/segment-text.helper";
 import { createTypewriter, EPlaybackStatus, stringRenderer } from "../index";
 
+
+
+describe("invalid advance unit rejection", () => {
+  it("type with unknown by string throws at compile time", () => {
+    expect(() =>
+      compile([{ id: "t1", kind: "type", cursor: "main", text: "Hi", by: "custom" as unknown as "char" }]),
+    ).toThrow(/Unknown advance unit/);
+  });
+
+  it("type with unknown unit in object by-form throws at compile time", () => {
+    expect(() =>
+      compile([{ id: "t2", kind: "type", cursor: "main", text: "Hi", by: { unit: "custom" as unknown as "char", amount: 1 } }]),
+    ).toThrow(/Unknown advance unit/);
+  });
+
+  it("delete with unknown by string throws at compile time", () => {
+    expect(() =>
+      compile([{ id: "d1", kind: "delete", cursor: "main", count: 1, by: "custom" as unknown as "char" }]),
+    ).toThrow(/Unknown advance unit/);
+  });
+
+  it("delete with by: whole throws because whole is not a valid delete unit", () => {
+    expect(() =>
+      compile([{ id: "d1b", kind: "delete", cursor: "main", count: 1, by: "whole" as unknown as "char" }]),
+    ).toThrow(/Valid units for delete are/);
+  });
+
+  it("delete with by object unit: whole throws", () => {
+    expect(() =>
+      compile([{ id: "d1c", kind: "delete", cursor: "main", count: 1, by: { unit: "whole" as unknown as "char", amount: 1 } }]),
+    ).toThrow(/Valid units for delete are/);
+  });
+
+  it("delete with unknown boundary string throws at compile time", () => {
+    expect(() =>
+      compile([{ id: "d2", kind: "delete", cursor: "main", count: "custom" as unknown as "whole" }]),
+    ).toThrow(/Unknown delete boundary/);
+  });
+
+  it("move with unknown boundary string throws at compile time", () => {
+    expect(() =>
+      compile([{ id: "m1", kind: "move", cursor: "main", offset: "custom" as unknown as "start" }]),
+    ).toThrow(/Unknown move boundary/);
+  });
+
+  it("move with unknown by unit throws", () => {
+    expect(() =>
+      compile([{ id: "m2", kind: "move", cursor: "main", offset: 1, by: "custom" as unknown as "char" }]),
+    ).toThrow(/Valid units for move are/);
+  });
+
+  it("move with by: whole throws because whole is not a valid move unit", () => {
+    expect(() =>
+      compile([{ id: "m3", kind: "move", cursor: "main", offset: 1, by: "whole" as unknown as "char" }]),
+    ).toThrow(/Valid units for move are/);
+  });
+
+  it("select with unknown boundary string throws at compile time", () => {
+    expect(() =>
+      compile([{ id: "s1", kind: "select", cursor: "main", count: "custom" as unknown as "whole" }]),
+    ).toThrow(/Unknown select boundary/);
+  });
+
+  it("select with unknown by unit throws", () => {
+    expect(() =>
+      compile([{ id: "s2", kind: "select", cursor: "main", count: 1, by: "custom" as unknown as "char" }]),
+    ).toThrow(/Valid units for select are/);
+  });
+
+  it("select with by: whole throws because whole is not a valid select unit", () => {
+    expect(() =>
+      compile([{ id: "s3", kind: "select", cursor: "main", count: 1, by: "whole" as unknown as "char" }]),
+    ).toThrow(/Valid units for select are/);
+  });
+
+  it("segmentText with unknown unit throws", () => {
+    expect(() => segmentText("hello", "custom" as unknown as "char")).toThrow(/Unknown advance unit/);
+  });
+});
 
 
 describe("resolveAdvanceMode undefined branch and default interval (play without by or interval)", () => {

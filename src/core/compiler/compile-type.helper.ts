@@ -19,9 +19,17 @@ let insertEventCounter = 0;
  * @param input - The raw input from the user
  * @returns A fully resolved TAdvanceMode
  */
+const VALID_UNITS: ReadonlySet<string> = new Set(["char", "grapheme", "word", "line", "whole"]);
+
 function resolveAdvanceMode(input: TAdvanceModeInput | undefined): TAdvanceMode {
   if (input === undefined) {
     return { unit: "char", amount: 1 };
+  }
+
+  const unit = typeof input === "string" ? input : input.unit;
+
+  if (!VALID_UNITS.has(unit)) {
+    throw new Error(`Unknown advance unit: "${unit}". Valid units are: char, grapheme, word, line, whole.`);
   }
 
   if (typeof input === "string") {

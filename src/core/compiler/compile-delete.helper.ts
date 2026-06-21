@@ -10,6 +10,9 @@ import { EEventKind } from "../events/event-kind.enum";
 const DEFAULT_INTERVAL = 50;
 let deleteEventCounter = 0;
 
+const VALID_UNITS: ReadonlySet<string> = new Set(["char", "grapheme", "word", "line"]);
+const VALID_BOUNDARIES: ReadonlySet<string> = new Set(["whole", "start", "end"]);
+
 /**
  * @description
  * Normalise a TAdvanceModeInput into a canonical TAdvanceMode
@@ -20,6 +23,12 @@ let deleteEventCounter = 0;
 function resolveAdvanceMode(input: TAdvanceModeInput | undefined): TAdvanceMode {
   if (input === undefined) {
     return { unit: "char", amount: 1 };
+  }
+
+  const unit = typeof input === "string" ? input : input.unit;
+
+  if (!VALID_UNITS.has(unit)) {
+    throw new Error(`Unknown advance unit: "${unit}". Valid units for delete are: char, grapheme, word, line.`);
   }
 
   if (typeof input === "string") {
@@ -61,6 +70,10 @@ export function compileDelete(
   // Boundary string operands compile to a single instant event
   if (typeof command.count === "string") {
     const boundary = command.count;
+
+    if (!VALID_BOUNDARIES.has(boundary)) {
+      throw new Error(`Unknown delete boundary: "${boundary}". Valid boundaries are: whole, start, end.`);
+    }
     const events: TDeleteEvent[] = cursorIds.map(cursorId => ({
       id: `delete_event_${++deleteEventCounter}`,
       kind: EEventKind.DELETE,
