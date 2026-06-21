@@ -1,5 +1,5 @@
 import type { TAudioChannelOptions } from "./audio-channel-options.type";
-import type { TAudioVoicePack } from "./audio-voice.type";
+import type { TAudioSfxPack } from "./audio-sfx.type";
 
 
 
@@ -25,11 +25,11 @@ export type TAudioOptions = {
 
   /**
    * @description
-   * Voice pack used by all channels.
-   * Each key is a voice name; each value holds one or more audio sample URLs.
+   * Sfx pack used by all channels.
+   * Each key is an sfx name; each value holds one or more audio sample URLs.
    * Defaults to the built-in typing sounds when not provided.
    */
-  readonly voices?: TAudioVoicePack;
+  readonly sfxs?: TAudioSfxPack;
 
   /**
    * @description

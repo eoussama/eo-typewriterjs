@@ -31,7 +31,7 @@ export type TBaseCommand = {
    * @description
    * Per-command audio override.
    * Set to `false` to silence sounds for this command.
-   * Set to an object to use a specific voice, voices subset, or volume.
+   * Set to an object to use a specific sfx, sfxs subset, or volume.
    * When omitted, the typewriter-level audio defaults apply.
    */
   readonly audio?: TAudioCommandOverride;

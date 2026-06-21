@@ -9,18 +9,18 @@ import type { TAudioStrategy } from "../enums/audio-strategy.enum";
 export type TAudioChannelOptions = {
   /**
    * @description
-   * Name of the default voice to use from the voice pack.
-   * When not set, the first voice in the pack is used.
+   * Name of the default sfx to use from the sfx pack.
+   * When not set, the first sfx in the pack is used.
    */
-  readonly voice?: string;
+  readonly sfx?: string;
 
   /**
    * @description
-   * Restrict sample selection to this subset of voice names.
-   * When set, only the listed voices are eligible for this channel.
-   * Overrides `voice` when both are present.
+   * Restrict sample selection to this subset of sfx names.
+   * When set, only the listed sfxs are eligible for this channel.
+   * Overrides `sfx` when both are present.
    */
-  readonly voices?: readonly string[];
+  readonly sfxs?: readonly string[];
 
   /**
    * @description

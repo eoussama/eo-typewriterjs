@@ -2,25 +2,25 @@
  * @description
  * Per-command audio override.
  * Set to `false` to silence audio for this specific command.
- * Set to an object to use a specific voice or volume for this command.
+ * Set to an object to use a specific sfx or volume for this command.
  */
 export type TAudioCommandOverride
   = | false
     | {
     /**
      * @description
-     * Name of a single voice from the voice pack to use for this command.
+     * Name of a single sfx from the sfx pack to use for this command.
      * Takes priority over the channel default.
      */
-      readonly voice?: string;
+      readonly sfx?: string;
 
       /**
        * @description
-       * Subset of voice names to select from for this command.
-       * When provided, the audio manager picks from only these voices.
-       * Takes priority over `voice` when both are set.
+       * Subset of sfx names to select from for this command.
+       * When provided, the audio manager picks from only these sfxs.
+       * Takes priority over `sfx` when both are set.
        */
-      readonly voices?: readonly string[];
+      readonly sfxs?: readonly string[];
 
       /**
        * @description

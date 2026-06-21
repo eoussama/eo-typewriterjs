@@ -201,9 +201,9 @@ export default defineConfig({
             { text: "TAudioOptions", link: "/api/type-aliases/TAudioOptions" },
             { text: "TAudioChannelOptions", link: "/api/type-aliases/TAudioChannelOptions" },
             { text: "TAudioCommandOverride", link: "/api/type-aliases/TAudioCommandOverride" },
-            { text: "TAudioVoice", link: "/api/type-aliases/TAudioVoice" },
-            { text: "TAudioVoicePack", link: "/api/type-aliases/TAudioVoicePack" },
-            { text: "DEFAULT_VOICE_PACK", link: "/api/variables/DEFAULT_VOICE_PACK" },
+            { text: "TAudioSfx", link: "/api/type-aliases/TAudioSfx" },
+            { text: "TAudioSfxPack", link: "/api/type-aliases/TAudioSfxPack" },
+            { text: "DEFAULT_SFX_PACK", link: "/api/variables/DEFAULT_SFX_PACK" },
           ],
         },
         {

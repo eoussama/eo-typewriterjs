@@ -1,1 +1,1 @@
-export { DEFAULT_VOICE_PACK } from "./default-voice-pack.const";
+export { DEFAULT_SFX_PACK } from "./default-sfx-pack.const";

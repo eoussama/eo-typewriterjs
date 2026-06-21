@@ -2,7 +2,7 @@
  * @description
  * A named collection of audio sample sources (URL strings or data URLs)
  */
-export type TAudioVoice = {
+export type TAudioSfx = {
   /**
    * @description
    * One or more audio sample sources. Multiple samples enable
@@ -14,9 +14,9 @@ export type TAudioVoice = {
 
 /**
  * @description
- * A dictionary of named voices.
- * The key is the voice name referenced by channel or command config.
+ * A dictionary of named sfx entries.
+ * The key is the sfx name referenced by channel or command config.
  */
-export type TAudioVoicePack = {
-  readonly [name: string]: TAudioVoice;
+export type TAudioSfxPack = {
+  readonly [name: string]: TAudioSfx;
 };

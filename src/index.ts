@@ -17,9 +17,9 @@ import { TimelineBuilder } from "./core/timeline/index";
 
 export { AudioManagerHelper } from "./core/audio/index";
 export { EAudioStrategy } from "./core/audio/index";
-export { DEFAULT_VOICE_PACK } from "./core/audio/index";
+export { DEFAULT_SFX_PACK } from "./core/audio/index";
 
-export type { TAudioChannelOptions, TAudioCommandOverride, TAudioOptions, TAudioStrategy, TAudioVoice, TAudioVoicePack } from "./core/audio/index";
+export type { TAudioChannelOptions, TAudioCommandOverride, TAudioOptions, TAudioSfx, TAudioSfxPack, TAudioStrategy } from "./core/audio/index";
 
 export { ECommandKind } from "./core/commands/index";
 export type { TBaseCommand } from "./core/commands/index";
@@ -127,7 +127,7 @@ export type TTypewriter = {
    * @description
    * Replace the full audio configuration at runtime.
    * Channel selection state (shuffle-bag, round-robin) is reset so new
-   * voices and strategies take effect immediately on the next keystroke.
+   * sfxs and strategies take effect immediately on the next keystroke.
    *
    * @param options - The new audio options to apply
    */

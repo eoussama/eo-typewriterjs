@@ -1,6 +1,6 @@
 /**
  * @description
- * Sample selection strategy used when a voice has multiple samples
+ * Sample selection strategy used when an sfx has multiple samples
  */
 export const EAudioStrategy = {
   /**

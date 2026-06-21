@@ -276,7 +276,7 @@ await tw2.play();
 
 ## Typing sounds
 
-Enable audio and optionally supply a custom voice pack:
+Enable audio and optionally supply a custom sound effects pack:
 
 ```ts
 import { createTypewriter, domRenderer, EAudioStrategy } from "eo-typewriterjs";
@@ -289,10 +289,10 @@ const tw = createTypewriter({
   audio: {
     enabled: true,
     volume: 0.6,
-    voices: {
+    sfxs: {
       key: { samples: ["/sounds/key1.mp3", "/sounds/key2.mp3"] },
     },
-    typing: { voice: "key", strategy: EAudioStrategy.SHUFFLE_BAG },
+    typing: { sfx: "key", strategy: EAudioStrategy.SHUFFLE_BAG },
   },
 });
 

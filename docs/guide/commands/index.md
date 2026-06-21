@@ -64,7 +64,7 @@ All commands accept the following options in addition to their own:
 |---|---|---|
 | `before` | `TCallbackHook` | Hook invoked before each step (or once for instant commands) |
 | `after` | `TCallbackHook` | Hook invoked after each step (or once for instant commands) |
-| `audio` | `TAudioCommandOverride` | Per-command audio override, `false` to silence, or an object with voice/volume settings |
+| `audio` | `TAudioCommandOverride` | Per-command audio override, `false` to silence, or an object with sfx/volume settings |
 
 See [Hooks and context](#hooks-and-context) below for the full hook shape.
 

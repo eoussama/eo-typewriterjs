@@ -2,7 +2,7 @@ import type { TAudioChannelOptions } from "../types/audio-channel-options.type";
 import type { TAudioCommandOverride } from "../types/audio-command-override.type";
 import type { TAudioOptions } from "../types/audio-options.type";
 
-import { DEFAULT_VOICE_PACK } from "../consts/default-voice-pack.const";
+import { DEFAULT_SFX_PACK } from "../consts/default-sfx-pack.const";
 import { EAudioStrategy } from "../enums/audio-strategy.enum";
 
 
@@ -154,7 +154,7 @@ function pickRandom(
  * @description
  * Runtime audio manager for the typing sound system.
  *
- * Handles voice pack resolution, sample selection strategies (shuffle-bag,
+ * Handles sfx pack resolution, sample selection strategies (shuffle-bag,
  * round-robin, random), volume/playback-rate jitter, overlap control,
  * and graceful no-op in non-browser environments.
  *
@@ -170,7 +170,7 @@ export class AudioManagerHelper {
    * @description
    * Create a new AudioManagerHelper
    *
-   * @param options - Initial audio configuration. Defaults to enabled with master volume 1 and the built-in voice pack.
+   * @param options - Initial audio configuration. Defaults to enabled with master volume 1 and the built-in sfx pack.
    */
   constructor(options: TAudioOptions = {}) {
     this._options = options;
@@ -181,7 +181,7 @@ export class AudioManagerHelper {
   /**
    * @description
    * Replace the full audio configuration.
-   * Resets internal channel selection state so the new voices and strategy
+   * Resets internal channel selection state so the new sfxs and strategy
    * take effect immediately on the next play call.
    *
    * @param options - The new audio options to apply
@@ -227,7 +227,7 @@ export class AudioManagerHelper {
   /**
    * @description
    * Play a typing (insert) sound.
-   * Pass a per-command override to use a specific voice or volume for this keystroke.
+   * Pass a per-command override to use a specific sfx or volume for this keystroke.
    * Pass `false` to silence this specific keystroke regardless of global settings.
    *
    * @param override - Optional per-command audio override
@@ -317,41 +317,41 @@ export class AudioManagerHelper {
   /**
    * @description
    * Collect the flat list of sample URLs to draw from for a given channel,
-   * applying any per-command voice override.
+   * applying any per-command sfx override.
    *
    * @param channel - The channel being played
    * @param override - Optional command override (never `false` at this point)
    * @returns Flat list of sample URL strings
    */
   private _resolveSamples(channel: "typing" | "delete", override?: Exclude<TAudioCommandOverride, false>): string[] {
-    const voices = this._options.voices ?? DEFAULT_VOICE_PACK;
+    const sfxs = this._options.sfxs ?? DEFAULT_SFX_PACK;
     const channelOpts = this._resolveChannelOpts(channel);
 
-    let voiceNames: readonly string[];
+    let sfxNames: readonly string[];
 
-    if (override?.voices !== undefined && override.voices.length > 0) {
-      voiceNames = override.voices;
+    if (override?.sfxs !== undefined && override.sfxs.length > 0) {
+      sfxNames = override.sfxs;
     }
-    else if (override?.voice !== undefined) {
-      voiceNames = [override.voice];
+    else if (override?.sfx !== undefined) {
+      sfxNames = [override.sfx];
     }
-    else if (channelOpts?.voices !== undefined && channelOpts.voices.length > 0) {
-      voiceNames = channelOpts.voices;
+    else if (channelOpts?.sfxs !== undefined && channelOpts.sfxs.length > 0) {
+      sfxNames = channelOpts.sfxs;
     }
-    else if (channelOpts?.voice !== undefined) {
-      voiceNames = [channelOpts.voice];
+    else if (channelOpts?.sfx !== undefined) {
+      sfxNames = [channelOpts.sfx];
     }
     else {
-      voiceNames = Object.keys(voices);
+      sfxNames = Object.keys(sfxs);
     }
 
     const samples: string[] = [];
 
-    for (const name of voiceNames) {
-      const voice = voices[name];
+    for (const name of sfxNames) {
+      const sfx = sfxs[name];
 
-      if (voice !== undefined) {
-        samples.push(...voice.samples);
+      if (sfx !== undefined) {
+        samples.push(...sfx.samples);
       }
     }
 

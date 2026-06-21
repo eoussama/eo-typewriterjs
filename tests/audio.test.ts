@@ -58,7 +58,7 @@ describe("audioManagerHelper construction and settings", () => {
 
   it("setOptions resets internal bag and round-robin state without throwing", () => {
     const mgr = new AudioManagerHelper({
-      voices: { a: { samples: ["url1", "url2"] } },
+      sfxs: { a: { samples: ["url1", "url2"] } },
       typing: { strategy: EAudioStrategy.SHUFFLE_BAG },
     });
 
@@ -87,27 +87,27 @@ describe("audioManagerHelper enabled and override guards", () => {
   });
 
   it("playTyping with override=false silences the call", () => {
-    const mgr = new AudioManagerHelper({ voices: { default: { samples: ["u1"] } } });
+    const mgr = new AudioManagerHelper({ sfxs: { default: { samples: ["u1"] } } });
 
     expect(() => mgr.playTyping(false)).not.toThrow();
   });
 
   it("playDelete with override=false silences the call", () => {
-    const mgr = new AudioManagerHelper({ voices: { default: { samples: ["u1"] } } });
+    const mgr = new AudioManagerHelper({ sfxs: { default: { samples: ["u1"] } } });
 
     expect(() => mgr.playDelete(false)).not.toThrow();
   });
 
-  it("playTyping with empty voice pack does not throw (pool is empty)", () => {
-    const mgr = new AudioManagerHelper({ voices: {} });
+  it("playTyping with empty sfx pack does not throw (pool is empty)", () => {
+    const mgr = new AudioManagerHelper({ sfxs: {} });
 
     expect(() => mgr.playTyping()).not.toThrow();
   });
 
-  it("playTyping with a voice name that does not exist in the pack does not throw", () => {
+  it("playTyping with a sfx name that does not exist in the pack does not throw", () => {
     const mgr = new AudioManagerHelper({
-      voices: { default: { samples: ["u1"] } },
-      typing: { voice: "nonexistent" },
+      sfxs: { default: { samples: ["u1"] } },
+      typing: { sfx: "nonexistent" },
     });
 
     expect(() => mgr.playTyping()).not.toThrow();
@@ -115,65 +115,65 @@ describe("audioManagerHelper enabled and override guards", () => {
 });
 
 
-describe("audioManagerHelper voice resolution precedence", () => {
+describe("audioManagerHelper sfx resolution precedence", () => {
   const pack = {
     a: { samples: ["a1", "a2"] },
     b: { samples: ["b1"] },
   };
 
-  it("uses command override voices when provided (array form)", () => {
-    const mgr = new AudioManagerHelper({ voices: pack, typing: { strategy: EAudioStrategy.ROUND_ROBIN } });
+  it("uses command override sfxs when provided (array form)", () => {
+    const mgr = new AudioManagerHelper({ sfxs: pack, typing: { strategy: EAudioStrategy.ROUND_ROBIN } });
 
-    // override.voices takes highest priority
-    expect(() => mgr.playTyping({ voices: ["a"] })).not.toThrow();
+    // override.sfxs takes highest priority
+    expect(() => mgr.playTyping({ sfxs: ["a"] })).not.toThrow();
   });
 
-  it("uses command override voice when provided (single form)", () => {
-    const mgr = new AudioManagerHelper({ voices: pack, typing: { strategy: EAudioStrategy.ROUND_ROBIN } });
+  it("uses command override sfx when provided (single form)", () => {
+    const mgr = new AudioManagerHelper({ sfxs: pack, typing: { strategy: EAudioStrategy.ROUND_ROBIN } });
 
-    expect(() => mgr.playTyping({ voice: "b" })).not.toThrow();
+    expect(() => mgr.playTyping({ sfx: "b" })).not.toThrow();
   });
 
-  it("uses channel voices when no command override is given", () => {
+  it("uses channel sfxs when no command override is given", () => {
     const mgr = new AudioManagerHelper({
-      voices: pack,
-      typing: { voices: ["b"], strategy: EAudioStrategy.ROUND_ROBIN },
+      sfxs: pack,
+      typing: { sfxs: ["b"], strategy: EAudioStrategy.ROUND_ROBIN },
     });
 
     expect(() => mgr.playTyping()).not.toThrow();
   });
 
-  it("uses channel voice (single) when no command override or channel voices given", () => {
+  it("uses channel sfx (single) when no command override or channel sfxs given", () => {
     const mgr = new AudioManagerHelper({
-      voices: pack,
-      typing: { voice: "a", strategy: EAudioStrategy.ROUND_ROBIN },
+      sfxs: pack,
+      typing: { sfx: "a", strategy: EAudioStrategy.ROUND_ROBIN },
     });
 
     expect(() => mgr.playTyping()).not.toThrow();
   });
 
-  it("uses all voices in pack when no override or channel config given", () => {
-    const mgr = new AudioManagerHelper({ voices: pack, typing: { strategy: EAudioStrategy.ROUND_ROBIN } });
+  it("uses all sfxs in pack when no override or channel config given", () => {
+    const mgr = new AudioManagerHelper({ sfxs: pack, typing: { strategy: EAudioStrategy.ROUND_ROBIN } });
 
     expect(() => mgr.playTyping()).not.toThrow();
   });
 
-  it("command override voices take priority over channel voices", () => {
+  it("command override sfxs take priority over channel sfxs", () => {
     const mgr = new AudioManagerHelper({
-      voices: pack,
-      typing: { voices: ["b"], strategy: EAudioStrategy.ROUND_ROBIN },
+      sfxs: pack,
+      typing: { sfxs: ["b"], strategy: EAudioStrategy.ROUND_ROBIN },
     });
 
-    expect(() => mgr.playTyping({ voices: ["a"] })).not.toThrow();
+    expect(() => mgr.playTyping({ sfxs: ["a"] })).not.toThrow();
   });
 
-  it("command override voice takes priority over channel voice", () => {
+  it("command override sfx takes priority over channel sfx", () => {
     const mgr = new AudioManagerHelper({
-      voices: pack,
-      typing: { voice: "b", strategy: EAudioStrategy.ROUND_ROBIN },
+      sfxs: pack,
+      typing: { sfx: "b", strategy: EAudioStrategy.ROUND_ROBIN },
     });
 
-    expect(() => mgr.playTyping({ voice: "a" })).not.toThrow();
+    expect(() => mgr.playTyping({ sfx: "a" })).not.toThrow();
   });
 });
 
@@ -181,8 +181,8 @@ describe("audioManagerHelper voice resolution precedence", () => {
 describe("audioManagerHelper delete channel", () => {
   it("delete falls back to typing channel when no delete config given", () => {
     const mgr = new AudioManagerHelper({
-      voices: { d: { samples: ["d1"] } },
-      typing: { voice: "d", strategy: EAudioStrategy.ROUND_ROBIN },
+      sfxs: { d: { samples: ["d1"] } },
+      typing: { sfx: "d", strategy: EAudioStrategy.ROUND_ROBIN },
     });
 
     expect(() => mgr.playDelete()).not.toThrow();
@@ -190,9 +190,9 @@ describe("audioManagerHelper delete channel", () => {
 
   it("delete uses dedicated delete channel when configured", () => {
     const mgr = new AudioManagerHelper({
-      voices: { a: { samples: ["a1"] }, b: { samples: ["b1"] } },
-      typing: { voice: "a", strategy: EAudioStrategy.ROUND_ROBIN },
-      delete: { voice: "b", strategy: EAudioStrategy.ROUND_ROBIN },
+      sfxs: { a: { samples: ["a1"] }, b: { samples: ["b1"] } },
+      typing: { sfx: "a", strategy: EAudioStrategy.ROUND_ROBIN },
+      delete: { sfx: "b", strategy: EAudioStrategy.ROUND_ROBIN },
     });
 
     expect(() => mgr.playDelete()).not.toThrow();
@@ -206,7 +206,7 @@ describe("audioManagerHelper strategies", () => {
   };
 
   it("shuffle-bag strategy plays without throwing over many calls", () => {
-    const mgr = new AudioManagerHelper({ voices: pack, typing: { strategy: EAudioStrategy.SHUFFLE_BAG } });
+    const mgr = new AudioManagerHelper({ sfxs: pack, typing: { strategy: EAudioStrategy.SHUFFLE_BAG } });
 
     for (let i = 0; i < 10; i++) {
       expect(() => mgr.playTyping()).not.toThrow();
@@ -214,7 +214,7 @@ describe("audioManagerHelper strategies", () => {
   });
 
   it("round-robin strategy plays without throwing over many calls", () => {
-    const mgr = new AudioManagerHelper({ voices: pack, typing: { strategy: EAudioStrategy.ROUND_ROBIN } });
+    const mgr = new AudioManagerHelper({ sfxs: pack, typing: { strategy: EAudioStrategy.ROUND_ROBIN } });
 
     for (let i = 0; i < 10; i++) {
       expect(() => mgr.playTyping()).not.toThrow();
@@ -222,7 +222,7 @@ describe("audioManagerHelper strategies", () => {
   });
 
   it("random strategy plays without throwing over many calls", () => {
-    const mgr = new AudioManagerHelper({ voices: pack, typing: { strategy: EAudioStrategy.RANDOM } });
+    const mgr = new AudioManagerHelper({ sfxs: pack, typing: { strategy: EAudioStrategy.RANDOM } });
 
     for (let i = 0; i < 10; i++) {
       expect(() => mgr.playTyping()).not.toThrow();
@@ -231,7 +231,7 @@ describe("audioManagerHelper strategies", () => {
 
   it("random strategy with avoidImmediateRepeat=false plays without throwing", () => {
     const mgr = new AudioManagerHelper({
-      voices: pack,
+      sfxs: pack,
       typing: { strategy: EAudioStrategy.RANDOM, avoidImmediateRepeat: false },
     });
 
@@ -243,7 +243,7 @@ describe("audioManagerHelper strategies", () => {
   it("random strategy hits eligible fallback when all samples equal lastPlayed", () => {
     // Duplicate samples force eligible=[] on the second call, exercising the fallback path
     const mgr = new AudioManagerHelper({
-      voices: { dup: { samples: ["x", "x", "x"] } },
+      sfxs: { dup: { samples: ["x", "x", "x"] } },
       typing: { strategy: EAudioStrategy.RANDOM, avoidImmediateRepeat: true },
     });
 
@@ -255,7 +255,7 @@ describe("audioManagerHelper strategies", () => {
 
   it("random strategy with pool of 1 sample plays without throwing", () => {
     const mgr = new AudioManagerHelper({
-      voices: { only: { samples: ["sole"] } },
+      sfxs: { only: { samples: ["sole"] } },
       typing: { strategy: EAudioStrategy.RANDOM },
     });
 
@@ -266,7 +266,7 @@ describe("audioManagerHelper strategies", () => {
 
   it("shuffle-bag drains and refills over more than pool-size calls", () => {
     const mgr = new AudioManagerHelper({
-      voices: { default: { samples: ["a", "b"] } },
+      sfxs: { default: { samples: ["a", "b"] } },
       typing: { strategy: EAudioStrategy.SHUFFLE_BAG, avoidImmediateRepeat: true },
     });
 
@@ -278,7 +278,7 @@ describe("audioManagerHelper strategies", () => {
 
   it("single-sample pool returns the sample without going through strategy", () => {
     const mgr = new AudioManagerHelper({
-      voices: { only: { samples: ["sole"] } },
+      sfxs: { only: { samples: ["sole"] } },
       typing: { strategy: EAudioStrategy.SHUFFLE_BAG },
     });
 
@@ -295,7 +295,7 @@ describe("audioManagerHelper jitter", () => {
 
   it("playbackRateJitter does not throw", () => {
     const mgr = new AudioManagerHelper({
-      voices: pack,
+      sfxs: pack,
       typing: { strategy: EAudioStrategy.ROUND_ROBIN, playbackRateJitter: { min: 0.9, max: 1.1 } },
     });
 
@@ -304,7 +304,7 @@ describe("audioManagerHelper jitter", () => {
 
   it("volumeJitter does not throw", () => {
     const mgr = new AudioManagerHelper({
-      voices: pack,
+      sfxs: pack,
       volume: 1,
       typing: { strategy: EAudioStrategy.ROUND_ROBIN, volumeJitter: { min: 0.8, max: 1.0 } },
     });
@@ -313,14 +313,14 @@ describe("audioManagerHelper jitter", () => {
   });
 
   it("per-command volume override is applied without throwing", () => {
-    const mgr = new AudioManagerHelper({ voices: pack, volume: 1 });
+    const mgr = new AudioManagerHelper({ sfxs: pack, volume: 1 });
 
     expect(() => mgr.playTyping({ volume: 0.5 })).not.toThrow();
   });
 
   it("overlap=false reuses audio element path does not throw", () => {
     const mgr = new AudioManagerHelper({
-      voices: pack,
+      sfxs: pack,
       typing: { strategy: EAudioStrategy.ROUND_ROBIN, overlap: false },
     });
 
@@ -421,19 +421,19 @@ describe("createTypewriter audio runtime controls", () => {
     expect(renderer.toString()).toBe("He");
   });
 
-  it("audio with per-command voice override does not throw during play", async () => {
+  it("audio with per-command sfx override does not throw during play", async () => {
     const renderer = stringRenderer();
     const tw = createTypewriter({
       renderer,
       audio: {
-        voices: { soft: { samples: ["s1", "s2"] }, loud: { samples: ["l1"] } },
+        sfxs: { soft: { samples: ["s1", "s2"] }, loud: { samples: ["l1"] } },
         typing: { strategy: EAudioStrategy.ROUND_ROBIN },
       },
     });
 
     tw.timeline
-      .type("A", { by: "char", interval: 1, audio: { voice: "soft" } })
-      .type("B", { by: "char", interval: 1, audio: { voices: ["loud"] } })
+      .type("A", { by: "char", interval: 1, audio: { sfx: "soft" } })
+      .type("B", { by: "char", interval: 1, audio: { sfxs: ["loud"] } })
       .type("C", { by: "char", interval: 1, audio: { volume: 0.3 } });
     await tw.play();
 

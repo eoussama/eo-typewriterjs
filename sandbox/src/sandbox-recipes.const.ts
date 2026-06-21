@@ -1048,10 +1048,10 @@ console.log("Final status:", status);`,
   {
     id: "audio-default",
     title: "Enable Typing Sounds",
-    description: "Audio is off by default. Pass audio: { enabled: true } to opt in. Each keystroke plays a keyboard click from the built-in voice pack.",
+    description: "Audio is off by default. Pass audio: { enabled: true } to opt in. Each keystroke plays a keyboard click from the built-in sfx pack.",
     category: "audio",
     code: `// Audio is OFF by default. Pass audio: { enabled: true } to opt in.
-// The built-in voice pack has three keyboard-click samples played in
+// The built-in sfx pack has three keyboard-click samples played in
 // shuffle-bag order so the same sound never plays twice in a row.
 // Use the speaker button in the sandbox toolbar to mute at any time.
 const tw = createTypewriter({ renderer, audio: { enabled: true } });
@@ -1176,20 +1176,20 @@ await tw.play();`,
   },
 
   {
-    id: "audio-custom-voices",
-    title: "Custom Voice Pack",
-    description: "Supply your own voice pack with named voices, then target a specific voice per command.",
+    id: "audio-custom-sfxs",
+    title: "Custom Sfx Pack",
+    description: "Supply your own sfx pack with named sfxs, then target a specific sfx per command.",
     category: "audio",
     code: `// Replace the URLs below with real audio file URLs or base64 data URLs.
 const tw = createTypewriter({
   renderer,
   audio: {
-    voices: {
+    sfxs: {
       mechanical: { samples: ["https://assets.mixkit.co/active_storage/sfx/2533/2533-preview.mp3", "https://assets.mixkit.co/active_storage/sfx/2542/2542-preview.mp3"] },
       soft:       { samples: ["https://assets.mixkit.co/active_storage/sfx/2841/2841-preview.mp3"] },
     },
-    typing: { voice: "mechanical", strategy: EAudioStrategy.ROUND_ROBIN },
-    delete: { voice: "soft",       strategy: EAudioStrategy.ROUND_ROBIN },
+    typing: { sfx: "mechanical", strategy: EAudioStrategy.ROUND_ROBIN },
+    delete: { sfx: "soft",       strategy: EAudioStrategy.ROUND_ROBIN },
   },
 });
 
