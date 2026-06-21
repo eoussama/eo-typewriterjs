@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import { compile } from "../src/core/compiler/compile.helper";
+import { compile } from "../src/core/compiler/helpers/compile.helper";
+import { withCursor } from "../src/core/state/helpers/typewriter-state.helper";
 import { createInitialState } from "../src/core/state/index";
-import { withCursor } from "../src/core/state/typewriter-state.type";
-import { segmentText } from "../src/core/stepping/segment-text.helper";
+import { segmentText } from "../src/core/stepping/helpers/segment-text.helper";
 import { createTypewriter, EPlaybackStatus, stringRenderer } from "../src/index";
 
 

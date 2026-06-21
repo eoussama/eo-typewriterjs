@@ -1,9 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { compile } from "../src/core/compiler/compile.helper";
-import { DEFAULT_CURSOR_RENDER_OPTIONS } from "../src/core/cursor/cursor-render-options.type";
-import { deleteTextAtCursor } from "../src/core/reducer/delete-text-at-cursor.helper";
-import { insertTextAtCursor } from "../src/core/reducer/insert.helper";
+import { compile } from "../src/core/compiler/helpers/compile.helper";
+import { DEFAULT_CURSOR_RENDER_OPTIONS } from "../src/core/cursor/consts/cursor-defaults.const";
+import { deleteTextAtCursor } from "../src/core/reducer/helpers/delete-text-at-cursor.helper";
+import { insertTextAtCursor } from "../src/core/reducer/helpers/insert.helper";
 import { createInitialState, withCursor, withSelection } from "../src/core/state/index";
 import { createTypewriter, EPlaybackStatus, stringRenderer } from "../src/index";
 

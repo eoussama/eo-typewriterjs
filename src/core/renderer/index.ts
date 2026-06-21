@@ -1,1 +1,1 @@
-export type { IRenderer } from "./renderer.interface";
+export type { IRenderer } from "./interfaces/renderer.interface";

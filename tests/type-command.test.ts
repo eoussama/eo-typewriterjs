@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { compile } from "../src/core/compiler/compile.helper";
+import { compile } from "../src/core/compiler/helpers/compile.helper";
 import { createTypewriter, stringRenderer } from "../src/index";
 
 

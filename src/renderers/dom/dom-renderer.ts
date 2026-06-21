@@ -1,11 +1,10 @@
 import type { TNullable } from "@eoussama/core";
-import type { TCursorAnimation, TCursorAnimationOptions } from "../../core/cursor/cursor-render-options.type";
-import type { IRenderer } from "../../core/renderer/renderer.interface";
-import type { TRichTextSegment } from "../../core/state/segment-rich-text.helper";
+import type { TCursorAnimation, TCursorAnimationOptions } from "../../core/cursor/types/cursor-render-options.type";
+import type { IRenderer } from "../../core/renderer/interfaces/renderer.interface";
+import type { TRichTextSegment } from "../../core/state/types/rich-text-segment.type";
+import type { TSelectionState, TTypewriterState } from "../../core/state/types/typewriter-state.type";
 
-import type { TSelectionState, TTypewriterState } from "../../core/state/typewriter-state.type";
-
-import { mergeStyles, segmentRichText } from "../../core/state/segment-rich-text.helper";
+import { mergeStyles, segmentRichText } from "../../core/state/helpers/segment-rich-text.helper";
 
 
 

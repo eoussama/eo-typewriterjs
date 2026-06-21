@@ -1,5 +1,5 @@
 import type { TAudioOptions } from "./core/audio/index";
-import type { TCursorSelector } from "./core/commands/type-command.type";
+import type { TCursorSelector } from "./core/commands/types/type-command.type";
 import type { TCursorRenderOptions } from "./core/cursor/index";
 import type { TPlaybackControllerState } from "./core/player/index";
 import type { IRenderer } from "./core/renderer/index";

@@ -1,9 +1,9 @@
 import type { TNullable } from "@eoussama/core";
-import type { IRenderer } from "../../core/renderer/renderer.interface";
+import type { IRenderer } from "../../core/renderer/interfaces/renderer.interface";
 
-import type { TTypewriterState } from "../../core/state/typewriter-state.type";
+import type { TTypewriterState } from "../../core/state/types/typewriter-state.type";
 
-import { mergeStyles, segmentRichText } from "../../core/state/segment-rich-text.helper";
+import { mergeStyles, segmentRichText } from "../../core/state/helpers/segment-rich-text.helper";
 
 
 

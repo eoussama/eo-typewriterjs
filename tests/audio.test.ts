@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { AudioManagerHelper } from "../src/core/audio/audio-manager.helper";
+import { AudioManagerHelper } from "../src/core/audio/helpers/audio-manager.helper";
 import { createTypewriter, EAudioStrategy, stringRenderer } from "../src/index";
 
 
