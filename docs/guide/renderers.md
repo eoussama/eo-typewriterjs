@@ -111,8 +111,8 @@ When selected text also carries a text style, a single `<span>` carries both `ty
 | Method | When called | Behaviour |
 |---|---|---|
 | `render(state)` | After every event | Repaints text, cursors, and selections at the new positions |
-| `mount(state)` | Once, before the first event | Resolves the target element and paints the initial state |
-| `unmount()` | When called by the consumer or player | Releases the element reference; final content stays in place |
+| `mount(state)` | Before rendering begins (e.g. on play, replay, or seek from idle) | Resolves the target element and paints the initial state |
+| `unmount()` | When explicitly torn down | Releases the element reference; final content stays in place |
 
 ### `stringRenderer` - Node.js / testing
 
@@ -196,8 +196,8 @@ await tw.play();
 | Method | When called | Typical use |
 |---|---|---|
 | `render(state)` | After every event | Write the updated text |
-| `mount(state)` | Once, before the first event | Prepare the output target |
-| `unmount()` | Optional teardown | Flush / release resources |
+| `mount(state)` | Before rendering begins (e.g. on play, replay, or seek from idle) | Prepare the output target |
+| `unmount()` | When explicitly torn down | Flush / release resources |
 
 ## Reading state
 

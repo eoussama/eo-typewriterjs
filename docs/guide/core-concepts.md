@@ -8,7 +8,7 @@ Every typewriter animation passes through four stages:
 
 ```
 Timeline commands
-      ↓  compile()
+    ↓  compile()
 Timeline events (with absolute timestamps)
     ↓  play()
 Reducer (apply each event to state)
@@ -23,21 +23,21 @@ You add **commands** to the timeline using the fluent builder methods:
 | Method | Description |
 |---|---|
 | `.type(text, options?)` | Insert text step by step |
-| `.delete(value, options?)` | Remove text from the cursor; accepts a relative count (`±n`), or `"start"`, `"end"`, `"whole"` |
-| `.move(value, options?)` | Move the cursor relative to its current position (`±n`), or jump to `"start"` or `"end"` |
+| `.delete(value, options?)` | Remove text from the cursor; accepts a positive or negative number, or `"start"`, `"end"`, `"whole"` |
+| `.move(value, options?)` | Move the cursor by a positive or negative number of units, or jump to `"start"` or `"end"` |
 | `.wait(duration)` | Pause before the next command |
-| `.select(value, options?)` | Create a text selection; accepts a relative count (`±n`), or `"start"`, `"end"`, `"whole"` |
+| `.select(value, options?)` | Create a text selection; accepts a positive or negative number, or `"start"`, `"end"`, `"whole"` |
 | `.unselect(options?)` | Remove the active selection from a cursor |
 | `.style(style, range, options?)` | Apply a style to a document range |
 | `.unstyle(range, options?)` | Remove text styles that overlap a range |
 | `.call(fn, options?)` | Schedule an inline callback (sync or async) |
 
-When `play()` is called, the timeline is compiled into a flat array of **timeline events**, one event per step, each stamped with an absolute timestamp. The same timeline can be replayed; the result is recompiled from scratch on each call, so the sequence is always consistent.
+When `play()` is called, the timeline is compiled into a flat array of **timeline events**, one event per step, each stamped with an absolute timestamp. The timeline is compiled once when `play()` is first called, and the result is cached. Recompilation only happens when commands are added to the timeline. `replay()` reuses the same compiled output unless the timeline has changed since the last compile.
 
 `wait`, `move`, `select`, `unselect`, `style`, `unstyle`, and `call` are special:
 - `wait` generates no events but advances the internal clock
-- `move` generates a single instant event and does not advance the clock
-- `select` generates a single instant event and does not advance the clock
+- `move` generates a single event per cursor and advances the clock by `interval` (or the default 50 ms)
+- `select` generates a single event per cursor and advances the clock by `interval` (or the default 50 ms)
 - `unselect` generates a single instant event and does not advance the clock
 - `style` generates one or more instant style events (one per cursor when `range` is `"selection"`) and does not advance the clock
 - `unstyle` generates one or more instant unstyle events (one per cursor when `range` is `"selection"`) and does not advance the clock
@@ -150,10 +150,10 @@ const myRenderer: IRenderer = {
     console.log(state.document.text);
   },
   mount(state: TTypewriterState) {
-    // optional, called once before playback starts
+    // optional, called before rendering begins (e.g. on play, replay, or seek from idle)
   },
   unmount() {
-    // optional, called once after playback ends
+    // optional, called when the renderer is torn down
   },
 };
 ```
@@ -179,8 +179,8 @@ tw.timeline
   .wait(300)
   .type("JS ⌨️", { by: "char", interval: 80 });
 
-await tw.play(); // compiles and plays
-await tw.replay(); // recompiles and replays from the beginning
+await tw.play(); // compiles (if needed) and plays
+await tw.replay(); // replays from the beginning (recompiles only if timeline changed)
 ```
 
 ## Audio

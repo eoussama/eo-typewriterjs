@@ -59,7 +59,7 @@ To loop indefinitely, wrap in a `while (true)` and call `tw.replay()` after `tw.
 
 ## Loading indicator
 
-Use a short interval and `wait` pauses for a snappy loading animation:
+Use a short interval for a snappy loading animation:
 
 ```ts
 import { createTypewriter, domRenderer } from "eo-typewriterjs";
@@ -244,7 +244,7 @@ console.log(chars); // ["H", "e", "l", "l", "o"]
 
 ## Conditional branch
 
-Use `.call()` to capture a result mid-animation, then build the continuation based on that result:
+Use `.call()` to capture a result mid-animation. If you need to branch based on that result, run a follow-up timeline after the first one resolves:
 
 ```ts
 import { createTypewriter, domRenderer } from "eo-typewriterjs";

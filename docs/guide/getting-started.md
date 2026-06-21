@@ -19,6 +19,8 @@ The DOM renderer writes directly into a target element. Each render call updates
 ```ts
 import { createTypewriter, domRenderer } from "eo-typewriterjs";
 
+
+
 const el = document.getElementById("output")!;
 
 const tw = createTypewriter({
@@ -36,6 +38,8 @@ The string renderer accumulates output in memory instead of touching the DOM. Ca
 
 ```ts
 import { createTypewriter, stringRenderer } from "eo-typewriterjs";
+
+
 
 const renderer = stringRenderer();
 
@@ -127,14 +131,23 @@ You can adjust or toggle audio at any point during playback. Changes take effect
 
 ```ts
 // Lower the volume mid-animation
-tw.audio.setVolume(0.3);
+tw.setAudioVolume(0.3);
 
 // Mute audio entirely without stopping playback
-tw.audio.setEnabled(false);
+tw.setAudioEnabled(false);
 
 // Unmute and restore volume
-tw.audio.setEnabled(true);
-tw.audio.setVolume(1);
+tw.setAudioEnabled(true);
+tw.setAudioVolume(1);
+```
+
+You can also replace the full audio configuration in one call:
+
+```ts
+tw.setAudioOptions({
+  enabled: true,
+  volume: 0.6,
+});
 ```
 
 ## Next steps
