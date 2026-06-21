@@ -221,8 +221,8 @@ The `state` is a read-only snapshot. Mutating it does not affect the running ani
 
 A selection is created on a cursor by `.select()` and cleared by the first of these that targets the same cursor afterward:
 
-1. `.type()`: the selection is cleared on the first type step; text is inserted at the cursor position (the selected range is **not** deleted automatically)
-2. `.delete()`: deletion proceeds based on `count` and direction from the cursor position; the selection is cleared afterward (the selected range is **not** deleted automatically)
+1. `.type()`: the selected range is **replaced** by the typed text on the first step; subsequent steps insert normally at the cursor position
+2. `.delete()`: the selected range is **deleted** and the `count`/direction operand is **ignored**; use `"whole"` as the operand to clear the entire document regardless of any selection
 3. `.move()`: the selection is cleared; the cursor jumps to the new position
 4. `.unselect()`: the selection is cleared; the cursor stays in place
 5. `.select()`: the existing selection is replaced by the new one

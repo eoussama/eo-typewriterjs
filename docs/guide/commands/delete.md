@@ -6,30 +6,27 @@ Removes text relative to the cursor position, one step at a time.
 tw.timeline.delete(count: TDeleteValue, options?: TDeleteOptions): TimelineBuilder
 ```
 
-The first argument determines both **how much** to delete and **in which direction**. Numeric values produce multiple timed steps; boundary strings delete in one instant step.
+The first argument determines both **how much** to delete and **in which direction**. Numeric values produce multiple timed steps; boundary strings compile to a single step.
 
 ## Operand semantics
 
 | `count` | Direction | Steps |
 |---|---|---|
-| Positive number (`count > 0`) | Delete **forward** from the cursor | `count / amount` |
-| Negative number (`count < 0`) | Delete **backward** from the cursor | `|count| / amount` |
-| `"start"` | Delete from cursor back to document **start** | 1 (instant) |
-| `"end"` | Delete from cursor forward to document **end** | 1 (instant) |
-| `"whole"` | Delete the **entire document** | 1 (instant) |
+| Positive number (`count > 0`) | Delete **forward** from the cursor | `ceil(count / amount)` |
+| Negative number (`count < 0`) | Delete **backward** from the cursor | `ceil(|count| / amount)` |
+| `"start"` | Delete from cursor back to document **start** | 1 |
+| `"end"` | Delete from cursor forward to document **end** | 1 |
+| `"whole"` | Delete the **entire document** | 1 |
 
-Numeric counts advance the timeline clock by `steps × interval` ms. Boundary strings (`"start"`, `"end"`, `"whole"`) are instant - they do not advance the clock.
+Numeric counts advance the timeline clock by `steps × interval` ms. Boundary strings (`"start"`, `"end"`, `"whole"`) compile to a single event and use the default interval (`50ms`) for their duration.
 
 ## Options
 
 ```ts
 type TDeleteOptions = {
   by?: TAdvanceModeInput;       // default: "char" (numeric counts only)
-  interval?: number;            // default: 50 (ms) (numeric counts only)
+  interval?: number;            // default: 50 (ms)
   cursor?: TCursorSelector;     // default: "main"
-  before?: TCallbackHook;
-  after?: TCallbackHook;
-  audio?: TAudioCommandOverride;
 };
 ```
 
@@ -38,9 +35,6 @@ type TDeleteOptions = {
 | `by` | `TAdvanceModeInput` | `"char"` | Unit used to measure and chunk the deletion (numeric counts only) |
 | `interval` | `number` | `50` | Milliseconds between each deletion step (numeric counts only) |
 | `cursor` | `TCursorSelector` | `"main"` | Which cursor(s) to delete from |
-| `before` | `TCallbackHook` | - | Hook fired before each step (or once for boundary operands) |
-| `after` | `TCallbackHook` | - | Hook fired after each step (or once for boundary operands) |
-| `audio` | `TAudioCommandOverride` | - | Per-command audio override |
 
 ## Behavior
 
@@ -50,7 +44,8 @@ type TDeleteOptions = {
 - **`"end"`**: deletes all text from the cursor's current position forward to the end of the document in one step.
 - **`"whole"`**: clears the entire document in one step regardless of cursor position.
 - All deletions are **clamped** - the operation never exceeds the document boundaries.
-- When a selection is active on the targeted cursor, the selection range is deleted in one step (regardless of `count` or `by`), then the selection is cleared.
+- When `cursor` targets multiple cursors, one set of events is produced per cursor at the same timestamps. The timeline clock advances only once.
+- When a selection is active on the targeted cursor, the selection range is deleted in one step (regardless of numeric `count` or `by`), then the selection is cleared. `"whole"` bypasses this and always deletes the entire document.
 - Styles that overlap the deleted range are automatically adjusted: styles fully inside the range are removed, styles partially overlapping are trimmed, and styles entirely outside the range are preserved and shifted as needed.
 
 ## Advance modes (`by`)
@@ -129,7 +124,7 @@ await tw.play();
 ```ts
 tw.timeline
   .type("Hello world - Epilogue", { by: "char", interval: 60 })
-  .move(11)         // cursor right after "Hello world"
+  .move(-11)        // cursor right after "Hello world"
   .delete("end");   // removes " - Epilogue" in one step
 
 await tw.play();
@@ -146,19 +141,6 @@ tw.timeline
   .type("Something new.", { by: "char", interval: 80 });
 
 await tw.play();
-```
-
-### Insert a missing character mid-word
-
-```ts
-tw.timeline
-  .type("Helo world", { by: "char", interval: 75 })
-  .wait(300)
-  .move(-8)                               // cursor between "He" and "lo" (index 2)
-  .type("l", { by: "char", interval: 60 }); // insert the missing 'l'
-
-await tw.play();
-// result: "Hello world"
 ```
 
 ### Forward delete a duplicate character
@@ -223,7 +205,7 @@ await tw.play();
 - **`"whole"` on an empty document** - no-op.
 - **`"start"` with cursor at 0** - no-op.
 - **`"end"` with cursor at the end** - no-op.
-- **Active selection** - the entire selected range is deleted in one step; `count` and `by` are ignored.
+- **Active selection** - for numeric and `"start"`/`"end"` operands, the entire selected range is deleted in one step; `count` and `by` are ignored. `"whole"` always deletes the entire document regardless of any active selection.
 - **Unknown `by` value** - passing an unrecognised advance unit such as `"custom"` throws an error at compile time. Only `"char"`, `"grapheme"`, `"word"`, and `"line"` are accepted for `by`. `"whole"` is not a valid `by` unit - use `.delete("whole")` instead.
 - **Unknown boundary string** - passing a string operand other than `"whole"`, `"start"`, or `"end"` throws an error at compile time.
 
@@ -234,5 +216,3 @@ await tw.play();
 - [`TDeleteValue`](/api/type-aliases/TDeleteValue)
 - [`TAdvanceModeInput`](/api/type-aliases/TAdvanceModeInput)
 - [`TCursorSelector`](/api/type-aliases/TCursorSelector)
-- [`TCallbackHook`](/api/type-aliases/TCallbackHook)
-- [`TAudioCommandOverride`](/api/type-aliases/TAudioCommandOverride)

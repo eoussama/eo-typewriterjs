@@ -125,7 +125,7 @@ tw.timeline.type("Error", {
 });
 ```
 
-Each inserted character receives its own style entry with `from = charIndex` and `to = charIndex + 1`. The DOM renderer coalesces adjacent identical styles into a single span when rendering.
+Each inserted chunk receives a style range covering the span it occupies in the document. The DOM renderer coalesces adjacent identical styles into a single span when rendering.
 
 Alternatively, use `.style()` after typing to attach a style to already-typed text, see [`.style()`](/guide/commands/style).
 
@@ -156,7 +156,7 @@ await tw.play();
 
 ## Replacing a selection
 
-If the targeted cursor has an active selection when `.type()` fires, the selected text is replaced by the typed characters in a single step before normal character-by-character insertion resumes:
+If the targeted cursor has an active selection when `.type()` fires, the **selected range is replaced** by the typed text on the first step. Subsequent steps insert normally at the cursor's new position:
 
 ```ts
 tw.timeline
