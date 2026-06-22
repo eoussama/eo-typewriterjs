@@ -1069,7 +1069,9 @@ function init(): void {
     });
   });
 
-  elRecipesToggleBtn.addEventListener("click", () => {
+  const elRecipesPanelHeader = elRecipesPanel.querySelector<HTMLElement>(".panel-header")!;
+
+  elRecipesPanelHeader.addEventListener("click", () => {
     const collapsed = elRecipesPanel.classList.toggle("recipes-panel--collapsed");
 
     elBottomRow.classList.toggle("bottom-row--recipes-collapsed", collapsed);

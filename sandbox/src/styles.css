@@ -591,6 +591,11 @@ body {
   background: var(--color-surface-hi);
 }
 
+.recipes-panel .panel-header {
+  cursor: pointer;
+  user-select: none;
+}
+
 /* ─── Recipe picker ─────────────────────────────────────────────────────── */
 
 .recipes-panel {
