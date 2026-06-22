@@ -8,7 +8,7 @@ tw.timeline.move(offset: TMoveValue, options?: TMoveOptions): TimelineBuilder
 
 `.move()` works like `.type()` and `.delete()`: it splits the offset into steps, emitting one event per unit (or per `amount` units), and advances the timeline clock by `interval` with each step. The cursor moves one step at a time, visiting every intermediate position.
 
-String boundaries (`"start"` and `"end"`) remain a single event — they are still instant jumps.
+String boundaries (`"start"` and `"end"`) remain a single event, they are still instant jumps.
 
 ## Operand semantics
 

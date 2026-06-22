@@ -13,7 +13,7 @@ The first argument determines both **how much** to delete and **in which directi
 | `count` | Direction | Steps |
 |---|---|---|
 | Positive number (`count > 0`) | Delete **forward** from the cursor | `ceil(count / amount)` |
-| Negative number (`count < 0`) | Delete **backward** from the cursor | `ceil(|count| / amount)` |
+| Negative number (`count < 0`) | Delete **backward** from the cursor | `ceil(\|count\| / amount)` |
 | `"start"` | Delete from cursor back to document **start** | 1 |
 | `"end"` | Delete from cursor forward to document **end** | 1 |
 | `"whole"` | Delete the **entire document** | 1 |
@@ -27,6 +27,9 @@ type TDeleteOptions = {
   by?: TAdvanceModeInput;       // default: "char" (numeric counts only)
   interval?: number;            // default: 50 (ms)
   cursor?: TCursorSelector;     // default: "main"
+  before?: TCallbackHook;
+  after?: TCallbackHook;
+  audio?: TAudioCommandOverride;
 };
 ```
 
@@ -35,6 +38,9 @@ type TDeleteOptions = {
 | `by` | `TAdvanceModeInput` | `"char"` | Unit used to measure and chunk the deletion (numeric counts only) |
 | `interval` | `number` | `50` | Milliseconds between each deletion step (numeric counts only) |
 | `cursor` | `TCursorSelector` | `"main"` | Which cursor(s) to delete from |
+| `before` | `TCallbackHook` | - | Hook fired before each step |
+| `after` | `TCallbackHook` | - | Hook fired after each step |
+| `audio` | `TAudioCommandOverride` | - | Per-command audio override |
 
 ## Behavior
 
@@ -229,3 +235,5 @@ await tw.play();
 - [`TDeleteValue`](/api/type-aliases/TDeleteValue)
 - [`TAdvanceModeInput`](/api/type-aliases/TAdvanceModeInput)
 - [`TCursorSelector`](/api/type-aliases/TCursorSelector)
+- [`TCallbackHook`](/api/type-aliases/TCallbackHook)
+- [`TAudioCommandOverride`](/api/type-aliases/TAudioCommandOverride)

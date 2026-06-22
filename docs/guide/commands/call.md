@@ -62,7 +62,7 @@ Return a `Promise` to suspend playback until the operation completes. The next c
 tw.timeline
   .type("Fetching results", { by: "char", interval: 70 })
   .call(async ({ signal }) => {
-    const response = await fetch("/api/data", { signal });
+    const response = await fetch("https://jsonplaceholder.typicode.com/posts/1", { signal });
     const data = await response.json();
     console.log("data:", data);
   })
@@ -81,7 +81,7 @@ tw.timeline
   .type("Loading", { by: "char", interval: 80 })
   .call(async ({ signal }) => {
     try {
-      const res = await fetch("/api/long-running", { signal });
+      const res = await fetch("https://jsonplaceholder.typicode.com/posts", { signal });
       const data = await res.json();
       console.log("result:", data);
     } catch (err) {
@@ -100,15 +100,20 @@ await tw.play();
 You can also call `tw.cancel()` from inside the callback to stop playback at a precise point:
 
 ```ts
+function checkAuth() {
+  return new Promise(resolve => setTimeout(() => { resolve(false) }, 100))
+}
+
 tw.timeline
-  .type("Checking credentials", { by: "char", interval: 60 })
-  .call(async ({ state }) => {
-    const ok = await checkAuth();
-    if (!ok) {
-      tw.cancel(); // stop playback; current text stays on screen
-    }
-  })
-  .type(" - Access granted!", { by: "char", interval: 60 });
+.type("Checking credentials...", { by: "char", interval: 60 })
+.call(async ({ state }) => {
+  const ok = await checkAuth();
+  if (!ok) {
+    tw.cancel(); // stop playback; current text stays on screen
+    console.log("Cancelled!")
+  }
+})
+.type(" - Access granted!", { by: "char", interval: 60 });
 
 await tw.play();
 // If checkAuth() returns false, " - Access granted!" is never typed

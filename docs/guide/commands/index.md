@@ -6,52 +6,57 @@ Commands are the building blocks of a typewriter animation. They are scheduled o
 
 The typewriter maintains an internal **timeline clock** that tracks how many milliseconds have elapsed since the animation started. Each timed command advances this clock; instant and timing-only commands do not. Every event is scheduled at a precise timestamp relative to that clock.
 
-There are four categories:
+There are five categories:
 
-### Timed commands
+### Segmented commands
 
-Timed commands produce **multiple playback events** spread over time. Each event fires at a calculated timestamp and mutates the document by one step.
+Segmented commands split their operand into `ceil(totalUnits / amount)` steps and emit **one event per step per targeted cursor**. The clock advances by `steps × interval` ms.
 
-| Command | Steps | Clock advance |
+| Command | Steps | Mutates document? |
 |---|---|---|
-| [type](/guide/commands/type) | One per chunk of text (char, word, line…) | `steps × interval` ms |
-| [delete](/guide/commands/delete) | One per deleted chunk (numeric counts only) | `steps × interval` ms |
+| [type](/guide/commands/type) | One per text chunk (char, grapheme, word, line…) | Yes, inserts text |
+| [delete](/guide/commands/delete) | One per deleted chunk (numeric counts only) | Yes, removes text |
+| [move](/guide/commands/move) | `ceil(\|offset\| / amount)` per cursor (numeric offsets only) | No, repositions cursor |
+| [select](/guide/commands/select) | `ceil(\|count\| / amount)` per cursor (numeric counts only) | No, sets cursor's selection range |
 
-### Timing-only commands
+A zero operand (`move(0)`, `select(0)`) is a special case: no events are emitted and the clock does not advance, but lifecycle hooks still fire once during sequential playback.
 
-Timing-only commands produce **no events** and do not mutate the document. They simply advance the timeline clock, creating a gap before the next command.
+### Boundary commands
 
-| Command | Clock advance |
-|---|---|
-| [wait](/guide/commands/wait) | Exactly `duration` ms |
+Boundary commands accept a **string operand** (`"start"`, `"end"`, or `"whole"` where applicable). They compile to **one event per targeted cursor** at the current clock position, then advance the clock by `interval` (default `50 ms`).
 
-### Multi-step movement commands
-
-`.move()` with a numeric offset behaves like a timed command: it splits the offset into `ceil(|offset| / amount)` steps, emits one event per step per cursor, and advances the clock by `steps × interval`. With a string boundary (`"start"` or `"end"`) it emits one event per cursor and advances the clock by `interval`. A zero offset emits no events, does not advance the clock, but still fires lifecycle hooks once during sequential playback.
-
-| Command | Mutates document? |
-|---|---|
-| [move](/guide/commands/move) | No, repositions the cursor only |
-
-### Single-step commands
-
-Single-step commands produce **one event per targeted cursor** at the current clock position, then advance the clock by `interval` (default `50 ms`). The `by` unit and `amount` are carried as metadata on the event and resolved by the reducer at apply time — no matter how large the selection count is, exactly one event is emitted.
-
-| Command | Mutates document? |
-|---|---|
-| [select](/guide/commands/select) | No, sets the cursor's selection range |
+| Command | Accepted boundaries | Mutates document? |
+|---|---|---|
+| [delete](/guide/commands/delete) | `"start"`, `"end"`, `"whole"` | Yes, removes text |
+| [move](/guide/commands/move) | `"start"`, `"end"` | No, repositions cursor |
+| [select](/guide/commands/select) | `"start"`, `"end"`, `"whole"` | No, sets cursor's selection range |
 
 ### Instant commands
 
-Instant commands produce **one event per targeted cursor** at the current clock position. They do not advance the clock. If they follow a timed or single-step command, they fire at the exact moment that command finishes.
-
-`.call()` is a special case: it produces **no timeline events** and does not appear in the compiled event list. It is executed purely at runtime by the executor, between the commands that surround it.
+Instant commands compile to **one event per targeted cursor** at the current clock position. They do **not** advance the clock. If they follow any other command, they fire at the exact timestamp that command ends.
 
 | Command | Mutates document? |
 |---|---|
 | [unselect](/guide/commands/unselect) | No, clears the cursor's selection |
 | [style](/guide/commands/style) | Yes, adds a style to a document range |
 | [unstyle](/guide/commands/unstyle) | Yes, removes styles from a document range |
+
+### Timing-only commands
+
+Timing-only commands produce **no events** and do not mutate the document. They only advance the timeline clock, creating a gap before the next command starts.
+
+| Command | Clock advance |
+|---|---|
+| [wait](/guide/commands/wait) | Exactly `duration` ms |
+
+### Runtime-only commands
+
+Runtime-only commands produce **no compiled events** and do not appear in the event stream. They are executed purely by the sequential executor (`play()` / `replay()`), between the commands that surround them.
+
+`.call()` can suspend playback: if the callback returns a `Promise`, the executor waits for it to settle before starting the next command. It has no effect during event-based navigation (`seek()`, `stepForward()`, `stepBackward()`).
+
+| Command | Mutates document? |
+|---|---|
 | [call](/guide/commands/call) | No, invokes a callback function |
 
 ## Command overview table
@@ -62,11 +67,11 @@ Instant commands produce **one event per targeted cursor** at the current clock 
 | [delete](/guide/commands/delete) | `.delete(count, options?)` | ✅ yes | ✅ yes, removes text |
 | [move](/guide/commands/move) | `.move(offset, options?)` | ✅ yes, `steps × interval` ms (numeric) / `interval` ms (boundary) | ❌ no |
 | [wait](/guide/commands/wait) | `.wait(duration, options?)` | ✅ yes | ❌ no |
-| [select](/guide/commands/select) | `.select(count, options?)` | ✅ yes, `interval` ms | ❌ no |
-| [unselect](/guide/commands/unselect) | `.unselect(options?)` | ❌ instant | ❌ no |
-| [style](/guide/commands/style) | `.style(style, range, options?)` | ❌ instant | ✅ yes, applies style |
-| [unstyle](/guide/commands/unstyle) | `.unstyle(range, options?)` | ❌ instant | ✅ yes, removes style |
-| [call](/guide/commands/call) | `.call(fn, options?)` | ❌ instant | ❌ no |
+| [select](/guide/commands/select) | `.select(count, options?)` | ✅ yes, `steps × interval` ms (numeric) / `interval` ms (boundary) | ❌ no |
+| [unselect](/guide/commands/unselect) | `.unselect(options?)` | ❌ no | ❌ no |
+| [style](/guide/commands/style) | `.style(style, range, options?)` | ❌ no | ✅ yes, applies style |
+| [unstyle](/guide/commands/unstyle) | `.unstyle(range, options?)` | ❌ no | ✅ yes, removes style |
+| [call](/guide/commands/call) | `.call(fn, options?)` | ❌ no | ❌ no |
 
 > **Note on `delete` with boundary operands:** When `count` is `"start"`, `"end"`, or `"whole"`, the deletion happens in a single step. The clock still advances by the default interval (50 ms), so commands after a boundary delete are scheduled 50 ms later.
 
@@ -100,7 +105,7 @@ The `"main"` cursor is always present. Additional named cursors are created the 
 
 ## Advance modes
 
-Timed commands (`type`, `delete`) and movement commands (`move`, `select`) all accept a `by` option that controls the unit of segmentation. This is called the **advance mode**.
+Segmented commands (`type`, `delete`, `move`, `select`) all accept a `by` option that controls the unit of segmentation. This is called the **advance mode**.
 
 ### String shortcuts
 
@@ -136,8 +141,8 @@ Commands compose by chaining. `select` advances the clock by `interval` (default
 tw.timeline
   .type("Hello World", { by: "char", interval: 80 }) // timed: ~880 ms
   .wait(600)                                          // pause 600 ms
-  .move(-5)                                           // 5 steps: advances clock 5 × 50 ms = 250 ms
-  .select(5)                                          // single-step: advances clock 50 ms
+  .move(-5)                                           // segmented: 5 steps × 50 ms = 250 ms
+  .select(5)                                          // segmented: 5 steps × 50 ms = 250 ms
   .style("highlight", "selection")                   // instant (fires at same moment as previous end)
   .move("end")                                        // boundary: advances clock 50 ms
   .type("!", { by: "char", interval: 80 });           // timed: 80 ms
@@ -181,9 +186,9 @@ await tw.play();
 
 Every command accepts optional `before` and `after` lifecycle hooks. They share the same `TCallbackFn` signature, which receives a `TCallbackContext`.
 
-**For timed and multi-step commands** (`type`, `delete`, and `move` with a numeric offset), both hooks fire once per step, before and after each individual operation.
+**For segmented commands** (`type`, `delete`, `move` with a numeric offset, and `select` with a numeric count), both hooks fire once per step, before and after each individual operation.
 
-**For single-step and instant commands** (`select`, `style`, `unselect`, `unstyle`, `wait`, `call`, and `move` with a string boundary or zero offset), they fire once total.
+**For all other commands** (boundary `delete`/`move`/`select`, `unselect`, `style`, `unstyle`, `wait`, `call`, and `move(0)`/`select(0)`), they fire once total.
 
 ```ts
 tw.timeline.type("Hello world", {
@@ -232,7 +237,7 @@ A selection is created on a cursor by `.select()` and cleared by the first of th
 4. `.unselect()`: the selection is cleared; the cursor stays in place
 5. `.select()`: the existing selection is replaced by the new one
 
-`.style()` and `.unstyle()` with `"selection"` consume the selection range as a target but do **not** clear the selection state. Use `.move()` or `.unselect()` afterward to dismiss the highlight.
+`.style()` and `.unstyle()` with `"selection"` read the selection range and **do** clear the selection state after applying. Unlike the commands above, they mutate the document (styles list) without moving the cursor.
 
 ## Command pages
 

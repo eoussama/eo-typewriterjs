@@ -8,8 +8,8 @@ tw.timeline.select(count: TSelectValue, options?: TSelectOptions): TimelineBuild
 
 `.select()` is compiled differently depending on the operand:
 
-- **String boundaries** (`"start"`, `"end"`, `"whole"`) — produce a single event and advance the clock by `interval` ms.
-- **Numeric counts** — split into `ceil(|count| / amount)` steps. One event is emitted per step and the clock advances by `interval` ms per step (total = `steps × interval`). Each step extends the selection by one more unit from the cursor's anchor, so the selection grows visibly one step at a time.
+- **String boundaries** (`"start"`, `"end"`, `"whole"`): produce a single event and advance the clock by `interval` ms.
+- **Numeric counts**: split into `ceil(|count| / amount)` steps. One event is emitted per step and the clock advances by `interval` ms per step (total = `steps × interval`). Each step extends the selection by one more unit from the cursor's anchor, so the selection grows visibly one step at a time.
 
 The selection is stored on the cursor state and consumed by subsequent commands or displayed as a visual highlight by the renderer.
 
@@ -216,7 +216,7 @@ The **DOM renderer** wraps the active selection in a `<span>` with class `typewr
 }
 ```
 
-The **string renderer**'s `toString()` returns plain text without selection markers. Use `toAnsiString()` for terminal output - it renders the selection range with ANSI highlight codes.
+The **string renderer**'s `toString()` returns plain text without selection markers. `toAnsiString()` applies ANSI escape codes from text styles only, it has no awareness of selections, so the selection range is not represented in either string renderer output.
 
 ## Edge cases
 
