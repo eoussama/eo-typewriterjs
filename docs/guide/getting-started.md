@@ -1,3 +1,9 @@
+<script setup>
+const domQuickStartCode = `const tw = createTypewriter({ renderer });
+tw.timeline.type("Hello, World!");
+await tw.play();`;
+</script>
+
 # Getting Started
 
 ::: warning Legacy versions
@@ -19,8 +25,6 @@ The DOM renderer writes directly into a target element. Each render call updates
 ```ts
 import { createTypewriter, domRenderer } from "eo-typewriterjs";
 
-
-
 const el = document.getElementById("output")!;
 
 const tw = createTypewriter({
@@ -31,6 +35,8 @@ tw.timeline.type("Hello, World!");
 
 await tw.play();
 ```
+
+<DocsPlayground :code="domQuickStartCode" />
 
 ### Node.js / server (string renderer)
 

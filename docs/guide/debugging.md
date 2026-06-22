@@ -223,6 +223,6 @@ This is expected. `.call()` callbacks are runtime-only and do not have compiled 
 
 ## Type reference
 
-- [`TPlaybackState`](/api/type-aliases/TPlaybackState)
+- [`TPlaybackControllerState`](/api/type-aliases/TPlaybackControllerState)
 - [`TTypewriterState`](/api/type-aliases/TTypewriterState)
 - [`TCallbackContext`](/api/type-aliases/TCallbackContext)

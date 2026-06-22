@@ -1,8 +1,13 @@
 import { createRequire } from "node:module";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 
 import { defineConfig } from "vitepress";
 
 
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 const require = createRequire(import.meta.url);
 const pkg = require("../../package.json") as { version: string };
@@ -17,6 +22,12 @@ export default defineConfig({
   vite: {
     define: {
       __PKG_VERSION__: JSON.stringify(pkg.version),
+    },
+    resolve: {
+      alias: {
+        "eo-typewriterjs": resolve(__dirname, "../../src/index.ts"),
+        "@eo-devtools": resolve(__dirname, "../../src/devtools"),
+      },
     },
   },
 
