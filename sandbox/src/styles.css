@@ -564,6 +564,33 @@ body {
   flex: 1;
 }
 
+/* Panel toggle button */
+
+.panel-toggle-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: color var(--transition), border-color var(--transition), background var(--transition);
+}
+
+.panel-toggle-btn svg {
+  transition: transform 0.15s ease;
+}
+
+.panel-toggle-btn:hover {
+  color: var(--color-text);
+  border-color: var(--color-border-hi);
+  background: var(--color-surface-hi);
+}
+
 /* ─── Recipe picker ─────────────────────────────────────────────────────── */
 
 .recipes-panel {
@@ -574,6 +601,23 @@ body {
   flex-direction: column;
   overflow: hidden;
   min-height: 0;
+}
+
+.recipes-body {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* Collapsed state */
+.recipes-panel--collapsed .recipes-body {
+  display: none;
+}
+
+.recipes-panel--collapsed .panel-toggle-btn svg {
+  transform: rotate(180deg);
 }
 
 .search-row {
@@ -1071,6 +1115,15 @@ kbd {
   .bottom-row {
     grid-template-columns: 220px 1fr;
   }
+}
+
+/* Collapsed recipes panel: shrink column to header-only width */
+.bottom-row--recipes-collapsed {
+  grid-template-columns: auto 1fr;
+}
+
+.bottom-row--recipes-collapsed .recipes-panel {
+  min-width: 0;
 }
 
 /* Small: ≤900px - stack panels vertically, allow page to scroll */

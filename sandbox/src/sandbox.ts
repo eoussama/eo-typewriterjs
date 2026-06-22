@@ -36,6 +36,9 @@ const elVolumeValue = $("#volume-value");
 const elErrorPanel = $("#error-panel");
 const elErrorMsg = $("#error-msg");
 const elCopyBtn = $("#copy-btn");
+const elRecipesToggleBtn = $("#recipes-toggle-btn");
+const elRecipesPanel = $(".recipes-panel");
+const elBottomRow = $(".bottom-row");
 const elSearchInput = $<HTMLInputElement>("#recipe-search");
 const elRecipeList = $("#recipe-list");
 const elEditorContainer = $("#editor-container");
@@ -1064,6 +1067,13 @@ function init(): void {
         elCopyBtn.textContent = orig;
       }, 1500);
     });
+  });
+
+  elRecipesToggleBtn.addEventListener("click", () => {
+    const collapsed = elRecipesPanel.classList.toggle("recipes-panel--collapsed");
+
+    elBottomRow.classList.toggle("bottom-row--recipes-collapsed", collapsed);
+    elRecipesToggleBtn.setAttribute("aria-expanded", String(!collapsed));
   });
 
   elSearchInput.addEventListener("input", () => renderRecipes());

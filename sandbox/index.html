@@ -77,7 +77,13 @@
 
         <div class="bottom-row">
           <aside class="recipes-panel">
-            <div class="panel-header"><span class="panel-title">Recipes</span></div>
+            <div class="panel-header">
+              <span class="panel-title">Recipes</span>
+              <button id="recipes-toggle-btn" class="panel-toggle-btn" title="Toggle recipes panel" aria-expanded="true" aria-controls="recipes-body">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>
+              </button>
+            </div>
+            <div id="recipes-body" class="recipes-body">
             <div class="search-row">
               <svg class="search-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
               <input id="recipe-search" class="search-input" type="text" placeholder="Search recipes..." />
@@ -94,6 +100,7 @@
               <button class="cat-chip" data-cat="effects">Effects</button>
             </div>
             <div id="recipe-list" class="recipe-list"></div>
+            </div>
           </aside>
 
           <div class="editor-panel">
