@@ -1,3 +1,25 @@
+<script setup>
+const timelineAccessCode = `const tw = createTypewriter({ renderer });
+
+tw.timeline
+  .type("Hello world", { by: "char", interval: 80 })
+  .wait(500)
+  .delete(-5);
+
+await tw.play();`;
+
+const timelineChainingCode = `const tw = createTypewriter({ renderer });
+
+tw.timeline
+  .type("Loading", { interval: 80 })
+  .type("...", { interval: 300 })
+  .wait(400)
+  .delete(-6, { interval: 1 })
+  .type("ed!", { by: "word" });
+
+await tw.play();`;
+</script>
+
 # Timeline
 
 The `TimelineBuilder` is the central interface for defining what the typewriter produces. It works at two levels:
@@ -24,6 +46,8 @@ tw.timeline
 await tw.play();
 ```
 
+<DocsPlayground :code="timelineAccessCode" />
+
 ## Chaining
 
 All `TimelineBuilder` methods return `this`, so calls chain fluently:
@@ -38,6 +62,8 @@ tw.timeline
 ```
 
 Commands are appended in the order they are called.
+
+<DocsPlayground :code="timelineChainingCode" />
 
 ## Commands
 
