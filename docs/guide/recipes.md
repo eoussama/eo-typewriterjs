@@ -1,3 +1,70 @@
+<script setup>
+const rotatingPhrasesCode = `const tw = createTypewriter({ renderer });
+const phrases = ["Developer", "Designer", "Problem solver"];
+
+for (const phrase of phrases) {
+  tw.timeline
+    .type(phrase, { by: "char", interval: 80 })
+    .wait(1000)
+    .delete(-phrase.length, { by: "char", interval: 40 })
+    .wait(300);
+}
+
+await tw.play();`;
+
+const loadingIndicatorCode = `const tw = createTypewriter({ renderer });
+
+tw.timeline
+  .type("Connecting", { by: "char", interval: 60 })
+  .type("...", { by: "char", interval: 300 });
+
+await tw.play();`;
+
+const graphemeSafeCode = `const tw = createTypewriter({ renderer });
+
+tw.timeline.type("I ❤️ open source 🚀", { by: "grapheme", interval: 100 });
+
+await tw.play();`;
+
+const inlineCallbackCode = `const tw = createTypewriter({ renderer });
+
+tw.timeline
+  .type("Step 1: connecting", { by: "char", interval: 60 })
+  .call(async () => {
+    await new Promise(r => setTimeout(r, 600));
+  })
+  .type("\\nStep 2: authenticated", { by: "char", interval: 60 });
+
+await tw.play();`;
+
+const perStepHookCode = `const tw = createTypewriter({ renderer });
+const chars = [];
+
+tw.timeline.type("Hello", {
+  by: "char",
+  interval: 80,
+  after: ({ state }) => {
+    chars.push(state.document.text.at(-1) ?? "");
+  },
+});
+
+await tw.play();
+console.log(chars.join(", "));`;
+
+const customCursorCode = `const tw = createTypewriter({
+  renderer,
+  cursor: { kind: ECursorKind.PIPE },
+});
+
+tw.timeline
+  .call(() => tw.setCursorOptions({ kind: ECursorKind.PIPE }))
+  .type("Pipe cursor", { by: "char", interval: 60 })
+  .call(() => tw.setCursorOptions({ kind: ECursorKind.BLOCK }))
+  .type("\\nBlock cursor", { by: "char", interval: 60 });
+
+await tw.play();`;
+</script>
+
 # Recipes
 
 Common patterns and real-world usage examples.
@@ -57,6 +124,8 @@ await tw.play();
 
 To loop indefinitely, wrap in a `while (true)` and call `tw.replay()` after `tw.play()`.
 
+<DocsPlayground :code="rotatingPhrasesCode" />
+
 ## Loading indicator
 
 Use a short interval for a snappy loading animation:
@@ -75,6 +144,8 @@ tw.timeline
 
 await tw.play();
 ```
+
+<DocsPlayground :code="loadingIndicatorCode" />
 
 ## Collecting all rendered frames
 
@@ -126,6 +197,8 @@ await tw.play();
 ```
 
 `"grapheme"` steps one user-perceived character at a time regardless of how many code points the character occupies.
+
+<DocsPlayground :code="graphemeSafeCode" />
 
 ## Server-side / Node.js rendering
 
@@ -217,6 +290,8 @@ tw.timeline
 await tw.play();
 ```
 
+<DocsPlayground :code="inlineCallbackCode" note="The playground uses setTimeout instead of a real fetch call to simulate async work without a network request." />
+
 ## Per-step hook
 
 Use the `after` hook to react after each individual character is typed:
@@ -241,6 +316,8 @@ tw.timeline.type("Hello", {
 await tw.play();
 console.log(chars); // ["H", "e", "l", "l", "o"]
 ```
+
+<DocsPlayground :code="perStepHookCode" />
 
 ## Conditional branch
 
@@ -331,6 +408,8 @@ tw.timeline
 await tw.play();
 ```
 
+<DocsPlayground :code="customCursorCode" />
+
 Hide the cursor before typing and reveal it after:
 
 ```ts
@@ -347,4 +426,3 @@ tw.timeline
   .call(() => tw.setCursorVisible(true));
 
 await tw.play();
-```
