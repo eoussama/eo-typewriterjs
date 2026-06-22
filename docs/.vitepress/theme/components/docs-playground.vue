@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { TTypewriter } from "../../../../src/index";
 
-import { onMounted, onUnmounted, ref } from "vue";
+import { computed, onMounted, onUnmounted, ref } from "vue";
 
 import { runSnippet } from "../../../../src/devtools/run-snippet.helper";
 import { domRenderer, EPlaybackStatus } from "../../../../src/index";
@@ -12,9 +12,11 @@ const props = withDefaults(defineProps<{
   code: string;
   attached?: boolean;
   collapsible?: boolean;
+  showPreview?: boolean;
 }>(), {
   attached: true,
   collapsible: true,
+  showPreview: true,
 });
 
 const previewEl = ref<HTMLElement | null>(null);
@@ -24,6 +26,11 @@ const duration = ref(0);
 const errorMsg = ref<string | null>(null);
 const isLoading = ref(false);
 const isCollapsed = ref(false);
+const isConsoleOpen = ref(false);
+
+type TLogEntry = { level: string; text: string };
+
+const logs = ref<TLogEntry[]>([]);
 
 let tw: TTypewriter | null = null;
 let rafId: number | null = null;
@@ -100,11 +107,20 @@ async function boot(): Promise<void> {
   playbackStatus.value = EPlaybackStatus.IDLE;
   currentTime.value = 0;
   duration.value = 0;
+  logs.value = [];
   isLoading.value = true;
 
-  const renderer = domRenderer(previewEl.value);
+  const renderer = props.showPreview ? domRenderer(previewEl.value) : domRenderer(document.createElement("div"));
 
-  const result = await runSnippet(props.code, renderer);
+  const result = await runSnippet(
+    props.code,
+    renderer,
+    undefined,
+    (level, line) => {
+      logs.value = [...logs.value, { level, text: line }];
+      isConsoleOpen.value = true;
+    },
+  );
 
   isLoading.value = false;
 
@@ -220,16 +236,29 @@ function onSeek(e: Event): void {
 }
 
 function formatTime(ms: number): string {
-  if (ms <= 0) {
-    return "0:00";
+  const clamped = Math.max(0, ms);
+
+  if (clamped < 1000) {
+    return `${Math.round(clamped)}ms`;
   }
 
-  const totalSec = Math.floor(ms / 1000);
+  const totalSec = clamped / 1000;
   const min = Math.floor(totalSec / 60);
-  const sec = totalSec % 60;
+  const sec = Math.floor(totalSec % 60);
+  const tenths = Math.floor((clamped % 1000) / 100);
 
-  return `${min}:${String(sec).padStart(2, "0")}`;
+  if (min === 0) {
+    return `${sec}.${tenths}s`;
+  }
+
+  return `${min}:${String(sec).padStart(2, "0")}.${tenths}`;
 }
+
+const headerLabel = computed(() =>
+  props.showPreview
+    ? "▶ Live Preview"
+    : "▶ Playback - string renderer writes to memory, not the DOM.",
+);
 
 const isPlaying = () => playbackStatus.value === EPlaybackStatus.PLAYING;
 const isPaused = () => playbackStatus.value === EPlaybackStatus.PAUSED;
@@ -257,7 +286,7 @@ onUnmounted(() => {
     }"
   >
     <div class="docs-playground__header">
-      <span class="docs-playground__label">▶ Live Preview</span>
+      <span class="docs-playground__label">{{ headerLabel }}</span>
       <button
         v-if="props.collapsible"
         class="docs-playground__collapse-btn"
@@ -269,10 +298,29 @@ onUnmounted(() => {
     </div>
 
     <div v-show="!isCollapsed">
-      <div ref="previewEl" class="docs-playground__preview" />
+      <div v-if="props.showPreview" ref="previewEl" class="docs-playground__preview" />
+      <div v-else ref="previewEl" style="display:none" aria-hidden="true" />
 
       <div v-if="errorMsg" class="docs-playground__error">
         {{ errorMsg }}
+      </div>
+
+      <div v-if="logs.length > 0" class="docs-playground__console">
+        <div class="docs-playground__console-header" @click="isConsoleOpen = !isConsoleOpen">
+          <span class="docs-playground__console-label">Console ({{ logs.length }})</span>
+          <span class="docs-playground__console-toggle">{{ isConsoleOpen ? '▲' : '▼' }}</span>
+        </div>
+        <div v-show="isConsoleOpen" class="docs-playground__console-body">
+          <div
+            v-for="(entry, i) in logs"
+            :key="i"
+            class="docs-playground__log"
+            :class="`docs-playground__log--${entry.level}`"
+          >
+            <span class="docs-playground__log-level">{{ entry.level }}</span>
+            <span class="docs-playground__log-text">{{ entry.text }}</span>
+          </div>
+        </div>
       </div>
 
       <div class="docs-playground__bar">
@@ -355,8 +403,6 @@ onUnmounted(() => {
 
 .docs-playground.docs-playground--attached {
   border-top: 1px solid var(--vp-c-divider);
-  border-top-left-radius: 0;
-  border-top-right-radius: 0;
   margin-top: -1px;
 }
 
@@ -423,6 +469,91 @@ onUnmounted(() => {
   color: var(--vp-c-danger-1, #f43f5e);
   background: var(--vp-c-danger-soft, rgba(244, 63, 94, 0.08));
   border-top: 1px solid var(--vp-c-danger-2, rgba(244, 63, 94, 0.3));
+}
+
+.docs-playground__console {
+  border-top: 1px solid var(--vp-c-divider);
+}
+
+.docs-playground__console-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 14px;
+  height: 32px;
+  background: var(--vp-c-bg-elv);
+  cursor: pointer;
+  user-select: none;
+}
+
+.docs-playground__console-header:hover .docs-playground__console-label {
+  color: var(--vp-c-brand-1);
+}
+
+.docs-playground__console-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-family: var(--vp-font-family-mono);
+  color: var(--vp-c-text-2);
+  transition: color 0.15s;
+}
+
+.docs-playground__console-toggle {
+  font-size: 10px;
+  color: var(--vp-c-text-3);
+}
+
+.docs-playground__console-body {
+  max-height: 160px;
+  overflow-y: auto;
+  background: var(--vp-c-bg);
+}
+
+.docs-playground__log {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 3px 14px;
+  font-size: 12px;
+  font-family: var(--vp-font-family-mono);
+  border-bottom: 1px solid var(--vp-c-divider);
+}
+
+.docs-playground__log:last-child {
+  border-bottom: none;
+}
+
+.docs-playground__log-level {
+  flex-shrink: 0;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  min-width: 36px;
+  opacity: 0.6;
+}
+
+.docs-playground__log--warn {
+  background: var(--vp-c-warning-soft, rgba(234, 179, 8, 0.08));
+  color: var(--vp-c-warning-1, #ca8a04);
+}
+
+.docs-playground__log--error {
+  background: var(--vp-c-danger-soft, rgba(244, 63, 94, 0.08));
+  color: var(--vp-c-danger-1, #f43f5e);
+}
+
+.docs-playground__log-text {
+  flex: 1;
+  color: var(--vp-c-text-2);
+  word-break: break-all;
+  white-space: pre-wrap;
+}
+
+.docs-playground__log--warn .docs-playground__log-text,
+.docs-playground__log--error .docs-playground__log-text {
+  color: inherit;
 }
 
 .docs-playground__bar {

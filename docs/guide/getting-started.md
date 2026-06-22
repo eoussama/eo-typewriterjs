@@ -2,6 +2,12 @@
 const domQuickStartCode = `const tw = createTypewriter({ renderer });
 tw.timeline.type("Hello, World!");
 await tw.play();`;
+
+const stringQuickStartCode = `const strRenderer = stringRenderer();
+const tw = createTypewriter({ renderer: strRenderer });
+tw.timeline.type("Hello, World!");
+await tw.play();
+console.log(strRenderer.toString());`;
 </script>
 
 # Getting Started
@@ -57,6 +63,8 @@ await tw.play();
 
 console.log(renderer.toString()); // "Hello, World!"
 ```
+
+<DocsPlayground :code="stringQuickStartCode" :show-preview="false" />
 
 ## Basic options
 

@@ -8,6 +8,7 @@ import {
   ECursorKind,
   EPlaybackStatus,
   StringRenderer,
+  stringRenderer,
   TimelineBuilder,
 } from "../index";
 
@@ -30,12 +31,14 @@ export type TRunResult
  * @param code - The snippet source to execute
  * @param renderer - The renderer to inject as `renderer`
  * @param onCreated - Called the moment createTypewriter() is invoked, before play() resolves
+ * @param onConsole - Called for each console.log/info/warn/error call inside the snippet
  * @returns A TRunResult with the captured TTypewriter or an error message
  */
 export async function runSnippet(
   code: string,
   renderer: IRenderer,
   onCreated?: (tw: TTypewriter) => void,
+  onConsole?: (level: string, line: string) => void,
 ): Promise<TRunResult> {
   let capturedTw: TTypewriter | null = null;
 
@@ -48,16 +51,36 @@ export async function runSnippet(
     return tw;
   }
 
+  function buildConsoleFn(level: "log" | "info" | "warn" | "error"): (...args: unknown[]) => void {
+    return (...args: unknown[]): void => {
+      const line = args
+        .map(a => (typeof a === "object" ? JSON.stringify(a) : String(a)))
+        .join(" ");
+
+      onConsole?.(level, line);
+      globalThis.console[level](...args);
+    };
+  }
+
+  const sandboxConsole = {
+    log: buildConsoleFn("log"),
+    info: buildConsoleFn("info"),
+    warn: buildConsoleFn("warn"),
+    error: buildConsoleFn("error"),
+  };
+
   const ctx = {
     createTypewriter: sandboxCreateTypewriter,
     renderer,
     domRenderer,
     StringRenderer,
+    stringRenderer,
     TimelineBuilder,
     ECommandKind,
     ECursorKind,
     EPlaybackStatus,
     EAudioStrategy,
+    console: sandboxConsole,
   };
 
   const moduleCode = `
@@ -67,11 +90,13 @@ export default async function __snippet__(ctx) {
     renderer,
     domRenderer,
     StringRenderer,
+    stringRenderer,
     TimelineBuilder,
     ECommandKind,
     ECursorKind,
     EPlaybackStatus,
     EAudioStrategy,
+    console,
   } = ctx;
 
   ${code}
