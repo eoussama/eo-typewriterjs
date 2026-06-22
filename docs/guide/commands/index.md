@@ -1,3 +1,36 @@
+<script setup>
+const hooksTypeCode = `const tw = createTypewriter({ renderer });
+
+tw.timeline.type("Hello world", {
+  by: "word",
+  interval: 200,
+  before: ({ state, stepIndex, stepCount }) => {
+    console.log(\`About to type step \${stepIndex + 1}/\${stepCount}\`);
+    console.log(\`Document is currently: "\${state.document.text}"\`);
+  },
+  after: ({ state, stepIndex, stepCount }) => {
+    console.log(\`After step \${stepIndex + 1}/\${stepCount}: "\${state.document.text}"\`);
+  },
+});
+
+await tw.play();`;
+
+const hooksMoveCode = `const tw = createTypewriter({ renderer });
+
+tw.timeline
+  .type("Hello world", { by: "char", interval: 60 })
+  .move("start", {
+    before: ({ state }) => {
+      console.log(\`Cursor about to jump from position \${state.cursors["main"].index}\`);
+    },
+    after: ({ state }) => {
+      console.log(\`Cursor is now at \${state.cursors["main"].index}\`);
+    },
+  });
+
+await tw.play();`;
+</script>
+
 # Commands
 
 Commands are the building blocks of a typewriter animation. They are scheduled on the [`TimelineBuilder`](/guide/timeline) and compiled into timed playback events when `play()` is called. No work is done at the moment you call a builder method, the entire sequence is defined declaratively, then replayed.
@@ -204,6 +237,8 @@ tw.timeline.type("Hello world", {
 });
 ```
 
+<DocsPlayground :code="hooksTypeCode" />
+
 ```ts
 tw.timeline.move("start", {
   before: ({ state }) => {
@@ -214,6 +249,8 @@ tw.timeline.move("start", {
   },
 });
 ```
+
+<DocsPlayground :code="hooksMoveCode" />
 
 ### `TCallbackContext` fields
 

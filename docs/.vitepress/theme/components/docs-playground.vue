@@ -151,6 +151,8 @@ function play(): void {
     return;
   }
 
+  logs.value = [];
+
   const s = tw.getState();
 
   playStartWall = Date.now();
@@ -187,6 +189,8 @@ function replay(): void {
   if (tw === null) {
     return;
   }
+
+  logs.value = [];
 
   playStartWall = Date.now();
   playStartTimeline = 0;
