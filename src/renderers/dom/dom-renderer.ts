@@ -2,7 +2,6 @@ import type { TNullable } from "@eoussama/core";
 import type { TCursorAnimation, TCursorAnimationOptions } from "../../core/cursor/types/cursor-render-options.type";
 import type { IRenderer } from "../../core/renderer/interfaces/renderer.interface";
 import type { TStyleRef } from "../../core/state/types/rich-text-document.type";
-import type { TRichTextSegment } from "../../core/state/types/rich-text-segment.type";
 import type { TSelectionState, TTypewriterState } from "../../core/state/types/typewriter-state.type";
 
 import { resolveStyleRef, segmentRichText } from "../../core/state/helpers/segment-rich-text.helper";
@@ -81,6 +80,8 @@ type TBoundary = {
  * All active per-cursor selections are rendered as highlighted spans.
  * Text styles from the rich-text document are applied as span attributes, CSS classes,
  * and/or inline styles - renderer-agnostic style objects are fully honoured.
+ * Adjacent text segments that share the same style stack and selection state are
+ * coalesced into a single span to minimise DOM node count.
  *
  * The target may be specified as a CSS selector string or a direct element reference.
  */
@@ -224,6 +225,8 @@ export class DomRenderer implements IRenderer {
    * Segments the text at every style boundary, cursor position, and selection boundary,
    * rendering cursor markers and selection highlights at their correct positions.
    * Text styles are applied as className, inline CSS, and/or HTML attributes on spans.
+   * Adjacent segments with identical style stacks and selection state are coalesced
+   * into a single DOM node before appending to reduce overall node count.
    *
    * @param state - The typewriter state to render
    */
@@ -251,27 +254,61 @@ export class DomRenderer implements IRenderer {
 
     boundaries.sort((a, b) => a.index - b.index || kindOrder[a.kind] - kindOrder[b.kind]);
 
-    // Build fragment by iterating rich segments and splitting them at boundaries
     const fragment = document.createDocumentFragment();
     const openSelections = new Set<string>();
 
+    // Coalescing run buffer - accumulates consecutive text slices that share
+    // the same style stack and selection state into a single DOM subtree.
+    let runText = "";
+    let runStylesKey = "";
+    let runSelectionsKey = "";
+    let runStyles: readonly TStyleRef[] = [];
+    let runSelections = new Set<string>();
+    let runActive = false;
+
+    const getSelectionsKey = (): string => [...openSelections].sort().join(",");
+
+    const flushRun = (): void => {
+      /* v8 ignore next 3 */
+      if (!runActive) {
+        return;
+      }
+
+      this._appendStyledText(fragment, runText, runStyles, runSelections);
+      runActive = false;
+      runText = "";
+    };
+
+    const bufferText = (text: string, styles: readonly TStyleRef[]): void => {
+      const sKey = JSON.stringify(styles);
+      const selKey = getSelectionsKey();
+
+      if (runActive && sKey === runStylesKey && selKey === runSelectionsKey) {
+        runText += text;
+      }
+      else {
+        flushRun();
+        runText = text;
+        runStyles = styles;
+        runSelections = new Set(openSelections);
+        runStylesKey = sKey;
+        runSelectionsKey = selKey;
+        runActive = true;
+      }
+    };
+
     for (const segment of richSegments) {
-      // Find all boundaries within this segment's range.
-      // Cursor boundaries at segment ends are handled specially below so they
-      // render once, while selection boundaries may still open/close exactly
-      // at style edges.
       const segBoundaries = boundaries.filter(b => b.index >= segment.from && b.index <= segment.to);
 
       let pos = segment.from;
 
       for (const boundary of segBoundaries) {
-        // Flush text from pos to boundary.index within this segment
         if (boundary.index > pos) {
           const sliceText = segment.text.slice(pos - segment.from, boundary.index - segment.from);
 
           /* v8 ignore next 3 */
           if (sliceText.length > 0) {
-            this._appendTextNode(fragment, sliceText, segment, openSelections);
+            bufferText(sliceText, segment.styles);
           }
         }
 
@@ -286,51 +323,48 @@ export class DomRenderer implements IRenderer {
         }
 
         if (boundary.kind === "selStart") {
+          flushRun();
           openSelections.add(boundary.cursorId);
         }
         /* v8 ignore start */
         else if (boundary.kind === "selEnd") {
+          flushRun();
           openSelections.delete(boundary.cursorId);
         }
         else if (boundary.kind === "cursor") {
           const cursor = state.cursors[boundary.cursorId];
 
-          // If the cursor is marked invisible, skip rendering it entirely
           if (cursor !== undefined && !cursor.renderOptions.visible) {
             continue;
           }
 
+          flushRun();
+
           const cursorEl = document.createElement("span");
           const opts = cursor?.renderOptions;
 
-          // Base class is always present
           cursorEl.className = "typewriter-cursor";
 
-          // Append any custom classes
           if (opts?.className !== undefined && opts.className.trim().length > 0) {
             const extraClasses = opts.className.trim().split(/\s+/).filter(Boolean);
 
             cursorEl.classList.add(...extraClasses);
           }
 
-          // Set data-cursor-kind for CSS targeting
           if (opts?.kind !== undefined) {
             cursorEl.dataset.cursorKind = opts.kind;
           }
 
-          // Render the glyph content
           if (opts?.content !== undefined) {
             cursorEl.textContent = opts.content;
           }
 
-          // Apply extra attributes
           if (opts?.attrs !== undefined) {
             for (const [attrKey, attrValue] of Object.entries(opts.attrs)) {
               cursorEl.setAttribute(attrKey, attrValue);
             }
           }
 
-          // Apply animation (default: blink)
           this._applyCursorAnimation(cursorEl, opts?.animation ?? "blink");
 
           cursorEl.setAttribute("aria-hidden", "true");
@@ -340,16 +374,17 @@ export class DomRenderer implements IRenderer {
         /* v8 ignore stop */
       }
 
-      // Flush remaining text in this segment after all boundaries
       if (pos < segment.to) {
         const remainingText = segment.text.slice(pos - segment.from);
 
         /* v8 ignore next 3 */
         if (remainingText.length > 0) {
-          this._appendTextNode(fragment, remainingText, segment, openSelections);
+          bufferText(remainingText, segment.styles);
         }
       }
     }
+
+    flushRun();
 
     this._target.innerHTML = "";
     this._target.appendChild(fragment);
@@ -357,30 +392,32 @@ export class DomRenderer implements IRenderer {
 
   /**
    * @description
-   * Append a text node (or styled span) to the fragment, wrapping in selection/style spans as needed
+   * Append a styled (or plain) text node to the fragment.
+   * When styles are present, wraps in one span per style ref (innermost = last applied).
+   * When a selection is active, adds the outermost selection highlight span.
    *
    * @param fragment - The document fragment to append to
    * @param text - The text content to append
-   * @param segment - The rich-text segment providing style context
+   * @param styles - The style refs to apply, ordered from first-applied (outermost) to last
    * @param openSelections - The set of currently open selection cursor ids
    */
-  private _appendTextNode(
+  private _appendStyledText(
     fragment: DocumentFragment,
     text: string,
-    segment: TRichTextSegment,
-    openSelections: Set<string>,
+    styles: readonly TStyleRef[],
+    openSelections: ReadonlySet<string>,
   ): void {
-    const hasStyle = segment.styles.length > 0;
+    const hasStyle = styles.length > 0;
     const hasSelection = openSelections.size > 0;
 
     if (hasStyle || hasSelection) {
       let current: Node = document.createTextNode(text);
 
       // Wrap in one span per style ref, innermost = last style applied
-      for (let i = segment.styles.length - 1; i >= 0; i--) {
+      for (let i = styles.length - 1; i >= 0; i--) {
         const el = document.createElement("span");
 
-        this._applySingleStyleRef(el, segment.styles[i]!);
+        this._applySingleStyleRef(el, styles[i]!);
         el.appendChild(current);
         current = el;
       }

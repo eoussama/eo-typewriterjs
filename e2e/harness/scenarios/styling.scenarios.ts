@@ -125,4 +125,15 @@ export const STYLING_SCENARIOS: readonly TScenario[] = [
       await tw.play();
     },
   },
+  {
+    id: "inline-style-coalescing",
+    async run({ el }) {
+      const tw = createTypewriter({ renderer: domRenderer(el), cursor: { content: "" } });
+
+      tw.timeline
+        .type("Hello ", { by: "char", interval: 1, style: "tw-greeting" })
+        .type("World!", { by: "char", interval: 1, style: "tw-accent" });
+      await tw.play();
+    },
+  },
 ];

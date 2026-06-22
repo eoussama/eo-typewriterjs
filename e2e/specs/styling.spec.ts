@@ -143,4 +143,21 @@ test.describe("styling", () => {
 
     expect(await getOutputText(page)).toBe("Important Notice");
   });
+
+  test("inline typing styles coalesce: each typed run produces exactly one span", async ({ page }) => {
+    await gotoScenario(page, "inline-style-coalescing");
+
+    const output = getOutputLocator(page);
+
+    const greetingSpans = output.locator("span.tw-greeting");
+    const accentSpans = output.locator("span.tw-accent");
+
+    await expect(greetingSpans).toHaveCount(1);
+    await expect(accentSpans).toHaveCount(1);
+
+    expect(await greetingSpans.textContent()).toBe("Hello ");
+    expect(await accentSpans.textContent()).toBe("World!");
+
+    expect(await getOutputText(page)).toBe("Hello World!");
+  });
 });

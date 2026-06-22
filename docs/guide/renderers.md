@@ -30,7 +30,8 @@ await tw.play();
 On every render call, `DomRenderer` segments the document by its text styles and then splits each segment at every cursor and selection boundary. The result is a mix of plain text nodes, styled `<span>` elements, and cursor marker `<span>` elements, all assembled into a `DocumentFragment` before replacing the target's `innerHTML`.
 
 - Text without any active style or selection is emitted as a bare text node.
-- Text inside an active selection or with an active style is wrapped in a `<span>`. If both apply, a single `<span>` carries both `typewriter-selection` and the text style classes/attributes.
+- Text with an active style is wrapped in one `<span>` per style ref (nested outward in application order - first applied is outermost). Adjacent characters that share the same style stack are coalesced into a single DOM subtree.
+- Text inside an active selection is additionally wrapped in an outermost `<span class="typewriter-selection">`. Selection and style spans are always separate elements - the selection span is the outermost wrapper.
 - Each visible cursor is rendered as `<span class="typewriter-cursor" aria-hidden="true" data-cursor-id="...">`.
 
 ```html
@@ -38,6 +39,12 @@ On every render call, `DomRenderer` segments the document by its text styles and
 Hello
 <span class="typewriter-cursor" aria-hidden="true" data-cursor-id="main" data-cursor-kind="pipe" data-cursor-animation="blink">|</span>
 <span class="highlight"> world</span>
+
+<!-- example: two inline styles typed in sequence (run coalescing) -->
+<span class="greeting">Hello </span><span class="accent">World!</span>
+
+<!-- example: two styles on the same range (nested spans) -->
+<span class="bold"><span class="underline">Important</span></span>
 ```
 
 #### Text styles to DOM
@@ -52,7 +59,9 @@ When a `TStyleObject` is applied to a segment, the renderer maps its fields onto
 | `ansi` | Ignored by `DomRenderer` (terminal-only) |
 | `meta` | Ignored by `DomRenderer` |
 
-Multiple styles can overlap. Their properties are **merged** - later styles in document order win on conflicting keys.
+When multiple styles cover the same characters, they are rendered as **nested spans** rather than merged into one. The first style applied (earliest `.style()` call or first in the `style` stack) is the outermost span; the last is the innermost. All `className`, `css`, and `attrs` from every ref are preserved independently.
+
+> `mergeStyles()` is a helper you can call in **custom renderers** to flatten a style stack into a single `TStyleObject` (useful for outputs that cannot nest). The DOM renderer does not use it internally.
 
 #### Cursor rendering
 
@@ -104,7 +113,7 @@ Selected text is wrapped in a `<span class="typewriter-selection">`. Style it to
 }
 ```
 
-When selected text also carries a text style, a single `<span>` carries both `typewriter-selection` and the style's class names / inline styles simultaneously.
+When selected text also carries a text style, the selection span and the style span(s) are separate nested elements. The `typewriter-selection` span is always the outermost wrapper, with style span(s) nested inside it.
 
 #### Lifecycle
 

@@ -804,3 +804,160 @@ describe("domRenderer, cumulative styles on same range", () => {
     expect(el.querySelector(".typewriter-selection")).not.toBeNull();
   });
 });
+
+
+describe("domRenderer, run coalescing", () => {
+  it("adjacent characters with the same inline style collapse into a single span", async () => {
+    const el = document.createElement("div");
+    const tw = createTypewriter({ renderer: new DomRenderer(el), cursor: { content: "" } });
+
+    tw.timeline.type("Hello", { by: "char", interval: 1, style: "greeting" });
+    await tw.play();
+
+    const spans = el.querySelectorAll(".greeting");
+
+    expect(spans).toHaveLength(1);
+    expect(spans[0]?.textContent).toBe("Hello");
+  });
+
+  it("two adjacent typed runs with different styles produce one span each", async () => {
+    const el = document.createElement("div");
+    const tw = createTypewriter({ renderer: new DomRenderer(el), cursor: { content: "" } });
+
+    tw.timeline
+      .type("Hello ", { by: "char", interval: 1, style: "greeting" })
+      .type("World!", { by: "char", interval: 1, style: "accent" });
+    await tw.play();
+
+    const greetingSpans = el.querySelectorAll(".greeting");
+    const accentSpans = el.querySelectorAll(".accent");
+
+    expect(greetingSpans).toHaveLength(1);
+    expect(greetingSpans[0]?.textContent).toBe("Hello ");
+
+    expect(accentSpans).toHaveLength(1);
+    expect(accentSpans[0]?.textContent).toBe("World!");
+
+    expect(el.textContent).toBe("Hello World!");
+  });
+
+  it("unstyled characters between styled runs are plain text nodes (no span)", async () => {
+    const el = document.createElement("div");
+    const tw = createTypewriter({ renderer: new DomRenderer(el), cursor: { content: "" } });
+
+    tw.timeline
+      .type("AB", { by: "char", interval: 1, style: "s1" })
+      .type("CD", { by: "char", interval: 1 })
+      .type("EF", { by: "char", interval: 1, style: "s2" });
+    await tw.play();
+
+    expect(el.querySelector(".s1")?.textContent).toBe("AB");
+    expect(el.querySelector(".s2")?.textContent).toBe("EF");
+    expect(el.textContent).toBe("ABCDEF");
+
+    // The plain "CD" between the spans must not be wrapped in any span
+    const allSpans = el.querySelectorAll("span");
+
+    const nonStyleSpans = [...allSpans].filter(
+      s => !s.classList.contains("s1") && !s.classList.contains("s2") && !s.classList.contains("typewriter-cursor"),
+    );
+
+    expect(nonStyleSpans).toHaveLength(0);
+  });
+
+  it("coalesced run with .style() on same range still nests spans correctly", async () => {
+    const el = document.createElement("div");
+    const tw = createTypewriter({ renderer: new DomRenderer(el), cursor: { content: "" } });
+
+    tw.timeline
+      .type("Hi", { by: "char", interval: 1 })
+      .style("outer", { from: 0, to: 2 })
+      .style("inner", { from: 0, to: 2 });
+    await tw.play();
+
+    const outerSpan = el.querySelector(".outer");
+
+    expect(outerSpan).not.toBeNull();
+    expect(outerSpan?.querySelector(".inner")).not.toBeNull();
+    expect(outerSpan?.textContent).toBe("Hi");
+  });
+
+  it("does not coalesce across a cursor boundary", async () => {
+    const el = document.createElement("div");
+    const tw = createTypewriter({ renderer: new DomRenderer(el) });
+
+    // Type with style, move cursor into the middle, then finish
+    // The cursor position sits between two identically-styled character runs
+    tw.timeline
+      .type("ABCDE", { by: "char", interval: 1, style: "hi" })
+      .move(-2);
+    await tw.play();
+
+    // The cursor is between C and D. Coalescing must not produce a single span
+    // that bridges the cursor position: there should be text before AND after cursor.
+    const cursor = el.querySelector(".typewriter-cursor");
+
+    expect(cursor).not.toBeNull();
+
+    // Cursor must be inside the output, not at the very end
+    const html = el.innerHTML;
+    const cursorIndex = html.indexOf("typewriter-cursor");
+
+    // There must be span content before the cursor
+    expect(html.slice(0, cursorIndex)).toContain("hi");
+    // And span/text content after the cursor
+    expect(html.slice(cursorIndex)).toContain("hi");
+  });
+
+  it("does not coalesce across a selection boundary", async () => {
+    const el = document.createElement("div");
+    const tw = createTypewriter({ renderer: new DomRenderer(el) });
+
+    tw.timeline
+      .type("ABCDE", { by: "char", interval: 1, style: "hi" })
+      .move(-999)
+      .select(3);
+    await tw.play();
+
+    // Selected portion (ABC) should be inside .typewriter-selection
+    const sel = el.querySelector(".typewriter-selection");
+
+    expect(sel).not.toBeNull();
+
+    // Unselected portion (DE) should still carry the "hi" style outside selection
+    const hiSpans = el.querySelectorAll(".hi");
+
+    expect(hiSpans.length).toBeGreaterThanOrEqual(1);
+    expect(el.textContent).toContain("ABCDE");
+  });
+
+  it("coalesces a long run of plain (unstyled) characters into a single text node", async () => {
+    const el = document.createElement("div");
+    const tw = createTypewriter({ renderer: new DomRenderer(el), cursor: { content: "" } });
+
+    tw.timeline.type("Hello World", { by: "char", interval: 1 });
+    await tw.play();
+
+    // No style spans at all - only the cursor span should be present, no text-wrapping spans
+    const styleSpans = [...el.querySelectorAll("span")].filter(
+      s => !s.classList.contains("typewriter-cursor"),
+    );
+
+    expect(styleSpans).toHaveLength(0);
+    expect(el.textContent).toBe("Hello World");
+  });
+
+  it("inline style with css object coalesces into a single styled span", async () => {
+    const el = document.createElement("div");
+    const tw = createTypewriter({ renderer: new DomRenderer(el), cursor: { content: "" } });
+
+    tw.timeline.type("Red", { by: "char", interval: 1, style: { css: { color: "red" } } });
+    await tw.play();
+
+    const styledSpans = el.querySelectorAll<HTMLElement>("span[style]");
+
+    expect(styledSpans).toHaveLength(1);
+    expect(styledSpans[0]?.style.color).toBe("red");
+    expect(styledSpans[0]?.textContent).toBe("Red");
+  });
+});
