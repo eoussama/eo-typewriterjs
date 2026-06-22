@@ -1,3 +1,32 @@
+<script setup>
+const stylingClassNamesCode = `const tw = createTypewriter({ renderer });
+
+tw.timeline
+  .type("Hello World")
+  .style({ css: { color: "#93c5fd" } }, { from: 0, to: 5 })
+  .style({ css: { color: "#fdba74", fontWeight: "bold" } }, { from: 6, to: 11 });
+
+await tw.play();`;
+
+const applyingStylesCode = `const tw = createTypewriter({ renderer });
+
+tw.timeline
+  .type("Error: not found")
+  .style({ css: { color: "red", fontWeight: "bold" } }, { from: 0, to: 5 });
+
+await tw.play();`;
+
+const stylingSelectionCode = `const tw = createTypewriter({ renderer });
+
+tw.timeline
+  .type("Important notice")
+  .move(-6)
+  .select(6)
+  .style({ css: { background: "rgba(251, 146, 60, 0.35)", borderRadius: "2px" } }, "selection");
+
+await tw.play();`;
+</script>
+
 # Styling
 
 The typewriter document supports rich-text styles that live alongside the plain text. This page explains the style model, how styles are applied and removed, and how to use styles with both built-in renderers.
@@ -41,6 +70,8 @@ tw.timeline
   .style("accent",   { from: 6, to: 11 });  // class name on "World"
 ```
 
+<DocsPlayground :code="stylingClassNamesCode" note="The playground uses inline CSS to approximate the class names shown above. In your own project, define .greeting and .accent in your stylesheet." />
+
 The `style` argument is a `TStyleRef`, a string (class name) or a `TStyleObject`:
 
 ```ts
@@ -48,6 +79,8 @@ tw.timeline
   .type("Error: not found")
   .style({ css: { color: "red", fontWeight: "bold" } }, { from: 0, to: 5 });
 ```
+
+<DocsPlayground :code="applyingStylesCode" />
 
 ### Styling a selection
 
@@ -62,6 +95,8 @@ tw.timeline
 ```
 
 This is the most natural way to apply styles to text that is typed or moved to dynamically.
+
+<DocsPlayground :code="stylingSelectionCode" note="The playground uses inline CSS to approximate the .highlight class shown above. In your own project, define .highlight in your stylesheet." />
 
 ## Removing styles
 

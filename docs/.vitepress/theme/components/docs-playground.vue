@@ -13,6 +13,7 @@ const props = withDefaults(defineProps<{
   attached?: boolean;
   collapsible?: boolean;
   showPreview?: boolean;
+  note?: string;
 }>(), {
   attached: true,
   collapsible: true,
@@ -295,6 +296,13 @@ onUnmounted(() => {
     >
       <span v-if="props.collapsible" class="docs-playground__header-arrow">{{ headerArrow }}</span>
       <span class="docs-playground__label">{{ headerLabel }}</span>
+      <span class="docs-playground__header-spacer" />
+      <span
+        v-if="props.note"
+        class="docs-playground__note"
+        :title="props.note"
+        @click.stop
+      >?</span>
     </div>
 
     <div v-show="!isCollapsed">
@@ -443,6 +451,10 @@ html:not(.dark) .docs-playground__console-label {
 html:not(.dark) .docs-playground__header-arrow {
   color: #9ca3af;
 }
+
+html:not(.dark) .docs-playground__note {
+  color: #9ca3af;
+}
 </style>
 
 <style scoped>
@@ -501,6 +513,33 @@ html:not(.dark) .docs-playground__header-arrow {
   letter-spacing: 0.06em;
   font-family: var(--vp-font-family-mono);
   transition: color 0.15s;
+}
+
+.docs-playground__header-spacer {
+  flex: 1;
+}
+
+.docs-playground__note {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  font-size: 10px;
+  font-weight: 700;
+  font-family: var(--vp-font-family-base);
+  border-radius: 50%;
+  border: 1.5px solid var(--vp-c-text-3);
+  color: var(--vp-c-text-3);
+  cursor: help;
+  flex-shrink: 0;
+  transition: color 0.15s, border-color 0.15s;
+  line-height: 1;
+}
+
+.docs-playground__note:hover {
+  color: var(--vp-c-brand-1);
+  border-color: var(--vp-c-brand-1);
 }
 
 .docs-playground__preview {
