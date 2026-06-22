@@ -541,6 +541,7 @@ body {
   min-height: 0;
   overflow: hidden;
   padding-bottom: 0.625rem;
+  transition: grid-template-columns 0.2s ease;
 }
 
 /* ─── Panel shared ──────────────────────────────────────────────────────── */
