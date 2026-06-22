@@ -1,3 +1,44 @@
+<script setup>
+const removeByRangeCode = `const tw = createTypewriter({ renderer });
+const highlight = { css: { background: "rgba(234,179,8,0.28)", borderRadius: "2px" } };
+
+tw.timeline
+  .type("Hello World", { by: "char", interval: 80 })
+  .style(highlight, { from: 0, to: 11 })
+  .wait(800)
+  .unstyle({ from: 6, to: 11 });
+
+await tw.play();`;
+
+const selectionUnstyleCode = `const tw = createTypewriter({ renderer });
+const highlight = { css: { background: "rgba(234,179,8,0.28)", borderRadius: "2px" } };
+const sel = { css: { background: "rgba(99,102,241,0.25)", borderRadius: "2px" } };
+
+tw.timeline
+  .type("Hello World", { by: "char", interval: 80 })
+  .style(highlight, { from: 0, to: 11 })
+  .wait(600)
+  .move(-5)
+  .select(5)
+  .style(sel, { from: 6, to: 11 })
+  .wait(600)
+  .unstyle({ from: 6, to: 11 })
+  .unstyle("selection");
+
+await tw.play();`;
+
+const styleTransitionCode = `const tw = createTypewriter({ renderer });
+
+tw.timeline
+  .type("Deploying...", { by: "char", interval: 60 })
+  .style({ css: { color: "#f59e0b" } }, { from: 0, to: 12 })
+  .wait(1500)
+  .unstyle({ from: 0, to: 12 })
+  .style({ css: { color: "#10b981", fontWeight: "bold" } }, { from: 0, to: 12 });
+
+await tw.play();`;
+</script>
+
 # `.unstyle()` - remove styles from a range
 
 Removes text styles that overlap a given document range or cursor selection.
@@ -93,6 +134,8 @@ await tw.play();
 // "Hello " still carries "highlight"; "World" does not
 ```
 
+<DocsPlayground :code="removeByRangeCode" note="Yellow highlight applied to the whole text, then .unstyle() removes it from 'World' only. 'Hello ' keeps the yellow." />
+
 ### Partial overlap is clipped, not removed
 
 ```ts
@@ -136,6 +179,8 @@ await tw.play();
 // "Hello " is still highlighted; "World" is not; selection UI is gone
 ```
 
+<DocsPlayground :code="selectionUnstyleCode" note="Yellow = existing highlight on the whole text. Blue = selection visual on 'World'. After 600ms both are removed from 'World' via .unstyle()." />
+
 ### Remove multiple overlapping styles at once
 
 ```ts
@@ -164,6 +209,8 @@ tw.timeline
 
 await tw.play();
 ```
+
+<DocsPlayground :code="styleTransitionCode" note="Orange color is applied, then removed via .unstyle(), then replaced with a green bold style." />
 
 ### Unstyle then restyle a word mid-animation
 

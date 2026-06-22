@@ -1,3 +1,31 @@
+<script setup>
+const syncCallbackCode = `const tw = createTypewriter({ renderer });
+
+tw.timeline
+  .type("Hello", { by: "char", interval: 80 })
+  .call(({ state }) => {
+    console.log("Text so far:", state.document.text);
+  })
+  .type(" world", { by: "char", interval: 80 });
+
+await tw.play();`;
+
+const readStateCode = `const tw = createTypewriter({ renderer });
+
+tw.timeline
+  .type("The quick brown fox", { by: "word", interval: 200 })
+  .call(({ state }) => {
+    const wordCount = state.document.text.trim().split(/\\s+/).length;
+    console.log("Words typed so far:", wordCount);
+  })
+  .type(" jumps over the lazy dog", { by: "word", interval: 200 })
+  .call(({ state }) => {
+    console.log("Total characters:", state.document.text.length);
+  });
+
+await tw.play();`;
+</script>
+
 # `.call()` - inline callback
 
 Schedules a callback function as a step in the timeline.
@@ -53,6 +81,8 @@ tw.timeline
 await tw.play();
 // logs "Hello" between the two type commands, then types " world"
 ```
+
+<DocsPlayground :code="syncCallbackCode" />
 
 ## Async callback
 
@@ -162,6 +192,8 @@ tw.timeline
 
 await tw.play();
 ```
+
+<DocsPlayground :code="readStateCode" />
 
 ## Sequencing async operations between timed commands
 

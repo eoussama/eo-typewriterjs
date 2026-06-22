@@ -1,3 +1,36 @@
+<script setup>
+const selectWaitDismissCode = `const tw = createTypewriter({ renderer });
+const sel = { css: { background: "rgba(99,102,241,0.25)", borderRadius: "2px" } };
+
+tw.timeline
+  .type("Hello World", { by: "char", interval: 80 })
+  .wait(300)
+  .select("whole")
+  .style(sel, { from: 0, to: 11 })
+  .wait(800)
+  .unselect()
+  .unstyle({ from: 0, to: 11 });
+
+await tw.play();`;
+
+const selectStyleUnselectCode = `const tw = createTypewriter({ renderer });
+const sel = { css: { background: "rgba(99,102,241,0.25)", borderRadius: "2px" } };
+const highlight = { css: { background: "rgba(234,179,8,0.28)", borderRadius: "2px" } };
+
+tw.timeline
+  .type("Hello World", { by: "char", interval: 80 })
+  .wait(400)
+  .move(-5)
+  .select(5)
+  .style(sel, { from: 6, to: 11 })
+  .wait(600)
+  .unselect()
+  .unstyle({ from: 6, to: 11 })
+  .style(highlight, { from: 6, to: 11 });
+
+await tw.play();`;
+</script>
+
 # `.unselect()` - dismiss the active text selection
 
 Removes the active text selection from one or more cursors without moving the cursor or mutating the document.
@@ -57,6 +90,8 @@ tw.timeline
 await tw.play();
 ```
 
+<DocsPlayground :code="selectWaitDismissCode" note="Blue (inline style) simulates the active selection. .unselect() dismisses the state, then .unstyle() removes the visual." />
+
 ### Select, apply a style, then clear without moving
 
 ```ts
@@ -72,6 +107,8 @@ await tw.play();
 // "World" carries the "highlight" class; no selection highlight remains
 // cursor is still at index 6 (not moved to end)
 ```
+
+<DocsPlayground :code="selectStyleUnselectCode" note="Blue = transient selection visual. Yellow = permanent highlight applied after .unselect() clears the selection state." />
 
 ### Unselect a specific cursor
 

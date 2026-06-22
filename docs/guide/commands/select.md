@@ -1,3 +1,84 @@
+<script setup>
+const SEL = { css: { background: "rgba(99,102,241,0.25)", borderRadius: "2px" } };
+const HIGHLIGHT = { css: { background: "rgba(234,179,8,0.28)", borderRadius: "2px" } };
+
+const selectWholeCode = `const tw = createTypewriter({ renderer });
+const sel = { css: { background: "rgba(99,102,241,0.25)", borderRadius: "2px" } };
+
+tw.timeline
+  .type("Hello World", { by: "char", interval: 80 })
+  .wait(600)
+  .select("whole")
+  .style(sel, { from: 0, to: 11 });
+
+await tw.play();`;
+
+const selectAnimatedCode = `const tw = createTypewriter({ renderer });
+const sel = { css: { background: "rgba(99,102,241,0.25)", borderRadius: "2px" } };
+
+tw.timeline
+  .type("Hello World", { by: "char", interval: 80 })
+  .wait(400)
+  .style(sel, { from: 10, to: 11 })
+  .wait(100)
+  .unstyle({ from: 10, to: 11 }).style(sel, { from: 9, to: 11 })
+  .wait(100)
+  .unstyle({ from: 9, to: 11 }).style(sel, { from: 8, to: 11 })
+  .wait(100)
+  .unstyle({ from: 8, to: 11 }).style(sel, { from: 7, to: 11 })
+  .wait(100)
+  .unstyle({ from: 7, to: 11 }).style(sel, { from: 6, to: 11 });
+
+await tw.play();`;
+
+const selectApplyStyleCode = `const tw = createTypewriter({ renderer });
+const sel = { css: { background: "rgba(99,102,241,0.25)", borderRadius: "2px" } };
+const highlight = { css: { background: "rgba(234,179,8,0.28)", borderRadius: "2px" } };
+
+tw.timeline
+  .type("Hello World", { by: "char", interval: 80 })
+  .wait(500)
+  .move(-5)
+  .select(5)
+  .style(sel, { from: 6, to: 11 })
+  .wait(600)
+  .unstyle({ from: 6, to: 11 })
+  .style(highlight, { from: 6, to: 11 })
+  .move("end");
+
+await tw.play();`;
+
+const selectReplaceCode = `const tw = createTypewriter({ renderer });
+const sel = { css: { background: "rgba(99,102,241,0.25)", borderRadius: "2px" } };
+
+tw.timeline
+  .type("Hello World", { by: "char", interval: 80 })
+  .wait(400)
+  .move(-5)
+  .select(5)
+  .style(sel, { from: 6, to: 11 })
+  .wait(600)
+  .unstyle({ from: 6, to: 11 })
+  .type("TypewriterJS");
+
+await tw.play();`;
+
+const selectDeleteCode = `const tw = createTypewriter({ renderer });
+const sel = { css: { background: "rgba(99,102,241,0.25)", borderRadius: "2px" } };
+
+tw.timeline
+  .type("Hello cruel World", { by: "char", interval: 70 })
+  .wait(400)
+  .move(-11)
+  .select(6)
+  .style(sel, { from: 6, to: 12 })
+  .wait(600)
+  .unstyle({ from: 6, to: 12 })
+  .delete(1);
+
+await tw.play();`;
+</script>
+
 # `.select()` - create a text selection
 
 Creates a text selection on a cursor.
@@ -102,6 +183,8 @@ await tw.play();
 // entire "Hello World" is highlighted in the DOM renderer
 ```
 
+<DocsPlayground :code="selectWholeCode" note="Blue background (inline style) visualizes the active selection. In real usage .typewriter-selection CSS handles this; here it is simulated inline." />
+
 ### Select forward from the cursor
 
 ```ts
@@ -125,6 +208,8 @@ tw.timeline
 await tw.play();
 // selection expands: "d" → "ld" → "rld" → "orld" → "World"
 ```
+
+<DocsPlayground :code="selectAnimatedCode" note="Selection growth is simulated by sequentially extending the blue inline-styled range one character at a time via .style() / .unstyle()." />
 
 ### Select from cursor to start
 
@@ -165,6 +250,8 @@ await tw.play();
 // "World" permanently carries the "highlight" class
 ```
 
+<DocsPlayground :code="selectApplyStyleCode" note="Blue = transient selection visual. Yellow = permanent highlight applied after the selection is consumed. Both are inline styles." />
+
 ### Select then replace
 
 ```ts
@@ -179,6 +266,8 @@ await tw.play();
 // result: "Hello TypewriterJS"
 ```
 
+<DocsPlayground :code="selectReplaceCode" note="Blue shows the selected range. After 600ms the inline style is removed and .type() replaces the selected text." />
+
 ### Select then delete
 
 ```ts
@@ -192,6 +281,8 @@ tw.timeline
 await tw.play();
 // result: "Hello World"
 ```
+
+<DocsPlayground :code="selectDeleteCode" note="Blue shows the selected range. After 600ms the inline style is removed and .delete(1) removes the selected text in one step." />
 
 ### Select by word
 

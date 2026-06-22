@@ -1,3 +1,56 @@
+<script setup>
+const highlightWordCode = `const tw = createTypewriter({ renderer });
+const highlight = { css: { background: "rgba(234,179,8,0.28)", borderRadius: "2px" } };
+
+tw.timeline
+  .type("Hello World", { by: "char", interval: 80 })
+  .wait(400)
+  .style(highlight, { from: 6, to: 11 });
+
+await tw.play();`;
+
+const inlineCssStyleCode = `const tw = createTypewriter({ renderer });
+
+tw.timeline
+  .type("Danger zone ahead", { by: "char", interval: 70 })
+  .style(
+    { css: { color: "#ef4444", fontWeight: "bold", textDecoration: "underline" } },
+    { from: 0, to: 6 }
+  );
+
+await tw.play();`;
+
+const selectionStyleCode = `const tw = createTypewriter({ renderer });
+const sel = { css: { background: "rgba(99,102,241,0.25)", borderRadius: "2px" } };
+
+tw.timeline
+  .type("The quick brown fox", { by: "char", interval: 70 })
+  .wait(500)
+  .move(-9)
+  .select(5)
+  .style(sel, { from: 10, to: 15 })
+  .wait(600)
+  .unstyle({ from: 10, to: 15 })
+  .style({ css: { fontStyle: "italic", color: "#8b5cf6" } }, "selection")
+  .move("end");
+
+await tw.play();`;
+
+const animateHighlightCode = `const tw = createTypewriter({ renderer });
+const sel = { css: { background: "rgba(99,102,241,0.25)", borderRadius: "2px" } };
+
+tw.timeline
+  .type("Searching for pattern...", { by: "char", interval: 55 })
+  .wait(800)
+  .select("whole")
+  .style(sel, { from: 0, to: 24 })
+  .wait(1000)
+  .unstyle({ from: 0, to: 24 })
+  .style({ css: { background: "rgba(16,185,129,0.25)", color: "#065f46" } }, { from: 0, to: 9 });
+
+await tw.play();`;
+</script>
+
 # `.style()` - apply a style to document text
 
 Applies a style to a range of already-typed document text.
@@ -130,6 +183,8 @@ await tw.play();
 // "World" is wrapped in a span with class "highlight"
 ```
 
+<DocsPlayground :code="highlightWordCode" note="Yellow background (inline style) represents the highlight applied to 'World' via .style()." />
+
 ### Multiple non-overlapping styles
 
 ```ts
@@ -156,6 +211,8 @@ await tw.play();
 // "Danger" renders red, bold, and underlined
 ```
 
+<DocsPlayground :code="inlineCssStyleCode" />
+
 ### Selection-based style
 
 ```ts
@@ -170,6 +227,8 @@ tw.timeline
 await tw.play();
 // "brown" permanently carries the "emphasis" class
 ```
+
+<DocsPlayground :code="selectionStyleCode" note="Blue shows the text as selected (inline style). After 600ms the selection visual is removed and the italic/purple style is applied." />
 
 ### Accessibility attributes via `attrs`
 
@@ -217,6 +276,8 @@ tw.timeline
 
 await tw.play();
 ```
+
+<DocsPlayground :code="animateHighlightCode" note="Blue simulates the selection over the whole text. After 1s the selection visual is replaced by a green highlight on 'Searching'." />
 
 ### Layered styles on the same range
 

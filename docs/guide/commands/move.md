@@ -1,3 +1,45 @@
+<script setup>
+const prependCode = `const tw = createTypewriter({ renderer });
+
+tw.timeline
+  .type("Hello world", { by: "char", interval: 80 })
+  .move("start")
+  .type(">>> ", { by: "char", interval: 80 });
+
+await tw.play();`;
+
+const insertMiddleCode = `const tw = createTypewriter({ renderer });
+
+tw.timeline
+  .type("Helloworld", { by: "char", interval: 80 })
+  .move(-5)
+  .type(" ", { by: "char", interval: 80 });
+
+await tw.play();`;
+
+const moveByWordCode = `const tw = createTypewriter({ renderer });
+
+tw.timeline
+  .type("The brown fox", { by: "char", interval: 70 })
+  .wait(400)
+  .move(-2, { by: "word" })
+  .type("quick ", { by: "char", interval: 70 });
+
+await tw.play();`;
+
+const correctWordCode = `const tw = createTypewriter({ renderer });
+
+tw.timeline
+  .type("The rain in Spain falls mainly on the plane", { by: "char", interval: 50 })
+  .wait(600)
+  .move("end")
+  .move(-5, { by: "char" })
+  .delete(5, { by: "char", interval: 50 })
+  .type("plain", { by: "char", interval: 70 });
+
+await tw.play();`;
+</script>
+
 # `.move()` - reposition the cursor
 
 Moves a cursor to a new position in the document.
@@ -89,6 +131,8 @@ await tw.play();
 // result: ">>> Hello world"
 ```
 
+<DocsPlayground :code="prependCode" />
+
 ### Jump to document end and append
 
 ```ts
@@ -113,6 +157,8 @@ tw.timeline
 await tw.play();
 // result: "Hello world"
 ```
+
+<DocsPlayground :code="insertMiddleCode" />
 
 ### Move with a large offset (clamped to boundary)
 
@@ -152,6 +198,8 @@ await tw.play();
 // result: "The quick brown fox"
 ```
 
+<DocsPlayground :code="moveByWordCode" />
+
 ### Correct a word in the middle of a sentence
 
 ```ts
@@ -166,6 +214,8 @@ tw.timeline
 await tw.play();
 // result: "The rain in Spain falls mainly on the plain"
 ```
+
+<DocsPlayground :code="correctWordCode" />
 
 ### Multi-cursor repositioning
 

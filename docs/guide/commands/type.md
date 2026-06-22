@@ -1,3 +1,41 @@
+<script setup>
+const classicTypeCode = `const tw = createTypewriter({ renderer });
+
+tw.timeline.type("Hello, world!", { by: "char", interval: 80 });
+
+await tw.play();`;
+
+const punctuationSlowdownCode = `const tw = createTypewriter({ renderer });
+
+tw.timeline
+  .type("Hello", { by: "char", interval: 60 })
+  .type(",", { by: "char", interval: 180 })
+  .type(" world", { by: "char", interval: 60 })
+  .type("!", { by: "char", interval: 180 });
+
+await tw.play();`;
+
+const wordRevealCode = `const tw = createTypewriter({ renderer });
+
+tw.timeline.type("The quick brown fox jumps over the lazy dog", {
+  by: "word",
+  interval: 160,
+});
+
+await tw.play();`;
+
+const loadingIndicatorTypeCode = `const tw = createTypewriter({ renderer });
+
+tw.timeline
+  .type("Loading", { by: "char", interval: 80 })
+  .type("...", { by: "char", interval: 300 })
+  .wait(400)
+  .delete("whole")
+  .type("Done", { by: "char", interval: 80 });
+
+await tw.play();`;
+</script>
+
 # `.type()` - insert text
 
 Schedules text to be inserted into the document one step at a time.
@@ -195,6 +233,8 @@ tw.timeline.type("Hello, world!", { by: "char", interval: 80 });
 await tw.play();
 ```
 
+<DocsPlayground :code="classicTypeCode" />
+
 ### Fast typing that slows down at punctuation
 
 ```ts
@@ -207,6 +247,8 @@ tw.timeline
 await tw.play();
 ```
 
+<DocsPlayground :code="punctuationSlowdownCode" />
+
 ### Word-by-word reveal
 
 ```ts
@@ -218,20 +260,22 @@ tw.timeline.type("The quick brown fox jumps over the lazy dog", {
 await tw.play();
 ```
 
+<DocsPlayground :code="wordRevealCode" />
+
 ### Loading indicator
 
 ```ts
 tw.timeline
   .type("Loading", { by: "char", interval: 80 })
-  .type(".", { by: "char", interval: 300 })
-  .type(".", { by: "char", interval: 300 })
-  .type(".", { by: "char", interval: 300 })
+  .type("...", { by: "char", interval: 300 })
   .wait(400)
   .delete("whole")
   .type("Done", { by: "char", interval: 80 });
 
 await tw.play();
 ```
+
+<DocsPlayground :code="loadingIndicatorTypeCode" />
 
 ### Multiline content
 

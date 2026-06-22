@@ -1,3 +1,49 @@
+<script setup>
+const pauseBetweenPhrasesCode = `const tw = createTypewriter({ renderer });
+
+tw.timeline
+  .type("Hello", { by: "char", interval: 80 })
+  .wait(800)
+  .type(", world!", { by: "char", interval: 80 });
+
+await tw.play();`;
+
+const loadingSequenceCode = `const tw = createTypewriter({ renderer });
+
+tw.timeline
+  .type("Connecting", { by: "char", interval: 70 })
+  .wait(300)
+  .type("...", { by: "char", interval: 400 })
+  .wait(600)
+  .delete("whole")
+  .type("Connected!", { by: "char", interval: 60 });
+
+await tw.play();`;
+
+const pauseBetweenSentencesCode = `const tw = createTypewriter({ renderer });
+
+tw.timeline
+  .type("The animation starts. ", { by: "char", interval: 60 })
+  .wait(600)
+  .type("Then it pauses. ", { by: "char", interval: 60 })
+  .wait(600)
+  .type("Then it continues.", { by: "char", interval: 60 });
+
+await tw.play();`;
+
+const hooksTimingCode = `const tw = createTypewriter({ renderer });
+
+tw.timeline
+  .type("Before the pause", { by: "char", interval: 60 })
+  .wait(1000, {
+    before: () => console.log("Pause starting"),
+    after: () => console.log("Pause ended"),
+  })
+  .type(" - after the pause", { by: "char", interval: 60 });
+
+await tw.play();`;
+</script>
+
 # `.wait()` - pause the timeline
 
 Inserts a timed gap before the next command starts.
@@ -50,6 +96,8 @@ await tw.play();
 // types "Hello", pauses 800 ms, then types ", world!"
 ```
 
+<DocsPlayground :code="pauseBetweenPhrasesCode" />
+
 ### Building a dramatic loading sequence
 
 ```ts
@@ -63,6 +111,8 @@ tw.timeline
 
 await tw.play();
 ```
+
+<DocsPlayground :code="loadingSequenceCode" />
 
 ### Pause before a correction
 
@@ -106,6 +156,8 @@ tw.timeline
 await tw.play();
 ```
 
+<DocsPlayground :code="pauseBetweenSentencesCode" />
+
 ### Using hooks to track timing
 
 ```ts
@@ -119,6 +171,8 @@ tw.timeline
 
 await tw.play();
 ```
+
+<DocsPlayground :code="hooksTimingCode" />
 
 ## Composition with instant commands
 

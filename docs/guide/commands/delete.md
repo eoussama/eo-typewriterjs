@@ -1,3 +1,55 @@
+<script setup>
+const typeBackspaceCode = `const tw = createTypewriter({ renderer });
+
+tw.timeline
+  .type("Hello world", { by: "char", interval: 80 })
+  .wait(600)
+  .delete(-6, { by: "char", interval: 50 });
+
+await tw.play();`;
+
+const typoCode = `const tw = createTypewriter({ renderer });
+
+tw.timeline
+  .type("Helllo world", { by: "char", interval: 75 })
+  .wait(400)
+  .move(-8)
+  .delete(-1, { by: "char", interval: 60 })
+  .move("end");
+
+await tw.play();`;
+
+const deleteByWordCode = `const tw = createTypewriter({ renderer });
+
+tw.timeline
+  .type("The quick brown fox", { by: "word", interval: 140 })
+  .wait(500)
+  .delete(-3, { by: "word", interval: 120 });
+
+await tw.play();`;
+
+const eraseWholeCode = `const tw = createTypewriter({ renderer });
+
+tw.timeline
+  .type("This text will vanish", { by: "char", interval: 60 })
+  .wait(1000)
+  .delete("whole")
+  .type("Something new.", { by: "char", interval: 80 });
+
+await tw.play();`;
+
+const deleteSelectionCode = `const tw = createTypewriter({ renderer });
+
+tw.timeline
+  .type("Hello cruel world", { by: "char", interval: 60 })
+  .wait(400)
+  .move(-12)
+  .select(6)
+  .delete(1);
+
+await tw.play();`;
+</script>
+
 # `.delete()` - remove text
 
 Removes text relative to the cursor position, one step at a time.
@@ -87,6 +139,8 @@ await tw.play();
 // types "Hello world", pauses 600 ms, backspaces " world" → "Hello"
 ```
 
+<DocsPlayground :code="typeBackspaceCode" />
+
 ### Simulate a typo correction
 
 ```ts
@@ -101,6 +155,8 @@ await tw.play();
 // result: "Hello world"
 ```
 
+<DocsPlayground :code="typoCode" />
+
 ### Delete by word (backward)
 
 ```ts
@@ -112,6 +168,8 @@ tw.timeline
 await tw.play();
 // → "The quick brown fox", then removes "fox", "brown ", "quick " → "The "
 ```
+
+<DocsPlayground :code="deleteByWordCode" />
 
 ### Delete to document start
 
@@ -148,6 +206,8 @@ tw.timeline
 
 await tw.play();
 ```
+
+<DocsPlayground :code="eraseWholeCode" />
 
 ### Forward delete a duplicate character
 
@@ -199,6 +259,8 @@ tw.timeline
 await tw.play();
 // result: "Hello world"
 ```
+
+<DocsPlayground :code="deleteSelectionCode" />
 
 ## Interaction with cursor position
 
