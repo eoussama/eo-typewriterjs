@@ -44,13 +44,17 @@ export default defineConfig({
           items: [
             { text: "Getting Started", link: "/guide/getting-started" },
             { text: "Core Concepts", link: "/guide/core-concepts" },
+            { text: "Configuration", link: "/guide/configuration" },
           ],
         },
         {
           text: "Usage",
           items: [
-            { text: "Renderers", link: "/guide/renderers" },
             { text: "Timeline", link: "/guide/timeline" },
+            { text: "Renderers", link: "/guide/renderers" },
+            { text: "Custom Renderers", link: "/guide/custom-renderers" },
+            { text: "Styling", link: "/guide/styling" },
+            { text: "Unicode & Advance Modes", link: "/guide/unicode-and-advance-modes" },
             { text: "Recipes", link: "/guide/recipes" },
           ],
         },
@@ -67,6 +71,15 @@ export default defineConfig({
             { text: "Style", link: "/guide/commands/style" },
             { text: "Unstyle", link: "/guide/commands/unstyle" },
             { text: "Call", link: "/guide/commands/call" },
+          ],
+        },
+        {
+          text: "More",
+          items: [
+            { text: "Migration Guide", link: "/guide/migration" },
+            { text: "Best Practices", link: "/guide/best-practices" },
+            { text: "Debugging", link: "/guide/debugging" },
+            { text: "FAQ", link: "/guide/faq" },
           ],
         },
       ],
