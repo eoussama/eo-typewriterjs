@@ -1136,7 +1136,8 @@ kbd {
 }
 
 /* On small screens the panel stacks vertically, so collapsed = content above is hidden.
-   Point the chevron down when expanded (content visible) and up when collapsed. */
+   Point the chevron down when expanded (content visible) and up when collapsed.
+   Also restore normal header layout (title visible, button on the right). */
 @media (max-width: 900px) {
   .recipes-panel .panel-toggle-btn svg {
     transform: rotate(-90deg);
@@ -1144,6 +1145,15 @@ kbd {
 
   .recipes-panel--collapsed .panel-toggle-btn svg {
     transform: rotate(90deg);
+  }
+
+  .bottom-row--recipes-collapsed .panel-title {
+    display: revert;
+  }
+
+  .bottom-row--recipes-collapsed .recipes-panel .panel-header {
+    justify-content: flex-start;
+    padding-inline: 0.75rem;
   }
 }
 
