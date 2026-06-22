@@ -18,8 +18,22 @@ Any release prior to **6.0.0** is considered legacy and is **not compatible** wi
 
 ## Installation
 
+The package is published to both the **npm registry** and the **GitHub Packages registry**.
+
 ```bash
 pnpm add eo-typewriterjs
+```
+
+To install from the GitHub Packages registry instead, scope the registry in your `.npmrc`:
+
+```ini
+@eoussama:registry=https://npm.pkg.github.com
+```
+
+Then install as usual:
+
+```bash
+pnpm add @eoussama/eo-typewriterjs
 ```
 
 ## Quick start

@@ -256,9 +256,11 @@ function formatTime(ms: number): string {
 
 const headerLabel = computed(() =>
   props.showPreview
-    ? "▶ Live Preview"
-    : "▶ Playback - string renderer writes to memory, not the DOM.",
+    ? "Live Preview"
+    : "Playback - string renderer writes to memory, not the DOM.",
 );
+
+const headerArrow = computed(() => (isCollapsed.value ? "▲" : "▼"));
 
 const isPlaying = () => playbackStatus.value === EPlaybackStatus.PLAYING;
 const isPaused = () => playbackStatus.value === EPlaybackStatus.PAUSED;
@@ -285,16 +287,14 @@ onUnmounted(() => {
       'docs-playground--collapsed': isCollapsed,
     }"
   >
-    <div class="docs-playground__header">
+    <div
+      class="docs-playground__header"
+      :class="{ 'docs-playground__header--collapsible': props.collapsible }"
+      :title="props.collapsible ? (isCollapsed ? 'Expand' : 'Collapse') : undefined"
+      @click="props.collapsible && (isCollapsed = !isCollapsed)"
+    >
+      <span v-if="props.collapsible" class="docs-playground__header-arrow">{{ headerArrow }}</span>
       <span class="docs-playground__label">{{ headerLabel }}</span>
-      <button
-        v-if="props.collapsible"
-        class="docs-playground__collapse-btn"
-        :title="isCollapsed ? 'Expand' : 'Collapse'"
-        @click="isCollapsed = !isCollapsed"
-      >
-        {{ isCollapsed ? '▼' : '▲' }}
-      </button>
     </div>
 
     <div v-show="!isCollapsed">
@@ -308,7 +308,7 @@ onUnmounted(() => {
       <div v-if="logs.length > 0" class="docs-playground__console">
         <div class="docs-playground__console-header" @click="isConsoleOpen = !isConsoleOpen">
           <span class="docs-playground__console-label">Console ({{ logs.length }})</span>
-          <span class="docs-playground__console-toggle">{{ isConsoleOpen ? '▲' : '▼' }}</span>
+          <span class="docs-playground__console-toggle">{{ isConsoleOpen ? '▼' : '▲' }}</span>
         </div>
         <div v-show="isConsoleOpen" class="docs-playground__console-body">
           <div
@@ -386,9 +386,62 @@ onUnmounted(() => {
 </template>
 
 <style>
-.vp-doc div[class*='language-']:has(+ .docs-playground.docs-playground--attached) {
-  border-bottom-left-radius: 0 !important;
-  border-bottom-right-radius: 0 !important;
+html:not(.dark) .docs-playground {
+  border-color: #d1d5db;
+  background: #f9fafb;
+}
+
+html:not(.dark) .docs-playground__header,
+html:not(.dark) .docs-playground__bar,
+html:not(.dark) .docs-playground__console-header {
+  background: #edf0f4;
+  border-color: #d1d5db;
+}
+
+html:not(.dark) .docs-playground__preview {
+  background: #ffffff;
+}
+
+html:not(.dark) .docs-playground__label {
+  color: var(--vp-c-brand-2, #3451b2);
+}
+
+html:not(.dark) .docs-playground__console-body {
+  background: #ffffff;
+}
+
+html:not(.dark) .docs-playground__log {
+  border-color: #e5e7eb;
+}
+
+html:not(.dark) .docs-playground__btn {
+  background: #ffffff;
+  border-color: #c8cdd5;
+  color: #374151;
+}
+
+html:not(.dark) .docs-playground__btn:hover:not(:disabled) {
+  background: var(--vp-c-brand-soft);
+  border-color: var(--vp-c-brand-1);
+  color: var(--vp-c-brand-1);
+}
+
+html:not(.dark) .docs-playground__btn--active {
+  background: var(--vp-c-brand-soft);
+  border-color: var(--vp-c-brand-1);
+  color: var(--vp-c-brand-1);
+}
+
+html:not(.dark) .docs-playground__time {
+  color: #6b7280;
+}
+
+html:not(.dark) .docs-playground__console-label {
+  color: #6b7280;
+}
+
+html:not(.dark) .docs-playground__header-arrow {
+  color: #9ca3af;
 }
 </style>
 
@@ -402,14 +455,13 @@ onUnmounted(() => {
 }
 
 .docs-playground.docs-playground--attached {
-  border-top: 1px solid var(--vp-c-divider);
-  margin-top: -1px;
+  margin-top: 0;
 }
 
 .docs-playground__header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
   padding: 0 10px;
   height: 36px;
   background: var(--vp-c-bg-elv);
@@ -421,6 +473,26 @@ onUnmounted(() => {
   border-bottom: none;
 }
 
+.docs-playground__header--collapsible {
+  cursor: pointer;
+}
+
+.docs-playground__header--collapsible:hover .docs-playground__label {
+  color: var(--vp-c-brand-1);
+}
+
+.docs-playground__header-arrow {
+  font-size: 10px;
+  color: var(--vp-c-text-3);
+  margin-right: 6px;
+  flex-shrink: 0;
+  transition: color 0.15s;
+}
+
+.docs-playground__header--collapsible:hover .docs-playground__header-arrow {
+  color: var(--vp-c-brand-1);
+}
+
 .docs-playground__label {
   font-size: 11px;
   font-weight: 600;
@@ -428,28 +500,7 @@ onUnmounted(() => {
   text-transform: uppercase;
   letter-spacing: 0.06em;
   font-family: var(--vp-font-family-mono);
-}
-
-.docs-playground__collapse-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 24px;
-  font-size: 11px;
-  font-family: var(--vp-font-family-mono);
-  border-radius: 4px;
-  border: 1px solid var(--vp-c-divider);
-  background: transparent;
-  color: var(--vp-c-text-3);
-  cursor: pointer;
-  transition: color 0.15s, border-color 0.15s;
-  flex-shrink: 0;
-}
-
-.docs-playground__collapse-btn:hover {
-  color: var(--vp-c-brand-1);
-  border-color: var(--vp-c-brand-1);
+  transition: color 0.15s;
 }
 
 .docs-playground__preview {
