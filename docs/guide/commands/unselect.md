@@ -32,13 +32,14 @@ type TUnselectOptions = {
 - The cursor's **text position is not changed**.
 - If a targeted cursor has no active selection, that cursor is unaffected and no error is raised.
 - Unlike `.move()`, `.unselect()` does not reposition the cursor - it only clears the selection metadata.
+- `before` fires once before the selection is cleared. `after` fires once after the selection is cleared.
+- The `audio` option, if set, triggers playback through the typing audio channel.
 
 ## When to use
 
-Most of the time a selection is cleared automatically - `.type()`, `.delete()`, and `.move()` all discard it as a side effect. Use `.unselect()` when you need to remove a selection **without** any of those side effects:
+Most of the time a selection is cleared automatically - `.type()`, `.delete()`, `.move()`, `.style("...", "selection")`, and `.unstyle("selection")` all discard it as a side effect. Use `.unselect()` when you need to remove a selection **without** any of those side effects:
 
-- After `.style("...", "selection")` - to dismiss the visual highlight while leaving the cursor in place.
-- After `.unstyle("selection")` - same reason.
+- After `.select()` with a timed pause - to dismiss the visual highlight while leaving the cursor in place.
 - To reset a cursor's selection state mid-animation as a pure visual cleanup step.
 
 ## Examples
@@ -63,9 +64,9 @@ tw.timeline
   .type("Hello World", { by: "char", interval: 80 })
   .wait(400)
   .move(-5)
-  .select(5)                         // selects "World"
-  .style("highlight", "selection")  // applies the style
-  .unselect();                       // dismisses the selection UI; cursor stays at index 6
+  .select(5)                            // selects "World"
+  .style("highlight", { from: 6, to: 11 }) // applies style using absolute range; selection remains
+  .unselect();                          // dismisses the selection; cursor stays at index 6
 
 await tw.play();
 // "World" carries the "highlight" class; no selection highlight remains
@@ -106,11 +107,11 @@ tw.timeline
   .type("Status: pending", { by: "char", interval: 60 })
   .wait(400)
   .move(-7)
-  .select(7)                            // selects "pending"
-  .unstyle("selection")                 // remove any existing styles from "pending"
-  .style("status-done", "selection")   // apply new style
-  .unselect()                           // dismiss the highlight
-  .move("end");                         // continue from the end
+  .select(7)                               // selects "pending" (indices 8–15)
+  .unstyle("selection")                    // removes styles from "pending"; selection cleared
+  .style("status-done", { from: 8, to: 15 }) // apply new style using absolute range
+  .unselect()                              // dismiss the selection if still active; cursor stays
+  .move("end");                            // continue from the end
 
 await tw.play();
 ```
