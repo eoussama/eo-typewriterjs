@@ -160,4 +160,18 @@ test.describe("styling", () => {
 
     expect(await getOutputText(page)).toBe("Hello World!");
   });
+
+  test("animated select: selection highlight is present after completion and covers the correct text", async ({ page }) => {
+    await gotoScenario(page, "animated-select-grows");
+
+    const output = getOutputLocator(page);
+
+    const selection = output.locator(".typewriter-selection");
+
+    await expect(selection).toBeVisible();
+
+    expect(await selection.textContent()).toBe("pending");
+
+    expect(await getOutputText(page)).toBe("Status: pending");
+  });
 });

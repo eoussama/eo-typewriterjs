@@ -991,20 +991,229 @@ describe("select - amount > 1", () => {
 });
 
 describe("select - before/after hooks", () => {
-  it("before fires before selection, after fires after", async () => {
+  it("before fires once per step, after fires once per step", async () => {
     const r = stringRenderer();
     const tw = createTypewriter({ renderer: r });
-    const log: Array<boolean> = [];
+    let beforeCount = 0;
+    let afterCount = 0;
 
     tw.timeline
       .type("hello", { by: "char", interval: 1 })
       .select(-3, {
-        before: () => { log.push(tw.getLiveState().selections.main === undefined); },
-        after: () => { log.push(tw.getLiveState().selections.main !== undefined); },
+        interval: 1,
+        before: () => { beforeCount++; },
+        after: () => { afterCount++; },
       });
     await tw.play();
 
-    expect(log).toEqual([true, true]);
+    expect(beforeCount).toBe(3);
+    expect(afterCount).toBe(3);
+    assertInvariants(tw);
+  });
+
+  it("before fires with no selection on the very first step", async () => {
+    const r = stringRenderer();
+    const tw = createTypewriter({ renderer: r });
+    let callCount = 0;
+    let firstBeforeHadNoSelection = false;
+
+    tw.timeline
+      .type("hello", { by: "char", interval: 1 })
+      .select(-3, {
+        interval: 1,
+        before: () => {
+          if (callCount === 0) {
+            firstBeforeHadNoSelection = tw.getLiveState().selections.main === undefined;
+          }
+
+          callCount++;
+        },
+      });
+    await tw.play();
+
+    expect(firstBeforeHadNoSelection).toBe(true);
+    assertInvariants(tw);
+  });
+});
+
+describe("select - step-by-step semantics", () => {
+  it("select(-3) fires before and after hooks 3 times", async () => {
+    const r = stringRenderer();
+    const tw = createTypewriter({ renderer: r });
+    let beforeCount = 0;
+    let afterCount = 0;
+
+    tw.timeline
+      .type("Hello", { by: "char", interval: 1 })
+      .select(-3, {
+        interval: 1,
+        before: () => { beforeCount++; },
+        after: () => { afterCount++; },
+      });
+    await tw.play();
+
+    expect(beforeCount).toBe(3);
+    expect(afterCount).toBe(3);
+    assertInvariants(tw);
+  });
+
+  it("select(-5) grows selection one char at a time", async () => {
+    const r = stringRenderer();
+    const tw = createTypewriter({ renderer: r });
+    const snapshots: Array<{ readonly from: number; readonly to: number }> = [];
+
+    tw.timeline
+      .type("Hello World", { by: "char", interval: 1 })
+      .select(-5, {
+        by: "char",
+        interval: 1,
+        after: () => {
+          const sel = tw.getLiveState().selections.main;
+
+          if (sel !== undefined) {
+            snapshots.push({ from: sel.from, to: sel.to });
+          }
+        },
+      });
+    await tw.play();
+
+    // cursor at 11; selection should grow: 10-11, 9-11, 8-11, 7-11, 6-11
+    expect(snapshots).toStrictEqual([
+      { from: 10, to: 11 },
+      { from: 9, to: 11 },
+      { from: 8, to: 11 },
+      { from: 7, to: 11 },
+      { from: 6, to: 11 },
+    ]);
+    assertInvariants(tw);
+  });
+
+  it("select(3) grows selection forward one char at a time", async () => {
+    const r = stringRenderer();
+    const tw = createTypewriter({ renderer: r });
+    const snapshots: Array<{ readonly from: number; readonly to: number }> = [];
+
+    tw.timeline
+      .type("Hello World", { by: "char", interval: 1 })
+      .move("start")
+      .select(3, {
+        by: "char",
+        interval: 1,
+        after: () => {
+          const sel = tw.getLiveState().selections.main;
+
+          if (sel !== undefined) {
+            snapshots.push({ from: sel.from, to: sel.to });
+          }
+        },
+      });
+    await tw.play();
+
+    expect(snapshots).toStrictEqual([
+      { from: 0, to: 1 },
+      { from: 0, to: 2 },
+      { from: 0, to: 3 },
+    ]);
+    assertInvariants(tw);
+  });
+
+  it("select(4, { by: { unit:'char', amount:2 } }) grows in steps of 2", async () => {
+    const r = stringRenderer();
+    const tw = createTypewriter({ renderer: r });
+    const snapshots: Array<{ readonly from: number; readonly to: number }> = [];
+
+    tw.timeline
+      .type("Hello", { by: "char", interval: 1 })
+      .move("start")
+      .select(4, {
+        by: { unit: "char", amount: 2 },
+        interval: 1,
+        after: () => {
+          const sel = tw.getLiveState().selections.main;
+
+          if (sel !== undefined) {
+            snapshots.push({ from: sel.from, to: sel.to });
+          }
+        },
+      });
+    await tw.play();
+
+    expect(snapshots).toStrictEqual([
+      { from: 0, to: 2 },
+      { from: 0, to: 4 },
+    ]);
+    assertInvariants(tw);
+  });
+
+  it("select(5, { amount:2 }) partial last step selects to exact total", async () => {
+    const r = stringRenderer();
+    const tw = createTypewriter({ renderer: r });
+    const snapshots: Array<{ readonly from: number; readonly to: number }> = [];
+
+    tw.timeline
+      .type("Hello World", { by: "char", interval: 1 })
+      .move("start")
+      .select(5, {
+        by: { unit: "char", amount: 2 },
+        interval: 1,
+        after: () => {
+          const sel = tw.getLiveState().selections.main;
+
+          if (sel !== undefined) {
+            snapshots.push({ from: sel.from, to: sel.to });
+          }
+        },
+      });
+    await tw.play();
+
+    expect(snapshots).toStrictEqual([
+      { from: 0, to: 2 },
+      { from: 0, to: 4 },
+      { from: 0, to: 5 },
+    ]);
+    assertInvariants(tw);
+  });
+
+  it("select(0) produces no events and does not create a selection", async () => {
+    const r = stringRenderer();
+    const tw = createTypewriter({ renderer: r });
+
+    tw.timeline
+      .type("Hello", { by: "char", interval: 1 })
+      .select(0);
+    await tw.play();
+
+    expect(tw.getLiveState().selections.main).toBeUndefined();
+    assertInvariants(tw);
+  });
+
+  it("multi-cursor select steps fan out correctly", async () => {
+    const r = stringRenderer();
+    const tw = createTypewriter({ renderer: r });
+    const snapshots: Array<{ readonly a: number | undefined; readonly b: number | undefined }> = [];
+
+    tw.timeline
+      .type("Hello World", { by: "char", interval: 1 })
+      // position cursors "a" and "b" at the end of the typed text
+      .move(11, { cursor: "a" })
+      .move(11, { cursor: "b" })
+      .select(-3, {
+        cursor: ["a", "b"],
+        by: "char",
+        interval: 1,
+        after: () => {
+          const state = tw.getLiveState();
+          const a = state.selections.a?.from;
+          const b = state.selections.b?.from;
+
+          snapshots.push({ a, b });
+        },
+      });
+    await tw.play();
+
+    expect(snapshots).toHaveLength(3);
+    expect(snapshots[2]).toStrictEqual({ a: 8, b: 8 });
+    assertInvariants(tw);
   });
 });
 

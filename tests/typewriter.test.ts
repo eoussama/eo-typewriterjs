@@ -8,6 +8,7 @@ import { play } from "../src/core/player/helpers/player.helper";
 import { applyStyle } from "../src/core/reducer/helpers/apply-style.helper";
 import { reduce } from "../src/core/reducer/helpers/reduce.helper";
 import { removeStyles } from "../src/core/reducer/helpers/remove-styles.helper";
+import { selectText } from "../src/core/reducer/helpers/select-text.helper";
 import { unselect as unselectReducer } from "../src/core/reducer/helpers/unselect.helper";
 import { mergeStyles, resolveStyleRef, segmentRichText } from "../src/core/state/helpers/segment-rich-text.helper";
 import { createInitialState, getSelection, withSelection, withSelectionCleared } from "../src/core/state/index";
@@ -293,21 +294,21 @@ describe("compile (move)", () => {
 
 
 describe("compile (select)", () => {
-  it("compiles a select command into a single event", () => {
+  it("compiles a numeric select command into one event per step", () => {
     const events = compile([{ id: "s1", kind: "select", cursor: "main", count: 3, by: "char" }]);
 
-    expect(events).toHaveLength(1);
-    expect(events[0]?.kind).toBe("select");
+    expect(events).toHaveLength(3);
+    expect(events.every(e => e.kind === "select")).toBe(true);
   });
 
   it("uses default by (char) when by is omitted on select command", () => {
     const events = compile([{ id: "s0", kind: "select", cursor: "main", count: 2 }]);
 
-    expect(events).toHaveLength(1);
-    expect(events[0]?.kind).toBe("select");
+    expect(events).toHaveLength(2);
+    expect(events.every(e => e.kind === "select")).toBe(true);
   });
 
-  it("advances the clock by the default interval (50 ms)", () => {
+  it("advances the clock by interval × steps (default 50 ms per step)", () => {
     const events = compile([
       { id: "s2", kind: "type", cursor: "main", text: "Hi", by: "char", interval: 100 },
       { id: "s3", kind: "select", cursor: "main", count: 2, by: "char" },
@@ -316,11 +317,11 @@ describe("compile (select)", () => {
 
     const abEvents = events.filter(e => (e as TInsertEvent).text === "A" || (e as TInsertEvent).text === "B");
 
-    // type "Hi" ends at 200, select advances by default 50ms → AB starts at 250
-    expect(abEvents[0]?.time).toBe(250);
+    // type "Hi" ends at 200, select(2) = 2 steps × 50ms = 100ms → AB starts at 300
+    expect(abEvents[0]?.time).toBe(300);
   });
 
-  it("advances the clock by an explicit interval when provided", () => {
+  it("advances the clock by explicit interval × steps when provided", () => {
     const events = compile([
       { id: "s5", kind: "type", cursor: "main", text: "Hi", by: "char", interval: 100 },
       { id: "s6", kind: "select", cursor: "main", count: 2, by: "char", interval: 300 },
@@ -329,8 +330,8 @@ describe("compile (select)", () => {
 
     const abEvents = events.filter(e => (e as TInsertEvent).text === "A" || (e as TInsertEvent).text === "B");
 
-    // type "Hi" ends at 200, select interval=300 → AB starts at 500
-    expect(abEvents[0]?.time).toBe(500);
+    // type "Hi" ends at 200, select(2, interval: 300) = 2 steps × 300ms = 600ms → AB starts at 800
+    expect(abEvents[0]?.time).toBe(800);
   });
 
   it("boundary select advances the clock by the default interval", () => {
@@ -342,11 +343,11 @@ describe("compile (select)", () => {
 
     const xEvents = events.filter(e => (e as TInsertEvent).text === "X");
 
-    // type "Hi" ends at 200, select "whole" advances by 50ms → X at 250
+    // boundary select is always a single event; type "Hi" ends at 200, select "whole" advances 50ms → X at 250
     expect(xEvents[0]?.time).toBe(250);
   });
 
-  it("multi-cursor select advances the clock only once", () => {
+  it("multi-cursor select advances the clock once per step (not once per cursor)", () => {
     const events = compile([
       { id: "s11", kind: "type", cursor: "main", text: "Hi", by: "char", interval: 100 },
       { id: "s12", kind: "select", cursor: ["a", "b"], count: 3, by: "char" },
@@ -355,8 +356,8 @@ describe("compile (select)", () => {
 
     const xEvents = events.filter(e => (e as TInsertEvent).text === "X");
 
-    // clock advances once for the multi-cursor select (default 50ms) → X at 250
-    expect(xEvents[0]?.time).toBe(250);
+    // clock advances once per step; 3 steps × 50ms = 150ms; "Hi" ends at 200 → X at 350
+    expect(xEvents[0]?.time).toBe(350);
   });
 });
 
@@ -488,14 +489,20 @@ describe("compile (multi-cursor)", () => {
     expect(yEvents).toHaveLength(5);
   });
 
-  it("fans out select events for each cursor", () => {
+  it("fans out select events for each cursor at each step", () => {
     const events = compile([
       { id: "mcd", kind: "select", cursor: ["p", "q"], count: 3, by: "char" },
     ]);
 
-    expect(events).toHaveLength(2);
+    // 3 steps × 2 cursors = 6 events
+    expect(events).toHaveLength(6);
     expect(events.every(e => e.kind === "select")).toBe(true);
-    expect(events.map(e => e.cursorId).sort()).toEqual(["p", "q"]);
+
+    const pEvents = events.filter(e => e.cursorId === "p");
+    const qEvents = events.filter(e => e.cursorId === "q");
+
+    expect(pEvents).toHaveLength(3);
+    expect(qEvents).toHaveLength(3);
   });
 });
 
@@ -581,6 +588,30 @@ describe("reduce (selectText edge cases)", () => {
 
     // Empty document: text.length === 0 → endIndex === startIndex (0) → no selection
     expect(state.selections.main).toBeUndefined();
+  });
+
+  it("select event with string by resolves unit and amount as char/1", () => {
+    let state = createInitialState();
+
+    // Add text so cursor is at 5
+    for (const event of compile([{ id: "c1", kind: "type" as const, cursor: "main", text: "Hello", by: "char" as const, interval: 1 }])) {
+      state = reduce(state, event);
+    }
+
+    // Fire a raw select event with string by to hit the string branch in resolveUnit/resolveAmount
+    const event = {
+      id: "e1",
+      kind: "select" as const,
+      time: 0,
+      cursorId: "main",
+      count: -1,
+      by: "char" as const,
+      sourceCommandId: "c1",
+    };
+
+    const next = selectText(state, event);
+
+    expect(next.selections.main).toStrictEqual({ from: 4, to: 5 });
   });
 });
 

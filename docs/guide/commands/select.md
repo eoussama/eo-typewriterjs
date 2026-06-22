@@ -6,7 +6,12 @@ Creates a text selection on a cursor.
 tw.timeline.select(count: TSelectValue, options?: TSelectOptions): TimelineBuilder
 ```
 
-`.select()` is an **instant command**. It produces a single event at the current timeline clock position and does **not** advance the clock. The selection is stored on the cursor state and consumed by subsequent commands or used by the renderer to display a visual highlight.
+`.select()` is compiled differently depending on the operand:
+
+- **String boundaries** (`"start"`, `"end"`, `"whole"`) — produce a single event and advance the clock by `interval` ms.
+- **Numeric counts** — split into `ceil(|count| / amount)` steps. One event is emitted per step and the clock advances by `interval` ms per step (total = `steps × interval`). Each step extends the selection by one more unit from the cursor's anchor, so the selection grows visibly one step at a time.
+
+The selection is stored on the cursor state and consumed by subsequent commands or displayed as a visual highlight by the renderer.
 
 ## Operand semantics
 
@@ -23,6 +28,7 @@ tw.timeline.select(count: TSelectValue, options?: TSelectOptions): TimelineBuild
 ```ts
 type TSelectOptions = {
   by?: TAdvanceModeInput;   // default: "char" (numeric counts only)
+  interval?: number;        // default: 50 (ms)
   cursor?: TCursorSelector; // default: "main"
   before?: TCallbackHook;
   after?: TCallbackHook;
@@ -33,6 +39,7 @@ type TSelectOptions = {
 | Option | Type | Default | Description |
 |---|---|---|---|
 | `by` | `TAdvanceModeInput` | `"char"` | Unit used to measure the selection span (numeric counts only) |
+| `interval` | `number` | `50` | Milliseconds per step. For numeric counts the total clock advance is `steps × interval`; for string boundaries it is exactly one interval. |
 | `cursor` | `TCursorSelector` | `"main"` | Which cursor creates the selection |
 | `before` | `TCallbackHook` | - | Hook fired before the selection is applied |
 | `after` | `TCallbackHook` | - | Hook fired after the selection is applied |
@@ -43,8 +50,11 @@ type TSelectOptions = {
 - The selection stores a `from` and `to` index. The cursor's text position itself is **not** changed.
 - A new `.select()` replaces any existing selection on the same cursor.
 - The selection is cleared by any subsequent `.type()`, `.delete()`, or `.move()` targeting the same cursor.
-- `.style("...", "selection")` and `.unstyle("selection")` read the selection range without clearing it - use `.move()` or `.unselect()` to dismiss the visual highlight afterward.
+- `.style("...", "selection")` and `.unstyle("selection")` read the selection range and then clear it.
 - Numeric counts that exceed the document boundaries are **clamped** to the document edges.
+- For **numeric counts**: `before` fires before each step, `after` fires after each step. The selection grows from 1 unit to `|count|` units across the steps, so intermediate renders show the selection expanding.
+- For **string boundaries**: `before` fires once before the event and `after` fires once after.
+- The `audio` option, if set, triggers playback through the typing audio channel.
 
 ## Advance modes (`by`)
 
@@ -75,8 +85,8 @@ A selection lives from the moment `.select()` fires until one of the following c
 | `.move()` | Clears the selection; cursor moves to the new position |
 | `.unselect()` | Clears the selection; cursor stays in place |
 | `.select()` (again) | Replaces the previous selection with the new one |
-| `.style("...", "selection")` | Reads the range but does **not** clear the selection |
-| `.unstyle("selection")` | Reads the range but does **not** clear the selection |
+| `.style("...", "selection")` | Reads the range and **clears** the selection |
+| `.unstyle("selection")` | Reads the range and **clears** the selection |
 
 ## Examples
 
@@ -98,21 +108,22 @@ await tw.play();
 tw.timeline
   .type("Hello World", { by: "char", interval: 80 })
   .wait(400)
-  .move(6)      // cursor after the space
+  .move(-5)      // cursor after the space
   .select(5);   // selects "World"
 
 await tw.play();
 ```
 
-### Select backward from the end
+### Select backward from the end (animated)
 
 ```ts
 tw.timeline
   .type("Hello World", { by: "char", interval: 80 })
   .wait(400)
-  .select(-5);  // selects "World" backward from the end
+  .select(-5, { by: "char", interval: 100 });  // selection grows 1 char at a time over 500 ms
 
 await tw.play();
+// selection expands: "d" → "ld" → "rld" → "orld" → "World"
 ```
 
 ### Select from cursor to start
@@ -147,8 +158,8 @@ tw.timeline
   .wait(500)
   .move(-5)
   .select(5)                         // selects "World"
-  .style("highlight", "selection")  // marks the selection
-  .move("end");                      // clears the selection UI, cursor at end
+  .style("highlight", "selection")  // marks the selection and clears the selection
+  .move("end");                      // cursor moves to end
 
 await tw.play();
 // "World" permanently carries the "highlight" class
@@ -190,17 +201,6 @@ tw.timeline
   .wait(400)
   .move("start")
   .select(2, { by: "word" }); // selects "The quick "
-
-await tw.play();
-```
-
-### Multi-cursor selections
-
-```ts
-tw.timeline
-  .type("ABCDE", { cursor: ["a", "b"], by: "char", interval: 80 })
-  .select(2, { cursor: "a" }) // cursor "a" selects "AB" from its position
-  .select(3, { cursor: "b" }); // cursor "b" selects "ABC" from its position
 
 await tw.play();
 ```

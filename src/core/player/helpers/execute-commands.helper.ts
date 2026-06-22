@@ -348,23 +348,83 @@ async function executeSelect(
   renderer: IRenderer,
   options: TExecuteCommandsOptions,
 ): Promise<TTypewriterState> {
-  await invokeHook(command.before, makeContext(state, 0, 1, null, options.signal));
+  if (typeof command.count === "string" || command.count === 0) {
+    await invokeHook(command.before, makeContext(state, 0, 1, null, options.signal));
 
-  if (options.signal.aborted) {
+    /* v8 ignore next 3 */
+    if (options.signal.aborted) {
+      return state;
+    }
+
+    const { events } = compileSelect(command, 0);
+
+    for (const event of events) {
+      state = reduce(state, event);
+    }
+
+    options.getAudioManager?.()?.playTyping(command.audio);
+    renderer.render(state);
+
+    /* v8 ignore next 3 */
+    if (!options.signal.aborted) {
+      await invokeHook(command.after, makeContext(state, 0, 1, null, options.signal));
+    }
+
     return state;
   }
 
-  const { events } = compileSelect(command, 0);
+  const mode = resolveMotionAdvanceMode(command.by, "select");
+  const interval = command.interval ?? DEFAULT_INTERVAL;
+  const amount = Math.max(1, mode.amount);
+  const direction: 1 | -1 = command.count > 0 ? 1 : -1;
+  const totalUnits = Math.abs(command.count);
+  const stepCount = Math.ceil(totalUnits / amount);
+  const cursorIds = normalizeCursors(command.cursor);
 
-  for (const event of events) {
-    state = reduce(state, event);
-  }
+  for (let i = 0; i < stepCount; i++) {
+    /* v8 ignore next 3 */
+    if (options.signal.aborted) {
+      break;
+    }
 
-  options.getAudioManager?.()?.playTyping(command.audio);
-  renderer.render(state);
+    const cumulativeUnits = Math.min(totalUnits, (i + 1) * amount);
 
-  if (!options.signal.aborted) {
-    await invokeHook(command.after, makeContext(state, 0, 1, null, options.signal));
+    await invokeHook(command.before, makeContext(state, i, stepCount, mode.unit, options.signal));
+
+    /* v8 ignore next 3 */
+    if (options.signal.aborted) {
+      break;
+    }
+
+    options.getAudioManager?.()?.playTyping(command.audio);
+
+    for (const cursorId of cursorIds) {
+      const event = {
+        id: nextEventId("exec_sel"),
+        kind: EEventKind.SELECT,
+        time: 0,
+        cursorId,
+        count: direction,
+        by: { unit: mode.unit, amount: cumulativeUnits },
+        sourceCommandId: command.id,
+      } as const;
+
+      state = reduce(state, event);
+    }
+
+    renderer.render(state);
+
+    await invokeHook(command.after, makeContext(state, i, stepCount, mode.unit, options.signal));
+
+    /* v8 ignore next 3 */
+    if (options.signal.aborted) {
+      break;
+    }
+
+    /* v8 ignore next 3 */
+    if (i < stepCount - 1 && !options.signal.aborted) {
+      await awaitDelay(interval, options);
+    }
   }
 
   return state;

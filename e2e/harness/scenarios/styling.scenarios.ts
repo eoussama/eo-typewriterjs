@@ -136,4 +136,15 @@ export const STYLING_SCENARIOS: readonly TScenario[] = [
       await tw.play();
     },
   },
+  {
+    id: "animated-select-grows",
+    async run({ el }) {
+      const tw = createTypewriter({ renderer: domRenderer(el), cursor: { content: "" } });
+
+      tw.timeline
+        .type("Status: pending", { by: "char", interval: 1 })
+        .select(-7, { by: "char", interval: 50 });
+      await tw.play();
+    },
+  },
 ];
