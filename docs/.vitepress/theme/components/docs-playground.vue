@@ -8,18 +8,30 @@ import { domRenderer, EPlaybackStatus } from "../../../../src/index";
 
 
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   code: string;
-  autorun?: boolean;
-}>();
+  attached?: boolean;
+  collapsible?: boolean;
+}>(), {
+  attached: true,
+  collapsible: true,
+});
 
 const previewEl = ref<HTMLElement | null>(null);
 const playbackStatus = ref<string>(EPlaybackStatus.IDLE);
+const currentTime = ref(0);
+const duration = ref(0);
 const errorMsg = ref<string | null>(null);
 const isLoading = ref(false);
+const isCollapsed = ref(false);
 
 let tw: TTypewriter | null = null;
 let rafId: number | null = null;
+
+// Wall-clock baseline for estimating currentTime during async playback.
+// Only set when play() / replay() is explicitly called from the UI.
+let playStartWall = 0;
+let playStartTimeline = 0;
 
 function startTick(): void {
   stopTick();
@@ -33,24 +45,49 @@ function stopTick(): void {
   }
 }
 
+function syncState(): void {
+  if (tw === null) {
+    return;
+  }
+
+  const s = tw.getState();
+
+  playbackStatus.value = s.status;
+  currentTime.value = s.currentTime;
+  // Duration is monotonic: once the controller reports a positive value, keep it.
+  if (s.duration > 0) {
+    duration.value = s.duration;
+  }
+}
+
 function tick(): void {
   if (tw === null) {
     return;
   }
 
-  const s = tw.getState().status;
+  const s = tw.getState();
 
-  playbackStatus.value = s;
+  playbackStatus.value = s.status;
 
-  if (s === EPlaybackStatus.PLAYING) {
+  if (s.duration > 0) {
+    duration.value = s.duration;
+  }
+
+  if (s.status === EPlaybackStatus.PLAYING) {
+    // Estimate currentTime from wall clock because the async executor path
+    // does not update _currentTime until completion.
+    const elapsed = (Date.now() - playStartWall) * s.rate;
+
+    currentTime.value = Math.min(playStartTimeline + elapsed, duration.value);
     rafId = requestAnimationFrame(tick);
   }
   else {
+    currentTime.value = s.currentTime;
     rafId = null;
   }
 }
 
-async function rerun(): Promise<void> {
+async function boot(): Promise<void> {
   if (previewEl.value === null) {
     return;
   }
@@ -61,15 +98,13 @@ async function rerun(): Promise<void> {
   previewEl.value.innerHTML = "";
   errorMsg.value = null;
   playbackStatus.value = EPlaybackStatus.IDLE;
+  currentTime.value = 0;
+  duration.value = 0;
   isLoading.value = true;
 
   const renderer = domRenderer(previewEl.value);
 
-  const result = await runSnippet(props.code, renderer, (instance) => {
-    tw = instance;
-    playbackStatus.value = instance.getState().status;
-    startTick();
-  });
+  const result = await runSnippet(props.code, renderer);
 
   isLoading.value = false;
 
@@ -80,7 +115,18 @@ async function rerun(): Promise<void> {
   }
 
   tw = result.tw;
-  playbackStatus.value = tw.getState().status;
+
+  // The snippet has fully executed (including any await tw.play()).
+  // Duration is now set. Sync once, then give the browser one more frame
+  // to flush any in-flight state so the reactive values are accurate.
+  syncState();
+
+  await new Promise<void>((resolve) => {
+    requestAnimationFrame(() => {
+      syncState();
+      resolve();
+    });
+  });
 }
 
 function play(): void {
@@ -88,17 +134,24 @@ function play(): void {
     return;
   }
 
+  const s = tw.getState();
+
+  playStartWall = Date.now();
+  playStartTimeline = s.currentTime;
   startTick();
-  tw.play().catch(() => null).finally(() => {
-    stopTick();
-    playbackStatus.value = tw?.getState().status ?? EPlaybackStatus.IDLE;
-  });
+
+  tw.play()
+    .catch(() => null)
+    .finally(() => {
+      stopTick();
+      syncState();
+    });
 }
 
 function pause(): void {
   tw?.pause();
   stopTick();
-  playbackStatus.value = tw?.getState().status ?? EPlaybackStatus.IDLE;
+  syncState();
 }
 
 function stop(): void {
@@ -110,6 +163,7 @@ function stop(): void {
   }
 
   playbackStatus.value = EPlaybackStatus.IDLE;
+  currentTime.value = 0;
 }
 
 function replay(): void {
@@ -117,23 +171,75 @@ function replay(): void {
     return;
   }
 
+  playStartWall = Date.now();
+  playStartTimeline = 0;
   startTick();
-  tw.replay().catch(() => null).finally(() => {
-    stopTick();
-    playbackStatus.value = tw?.getState().status ?? EPlaybackStatus.IDLE;
-  });
+
+  tw.replay()
+    .catch(() => null)
+    .finally(() => {
+      stopTick();
+      syncState();
+    });
+}
+
+function stepForward(): void {
+  if (tw === null) {
+    return;
+  }
+
+  tw.stepForward();
+  syncState();
+}
+
+function stepBackward(): void {
+  if (tw === null) {
+    return;
+  }
+
+  tw.stepBackward();
+  syncState();
+}
+
+function onSeek(e: Event): void {
+  if (tw === null) {
+    return;
+  }
+
+  const target = e.target as HTMLInputElement;
+  const ms = Number(target.value);
+
+  tw.seek(ms);
+
+  if (tw.getState().status === EPlaybackStatus.PLAYING) {
+    playStartWall = Date.now();
+    playStartTimeline = ms;
+  }
+
+  syncState();
+}
+
+function formatTime(ms: number): string {
+  if (ms <= 0) {
+    return "0:00";
+  }
+
+  const totalSec = Math.floor(ms / 1000);
+  const min = Math.floor(totalSec / 60);
+  const sec = totalSec % 60;
+
+  return `${min}:${String(sec).padStart(2, "0")}`;
 }
 
 const isPlaying = () => playbackStatus.value === EPlaybackStatus.PLAYING;
 const isPaused = () => playbackStatus.value === EPlaybackStatus.PAUSED;
-const isStopped = () => playbackStatus.value === EPlaybackStatus.STOPPED;
 const isIdle = () => playbackStatus.value === EPlaybackStatus.IDLE;
+const isStopped = () => playbackStatus.value === EPlaybackStatus.STOPPED;
 const isCompleted = () => playbackStatus.value === EPlaybackStatus.COMPLETED;
+const canStep = () => tw !== null && !isLoading.value && !isPlaying() && !isIdle();
 
 onMounted(() => {
-  if (props.autorun !== false) {
-    void rerun();
-  }
+  void boot();
 });
 
 onUnmounted(() => {
@@ -143,64 +249,100 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="docs-playground">
+  <div
+    class="docs-playground"
+    :class="{
+      'docs-playground--attached': props.attached,
+      'docs-playground--collapsed': isCollapsed,
+    }"
+  >
     <div class="docs-playground__header">
-      <span class="docs-playground__label">Live Preview</span>
+      <span class="docs-playground__label">▶ Live Preview</span>
       <button
-        class="docs-playground__rerun"
-        title="Re-run snippet"
-        :disabled="isLoading"
-        @click="() => void rerun()"
+        v-if="props.collapsible"
+        class="docs-playground__collapse-btn"
+        :title="isCollapsed ? 'Expand' : 'Collapse'"
+        @click="isCollapsed = !isCollapsed"
       >
-        ↺ Rerun
+        {{ isCollapsed ? '▼' : '▲' }}
       </button>
     </div>
 
-    <div ref="previewEl" class="docs-playground__preview" />
+    <div v-show="!isCollapsed">
+      <div ref="previewEl" class="docs-playground__preview" />
 
-    <div v-if="errorMsg" class="docs-playground__error">
-      {{ errorMsg }}
-    </div>
+      <div v-if="errorMsg" class="docs-playground__error">
+        {{ errorMsg }}
+      </div>
 
-    <div class="docs-playground__controls">
-      <button
-        class="docs-playground__btn"
-        :class="{ 'docs-playground__btn--active': isPaused() || isStopped() }"
-        :disabled="isPlaying() || isLoading || tw === null"
-        title="Play"
-        @click="play"
-      >
-        ▶
-      </button>
-      <button
-        class="docs-playground__btn"
-        :class="{ 'docs-playground__btn--active': isPaused() }"
-        :disabled="!isPlaying() || isLoading"
-        title="Pause"
-        @click="pause"
-      >
-        ⏸
-      </button>
-      <button
-        class="docs-playground__btn"
-        :disabled="isIdle() || isStopped() || isLoading || tw === null"
-        title="Stop"
-        @click="stop"
-      >
-        ⏹
-      </button>
-      <button
-        class="docs-playground__btn"
-        :class="{ 'docs-playground__btn--active': isCompleted() }"
-        :disabled="isIdle() || isLoading || tw === null"
-        title="Replay from start"
-        @click="replay"
-      >
-        ↩ Replay
-      </button>
+      <div class="docs-playground__bar">
+        <button
+          class="docs-playground__btn"
+          :disabled="!canStep()"
+          title="Step backward"
+          @click="stepBackward"
+        >
+          ⏮
+        </button>
+        <button
+          class="docs-playground__btn"
+          :class="{ 'docs-playground__btn--active': isPaused() || isStopped() }"
+          :disabled="isLoading || tw === null || isCompleted()"
+          :title="isPlaying() ? 'Pause' : 'Play'"
+          @click="isPlaying() ? pause() : play()"
+        >
+          {{ isPlaying() ? '⏸' : '▶' }}
+        </button>
+        <button
+          class="docs-playground__btn"
+          :disabled="isIdle() || isStopped() || isLoading || tw === null"
+          title="Stop"
+          @click="stop"
+        >
+          ⏹
+        </button>
+        <button
+          class="docs-playground__btn"
+          :class="{ 'docs-playground__btn--active': isCompleted() }"
+          :disabled="isIdle() || isLoading || tw === null"
+          title="Replay from start"
+          @click="replay"
+        >
+          ↩
+        </button>
+        <button
+          class="docs-playground__btn"
+          :disabled="!canStep()"
+          title="Step forward"
+          @click="stepForward"
+        >
+          ⏭
+        </button>
+
+        <input
+          class="docs-playground__seek"
+          type="range"
+          :min="0"
+          :max="duration || 1"
+          :value="currentTime"
+          :disabled="tw === null || isLoading || isIdle() || isStopped()"
+          @input="onSeek"
+        >
+
+        <span class="docs-playground__time">
+          {{ formatTime(currentTime) }} / {{ formatTime(duration) }}
+        </span>
+      </div>
     </div>
   </div>
 </template>
+
+<style>
+.vp-doc div[class*='language-']:has(+ .docs-playground.docs-playground--attached) {
+  border-bottom-left-radius: 0 !important;
+  border-bottom-right-radius: 0 !important;
+}
+</style>
 
 <style scoped>
 .docs-playground {
@@ -211,49 +353,61 @@ onUnmounted(() => {
   background: var(--vp-c-bg-soft);
 }
 
+.docs-playground.docs-playground--attached {
+  border-top: 1px solid var(--vp-c-divider);
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+  margin-top: -1px;
+}
+
 .docs-playground__header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 8px 14px;
+  padding: 0 10px;
+  height: 36px;
   background: var(--vp-c-bg-elv);
   border-bottom: 1px solid var(--vp-c-divider);
+  user-select: none;
+}
+
+.docs-playground--collapsed .docs-playground__header {
+  border-bottom: none;
 }
 
 .docs-playground__label {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
   color: var(--vp-c-brand-1);
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.06em;
   font-family: var(--vp-font-family-mono);
 }
 
-.docs-playground__rerun {
-  font-size: 12px;
+.docs-playground__collapse-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  font-size: 11px;
   font-family: var(--vp-font-family-mono);
-  padding: 3px 10px;
   border-radius: 4px;
   border: 1px solid var(--vp-c-divider);
-  background: var(--vp-c-bg);
-  color: var(--vp-c-text-2);
+  background: transparent;
+  color: var(--vp-c-text-3);
   cursor: pointer;
-  transition: background 0.15s, color 0.15s;
+  transition: color 0.15s, border-color 0.15s;
+  flex-shrink: 0;
 }
 
-.docs-playground__rerun:hover:not(:disabled) {
-  background: var(--vp-c-brand-soft);
+.docs-playground__collapse-btn:hover {
   color: var(--vp-c-brand-1);
   border-color: var(--vp-c-brand-1);
 }
 
-.docs-playground__rerun:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-}
-
 .docs-playground__preview {
-  min-height: 64px;
+  min-height: 60px;
   padding: 20px 24px;
   font-family: var(--vp-font-family-mono);
   font-size: 1rem;
@@ -271,25 +425,31 @@ onUnmounted(() => {
   border-top: 1px solid var(--vp-c-danger-2, rgba(244, 63, 94, 0.3));
 }
 
-.docs-playground__controls {
+.docs-playground__bar {
   display: flex;
-  gap: 6px;
-  padding: 8px 14px;
+  align-items: center;
+  gap: 4px;
+  padding: 0 10px;
+  height: 44px;
   border-top: 1px solid var(--vp-c-divider);
   background: var(--vp-c-bg-elv);
 }
 
 .docs-playground__btn {
-  font-size: 13px;
-  padding: 4px 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  font-size: 14px;
   border-radius: 4px;
   border: 1px solid var(--vp-c-divider);
   background: var(--vp-c-bg);
   color: var(--vp-c-text-2);
   cursor: pointer;
-  transition: background 0.15s, color 0.15s;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
   font-family: var(--vp-font-family-mono);
-  line-height: 1.4;
+  flex-shrink: 0;
 }
 
 .docs-playground__btn:hover:not(:disabled) {
@@ -305,7 +465,28 @@ onUnmounted(() => {
 }
 
 .docs-playground__btn:disabled {
+  opacity: 0.38;
+  cursor: not-allowed;
+}
+
+.docs-playground__seek {
+  flex: 1;
+  height: 4px;
+  cursor: pointer;
+  accent-color: var(--vp-c-brand-1);
+  margin: 0 8px;
+}
+
+.docs-playground__seek:disabled {
   opacity: 0.4;
   cursor: not-allowed;
+}
+
+.docs-playground__time {
+  font-size: 11px;
+  font-family: var(--vp-font-family-mono);
+  color: var(--vp-c-text-3);
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 </style>

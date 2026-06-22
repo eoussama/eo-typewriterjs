@@ -19,6 +19,9 @@ export default defineConfig({
       formats: ["es", "cjs"],
       fileName: format => (format === "es" ? "index.js" : "index.cjs"),
     },
+    rollupOptions: {
+      external: id => id.includes("/devtools/"),
+    },
     sourcemap: true,
     emptyOutDir: true,
   },
