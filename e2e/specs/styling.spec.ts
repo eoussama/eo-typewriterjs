@@ -119,4 +119,28 @@ test.describe("styling", () => {
     expect(texts[0]).toBe("Hel");
     expect(texts[1]).toBe("rld");
   });
+
+  test("cumulative styles on the same range produce nested spans preserving all classes", async ({ page }) => {
+    await gotoScenario(page, "cumulative-styles-same-range");
+
+    const output = getOutputLocator(page);
+
+    await expect(output.locator("span.tw-bold")).toBeVisible();
+    await expect(output.locator("span.tw-underline")).toBeVisible();
+
+    const boldText = await output.locator("span.tw-bold").textContent();
+
+    expect(boldText).toBe("Important");
+
+    const underlineText = await output.locator("span.tw-underline").textContent();
+
+    expect(underlineText).toBe("Important");
+
+    // tw-underline must be nested inside tw-bold (first style is outermost)
+    const nestedUnderline = output.locator("span.tw-bold span.tw-underline");
+
+    await expect(nestedUnderline).toBeVisible();
+
+    expect(await getOutputText(page)).toBe("Important Notice");
+  });
 });

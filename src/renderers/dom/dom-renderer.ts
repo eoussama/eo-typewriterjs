@@ -1,10 +1,11 @@
 import type { TNullable } from "@eoussama/core";
 import type { TCursorAnimation, TCursorAnimationOptions } from "../../core/cursor/types/cursor-render-options.type";
 import type { IRenderer } from "../../core/renderer/interfaces/renderer.interface";
+import type { TStyleRef } from "../../core/state/types/rich-text-document.type";
 import type { TRichTextSegment } from "../../core/state/types/rich-text-segment.type";
 import type { TSelectionState, TTypewriterState } from "../../core/state/types/typewriter-state.type";
 
-import { mergeStyles, segmentRichText } from "../../core/state/helpers/segment-rich-text.helper";
+import { resolveStyleRef, segmentRichText } from "../../core/state/helpers/segment-rich-text.helper";
 
 
 
@@ -192,31 +193,26 @@ export class DomRenderer implements IRenderer {
 
   /**
    * @description
-   * Apply a TRichTextSegment's styles to a DOM span element.
-   * Merges all active style refs and applies className, attrs, and css.
+   * Apply a single TStyleRef to a DOM span element.
    *
    * @param el - The span element to style
-   * @param segment - The rich-text segment whose styles should be applied
+   * @param ref - The style reference to apply
    */
-  private _applySegmentStyles(el: HTMLElement, segment: TRichTextSegment): void {
-    if (segment.styles.length === 0) {
-      return;
+  private _applySingleStyleRef(el: HTMLElement, ref: TStyleRef): void {
+    const resolved = resolveStyleRef(ref);
+
+    if (resolved.className !== undefined) {
+      el.classList.add(...resolved.className.split(/\s+/).filter(Boolean));
     }
 
-    const merged = mergeStyles(segment.styles);
-
-    if (merged.className !== undefined) {
-      el.classList.add(...merged.className.split(/\s+/).filter(Boolean));
-    }
-
-    if (merged.attrs !== undefined) {
-      for (const [key, value] of Object.entries(merged.attrs)) {
+    if (resolved.attrs !== undefined) {
+      for (const [key, value] of Object.entries(resolved.attrs)) {
         el.setAttribute(key, value);
       }
     }
 
-    if (merged.css !== undefined) {
-      for (const [prop, value] of Object.entries(merged.css)) {
+    if (resolved.css !== undefined) {
+      for (const [prop, value] of Object.entries(resolved.css)) {
         (el.style as unknown as Record<string, string>)[prop] = value;
       }
     }
@@ -378,15 +374,27 @@ export class DomRenderer implements IRenderer {
     const hasSelection = openSelections.size > 0;
 
     if (hasStyle || hasSelection) {
-      const el = document.createElement("span");
+      let current: Node = document.createTextNode(text);
 
-      if (hasSelection) {
-        el.classList.add("typewriter-selection");
+      // Wrap in one span per style ref, innermost = last style applied
+      for (let i = segment.styles.length - 1; i >= 0; i--) {
+        const el = document.createElement("span");
+
+        this._applySingleStyleRef(el, segment.styles[i]!);
+        el.appendChild(current);
+        current = el;
       }
 
-      this._applySegmentStyles(el, segment);
-      el.textContent = text;
-      fragment.appendChild(el);
+      // Selection highlight is the outermost wrapper
+      if (hasSelection) {
+        const selEl = document.createElement("span");
+
+        selEl.classList.add("typewriter-selection");
+        selEl.appendChild(current);
+        current = selEl;
+      }
+
+      fragment.appendChild(current);
     }
     else {
       fragment.appendChild(document.createTextNode(text));

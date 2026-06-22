@@ -225,19 +225,20 @@ tw.timeline
   .type("Important Notice", { by: "char", interval: 60 })
   .style("bold", { from: 0, to: 9 })
   .style("underline", { from: 0, to: 9 });
-// Both styles accumulate - the DOM renderer produces nested spans
 
 await tw.play();
+// Renders: <span class="bold"><span class="underline">Important</span></span> Notice
+// Both styles are present - the first style applied becomes the outermost span
 ```
 
 ## Interaction with renderers
 
-The **DOM renderer** wraps styled characters in `<span>` elements. Styles are applied in this order:
+The **DOM renderer** wraps styled characters in `<span>` elements. Each style ref on a segment produces its own span. When multiple styles cover the same range, they are rendered as nested spans: the first style applied is the outermost span and the last is the innermost. Within each span, styles are applied in this order:
 1. `className` - added as CSS classes
-2. `css` - applied as inline styles
-3. `attrs` - added as HTML attributes
+2. `attrs` - added as HTML attributes
+3. `css` - applied as inline styles
 
-Overlapping styles on the same character range produce nested spans. Use `segmentRichText(document)` to get pre-segmented ranges with merged style metadata if your custom renderer needs a flat structure.
+Use `segmentRichText(document)` to get pre-segmented ranges with their stacked style refs if your custom renderer needs to inspect or flatten the style layers.
 
 The **string renderer** ignores styles in `toString()`. In `toAnsiString()`, the `ansi` field of each style is applied as ANSI escape codes.
 
@@ -254,7 +255,7 @@ When `.delete()` removes text that overlaps a styled range:
 - **`from === to`** - zero-width style; valid but has no visible effect.
 - **`from > to`** - undefined behavior; always use `from < to`.
 - **`"selection"` with no active selection** - the state is returned unchanged; no style is applied.
-- **Multiple styles on the same range** - all accumulate; no deduplication is performed.
+- **Multiple styles on the same range** - all accumulate as nested spans in the DOM renderer; no deduplication is performed.
 - **Out-of-bounds range** - the style is stored with the given indices. Renderers clip to visible text length.
 
 ## Type reference

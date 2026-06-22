@@ -113,4 +113,16 @@ export const STYLING_SCENARIOS: readonly TScenario[] = [
       await tw.play();
     },
   },
+  {
+    id: "cumulative-styles-same-range",
+    async run({ el }) {
+      const tw = createTypewriter({ renderer: domRenderer(el), cursor: { content: "" } });
+
+      tw.timeline
+        .type("Important Notice", { by: "char", interval: 1 })
+        .style("tw-bold", { from: 0, to: 9 })
+        .style("tw-underline", { from: 0, to: 9 });
+      await tw.play();
+    },
+  },
 ];

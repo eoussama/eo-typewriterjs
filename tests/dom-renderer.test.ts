@@ -698,3 +698,109 @@ describe("domRenderer, cursor animation", () => {
     expect(cursor?.style.animationDirection).toBe("alternate");
   });
 });
+
+
+describe("domRenderer, cumulative styles on same range", () => {
+  it("two className styles on the same range both appear as nested spans", async () => {
+    const el = document.createElement("div");
+    const tw = createTypewriter({ renderer: new DomRenderer(el), cursor: { content: "" } });
+
+    tw.timeline
+      .type("Important Notice", { by: "char", interval: 1 })
+      .style("bold", { from: 0, to: 9 })
+      .style("underline", { from: 0, to: 9 });
+    await tw.play();
+
+    expect(el.textContent).toBe("Important Notice");
+    expect(el.querySelector(".bold")).not.toBeNull();
+    expect(el.querySelector(".underline")).not.toBeNull();
+  });
+
+  it("the first applied style is the outermost span and the second is nested inside it", async () => {
+    const el = document.createElement("div");
+    const tw = createTypewriter({ renderer: new DomRenderer(el), cursor: { content: "" } });
+
+    tw.timeline
+      .type("Hello", { by: "char", interval: 1 })
+      .style("outer", { from: 0, to: 5 })
+      .style("inner", { from: 0, to: 5 });
+    await tw.play();
+
+    const outerSpan = el.querySelector(".outer");
+
+    expect(outerSpan).not.toBeNull();
+    expect(outerSpan?.querySelector(".inner")).not.toBeNull();
+  });
+
+  it("three className styles on the same range all appear in the DOM", async () => {
+    const el = document.createElement("div");
+    const tw = createTypewriter({ renderer: new DomRenderer(el), cursor: { content: "" } });
+
+    tw.timeline
+      .type("ABC", { by: "char", interval: 1 })
+      .style("first", { from: 0, to: 3 })
+      .style("second", { from: 0, to: 3 })
+      .style("third", { from: 0, to: 3 });
+    await tw.play();
+
+    expect(el.querySelector(".first")).not.toBeNull();
+    expect(el.querySelector(".second")).not.toBeNull();
+    expect(el.querySelector(".third")).not.toBeNull();
+    expect(el.textContent).toBe("ABC");
+  });
+
+  it("mixed className and css styles on the same range both apply", async () => {
+    const el = document.createElement("div");
+    const tw = createTypewriter({ renderer: new DomRenderer(el), cursor: { content: "" } });
+
+    tw.timeline
+      .type("Hi", { by: "char", interval: 1 })
+      .style("emphasis", { from: 0, to: 2 })
+      .style({ css: { color: "red" } }, { from: 0, to: 2 });
+    await tw.play();
+
+    expect(el.querySelector(".emphasis")).not.toBeNull();
+
+    const colorSpan = el.querySelector<HTMLElement>("span[style]");
+
+    expect(colorSpan).not.toBeNull();
+    expect(colorSpan?.style.color).toBe("red");
+    expect(el.textContent).toBe("Hi");
+  });
+
+  it("non-overlapping styles on adjacent ranges each produce their own independent span", async () => {
+    const el = document.createElement("div");
+    const tw = createTypewriter({ renderer: new DomRenderer(el), cursor: { content: "" } });
+
+    tw.timeline
+      .type("Hello World", { by: "char", interval: 1 })
+      .style("part-a", { from: 0, to: 5 })
+      .style("part-b", { from: 6, to: 11 });
+    await tw.play();
+
+    const spanA = el.querySelector(".part-a");
+    const spanB = el.querySelector(".part-b");
+
+    expect(spanA).not.toBeNull();
+    expect(spanB).not.toBeNull();
+    expect(spanA?.textContent).toBe("Hello");
+    expect(spanB?.textContent).toBe("World");
+  });
+
+  it("cumulative styles and selection highlight both render correctly", async () => {
+    const el = document.createElement("div");
+    const tw = createTypewriter({ renderer: new DomRenderer(el) });
+
+    tw.timeline
+      .type("Test", { by: "char", interval: 1 })
+      .style("bold", { from: 0, to: 4 })
+      .style("underline", { from: 0, to: 4 })
+      .move(-999)
+      .select(4);
+    await tw.play();
+
+    expect(el.querySelector(".bold")).not.toBeNull();
+    expect(el.querySelector(".underline")).not.toBeNull();
+    expect(el.querySelector(".typewriter-selection")).not.toBeNull();
+  });
+});
