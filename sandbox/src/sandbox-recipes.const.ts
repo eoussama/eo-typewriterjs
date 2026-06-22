@@ -116,7 +116,7 @@ tw.timeline
   .wait(600)
   .type("\\ncafé  naïve  façade", { by: "grapheme", interval: 70 })
   .wait(500)
-  .delete(6, { by: "grapheme", interval: 110 })
+  .delete(-6, { by: "grapheme", interval: 110 })
   .type("résumé", { by: "grapheme", interval: 90 })
   .wait(800);
 
@@ -133,7 +133,7 @@ await tw.play();`,
 tw.timeline
   .type("EO TypewriterTS", { by: "char", interval: 60 })
   .wait(500)
-  .delete(2, { by: "char", interval: 80 })
+  .delete(-2, { by: "char", interval: 80 })
   .wait(300)
   .type("JS Sandbox \uD83C\uDF89", { by: "char", interval: 80 })
   .wait(400)
@@ -207,8 +207,8 @@ tw.timeline
   .type("By character: ", { by: "char", interval: 40 })
   .type("the quick brown fox", { by: "char", interval: 60 })
   .wait(800)
-  .delete(19, { by: "char", interval: 25 })
-  .delete(14, { by: "char", interval: 25 })
+  .delete(-19, { by: "char", interval: 25 })
+  .delete(-14, { by: "char", interval: 25 })
   .wait(300)
   .type("By word: ", { by: "char", interval: 40 })
   .type("the quick brown fox", { by: "word", interval: 200 })
@@ -260,12 +260,12 @@ await tw.play();`,
 tw.timeline
   .type("Looping forever!", { by: "char", interval: 70 })
   .wait(600)
-  .delete(16, { by: "char", interval: 40 })
+  .delete(-16, { by: "char", interval: 40 })
   .wait(300);
 
 await tw.play();
 
-while (true) {
+while (tw.getState().status === EPlaybackStatus.COMPLETED) {
   await tw.replay();
 }`,
   },
@@ -279,15 +279,11 @@ while (true) {
     category: "editing",
     code: `const tw = createTypewriter({ renderer });
 
-// Each .delete(1, { by: "word" }) removes one whole word from the end.
+// Each .delete(-1, { by: "word" }) removes one whole word from the end.
 tw.timeline
   .type("one two three four five", { by: "char", interval: 60 })
   .wait(600)
-  .delete(1, { by: "word", interval: 300 })
-  .delete(1, { by: "word", interval: 300 })
-  .delete(1, { by: "word", interval: 300 })
-  .delete(1, { by: "word", interval: 300 })
-  .delete(1, { by: "word", interval: 300 })
+  .delete(-5, { by: "word", interval: 300 })
   .wait(400)
   .type("all erased.", { by: "char", interval: 70 });
 
@@ -301,11 +297,11 @@ await tw.play();`,
     category: "editing",
     code: `const tw = createTypewriter({ renderer });
 
-// "I love TypewriterJS" - move to index 7 (after "I love ") to insert "using "
+// "I love TypewriterJS" = 19 chars. Move back 12 to reach index 7 (after "I love ").
 tw.timeline
   .type("I love TypewriterJS", { by: "char", interval: 70 })
   .wait(600)
-  .move(7)
+  .move(-12)
   .wait(300)
   .type("using ", { by: "char", interval: 80 });
 
@@ -319,17 +315,17 @@ await tw.play();`,
     category: "editing",
     code: `const tw = createTypewriter({ renderer });
 
-// "A usefull library." = 18 chars
-// "usefull" occupies indices 2-8 (7 chars). Cursor at 9 (after the l).
+// "A usefull library." = 18 chars. Cursor at 18 after typing.
+// "usefull" occupies indices 2-8 (7 chars). Move back 9 to reach index 9 (after "usefull").
 // Delete 7 backward → removes "usefull", then type "useful" (6 chars).
 // Final text: "A useful library." (17 chars)
 // Marks: "useful" = 2-8, "library" = 9-16
 tw.timeline
   .type("A usefull library.", { by: "char", interval: 70 })
   .wait(600)
-  .move(9)
+  .move(-9)
   .wait(200)
-  .delete(7, { by: "char", interval: 55 })
+  .delete(-7, { by: "char", interval: 55 })
   .type("useful", { by: "char", interval: 70 })
   .wait(400)
   .style("tw-success", { from: 2, to: 8 })
@@ -351,23 +347,26 @@ await tw.play();`,
 // To update a status: move cursor to end of status field (prefix + 7),
 // delete 7 chars backward, then type the new 7-char status.
 //
-// Line offsets (end of status field, before \\n):
-//   Line 1: index 14  (7 prefix + 7 status)
-//   Line 2: index 29  (15 + 7 + 7)
-//   Line 3: index 44  (30 + 7 + 7)
+// After typing 3 lines the cursor is at index 45 (end of document).
+// To update each field: move to the end of PENDING, delete 1 word backward, type replacement.
+//
+// Absolute indices (end of PENDING, before \\n):
+//   Line 1: index 14  → from 45, move(-31)
+//   Line 2: index 24  → after first edit (cursor at 9), move(15)
+//   Line 3: index 34  → after second edit (cursor at 19), move(15)
 tw.timeline
   .type("API    PENDING\\n", { by: "char", interval: 40 })
   .type("DB     PENDING\\n", { by: "char", interval: 40 })
   .type("CACHE  PENDING\\n", { by: "char", interval: 40 })
   .wait(600)
-  .move(14)
-  .delete(1, { by: "word", interval: 50 })
+  .move(-31)
+  .delete(-1, { by: "word", interval: 50 })
   .type("OK", { by: "word", interval: 60 })
-  .move(24)
-  .delete(1, { by: "word", interval: 50 })
+  .move(15)
+  .delete(-1, { by: "word", interval: 50 })
   .type("OK", { by: "word", interval: 60 })
-  .move(34)
-  .delete(1, { by: "word", interval: 50 })
+  .move(15)
+  .delete(-1, { by: "word", interval: 50 })
   .type("MISSING", { by: "word", interval: 60 })
   .wait(600);
 
@@ -514,13 +513,16 @@ await tw.play();`,
     category: "cursor",
     code: `const tw = createTypewriter({ renderer });
 
+// After typing "Hello World" (11 chars), cursor is at 11.
+// move(-6) positions cursor at index 5 (before "World").
+// After inserting "," cursor is at 6; move("end") jumps to the end.
 tw.timeline
   .type("Hello World", { by: "char", interval: 70 })
   .wait(400)
-  .move(5)
+  .move(-6)
   .wait(300)
   .type(",", { by: "char", interval: 80 })
-  .move(13)
+  .move("end")
   .type("!", { by: "char", interval: 80 });
 
 await tw.play();`,
@@ -542,26 +544,6 @@ tw.timeline
 await tw.play();`,
   },
 
-  {
-    id: "mirror-cursors",
-    title: "Mirror Cursors",
-    description: "Two cursors on separate lines type the same text simultaneously.",
-    category: "cursor",
-    code: `const tw = createTypewriter({ renderer });
-
-// "Name: \\nRole: " = 13 chars. main ends at 13 (after "Role: ").
-// cursor "b" is parked at 6 (end of "Name: " line, before \\n).
-// Both cursors then type "Alice" at their respective positions.
-tw.timeline
-  .type("Name: \\nRole: ", { by: "char", interval: 70 })
-  .wait(400)
-  .move(6, { cursor: "b" })
-  .wait(200)
-  .type("Alice", { cursor: ["main", "b"], by: "char", interval: 90 })
-  .wait(600);
-
-await tw.play();`,
-  },
 
   {
     id: "multi-cursor-paragraph",
@@ -580,19 +562,19 @@ tw.timeline
     interval: 50,
   })
   .wait(600)
-  // Park cursor "b" after "qick" (index 8)
-  .move(8, { cursor: "b" })
+  // Park cursor "b" after "qick" (index 8): from 43, move(-35)
+  .move(-35, { cursor: "b" })
   .wait(200)
   // Fix typo 1 with cursor "b"
-  .delete(4, { cursor: "b", by: "char", interval: 60 })
+  .delete(-4, { cursor: "b", by: "char", interval: 60 })
   .type("quick", { cursor: "b", by: "char", interval: 70 })
   .wait(300)
   // Fix typo 2 with main - position after "jumpd".
-  // After fixing "qick"(4 chars) -> "quick"(5 chars), main has shifted by 1 to 44.
-  // "jumpd" now ends at index 25. Move main there.
-  .move(25)
+  // After fixing "qick"(4 chars) -> "quick"(5 chars), main shifted by 1 to 44.
+  // "jumpd" now ends at index 25. From 44, move(-19).
+  .move(-19)
   .wait(200)
-  .delete(5, { cursor: "main", by: "char", interval: 60 })
+  .delete(-5, { cursor: "main", by: "char", interval: 60 })
   .type("jumped", { cursor: "main", by: "char", interval: 70 })
   .wait(600);
 
@@ -671,13 +653,13 @@ tw.timeline
   .type("Code in ", { by: "char", interval: 80 })
   .type("style",     { by: "char", interval: 90, style: "tw-accent" })
   .wait(900)
-  .delete(5, { by: "char", interval: 45 })
+  .delete(-5, { by: "char", interval: 45 })
   .type("bravery",   { by: "char", interval: 90, style: "tw-accent" })
   .wait(900)
-  .delete(7, { by: "char", interval: 45 })
+  .delete(-7, { by: "char", interval: 45 })
   .type("elegance",  { by: "char", interval: 90, style: "tw-accent" })
   .wait(900)
-  .delete(8, { by: "char", interval: 45 })
+  .delete(-8, { by: "char", interval: 45 })
   .type("precision", { by: "char", interval: 90, style: "tw-accent" })
   .wait(1000);
 
@@ -756,7 +738,7 @@ await tw.play();`,
 tw.timeline
   .type("Make this word pop.", { by: "char", interval: 70 })
   .wait(500)
-  .move(14)
+  .move(-5)
   .wait(200)
   .select(-4, { by: "char" })
   .wait(300)
@@ -778,7 +760,7 @@ await tw.play();`,
 tw.timeline
   .type("Hello World", { by: "char", interval: 70 })
   .wait(400)
-  .move(6)
+  .move(-5)
   .select(5)
   .wait(800)
   .unselect()
@@ -821,7 +803,7 @@ tw.timeline
   .wait(400)
   .style("tw-highlight", { from: 0, to: 11 })
   .wait(400)
-  .move(6)
+  .move(-5)
   .select(5)
   .wait(600)
   .unstyle("selection")
@@ -894,7 +876,7 @@ tw.timeline
     console.log("Text so far:", state.document.text);
   })
   .wait(400)
-  .delete(3, { by: "char", interval: 60 })
+  .delete(-3, { by: "char", interval: 60 })
   .type(" complete!", { by: "char", interval: 70 });
 
 await tw.play();`,
@@ -915,7 +897,7 @@ tw.timeline
     await new Promise(resolve => setTimeout(resolve, 800));
   })
   .wait(200)
-  .delete(13, { by: "char", interval: 25 })
+  .delete(-16, { by: "char", interval: 25 })
   .type("Data loaded \u2713", { by: "char", interval: 65 });
 
 await tw.play();`,
@@ -1094,10 +1076,10 @@ const tw = createTypewriter({ renderer, audio: { enabled: true } });
 
 tw.timeline
   .type("Loud ", { by: "char", interval: 70 })
-  .type("silent ", { by: "char", interval: 70, audio: false })
+  .type("silent ", { by: "char", interval:120 , audio: false })
   .type("loud again!", { by: "char", interval: 70 })
   .wait(500)
-  .delete(11, { by: "char", interval: 50, audio: false })
+  .delete(-11, { by: "char", interval: 50, audio: false })
   .type("done.", { by: "char", interval: 70 });
 
 await tw.play();`,
@@ -1169,7 +1151,7 @@ await tw.play();`,
 tw.timeline
   .type("Natural-feeling keystrokes with jitter.", { by: "char", interval: 75 })
   .wait(400)
-  .delete(7, { by: "char", interval: 60 })
+  .delete(-7, { by: "char", interval: 60 })
   .type("variance!", { by: "char", interval: 75 });
 
 await tw.play();`,
@@ -1197,7 +1179,7 @@ tw.timeline
   .type("Mechanical keys: ", { by: "char", interval: 80 })
   .type("clack clack!", { by: "char", interval: 90 })
   .wait(400)
-  .delete(12, { by: "char", interval: 60 })
+  .delete(-12, { by: "char", interval: 60 })
   .type("soft delete.", { by: "char", interval: 80 });
 
 await tw.play();`,
