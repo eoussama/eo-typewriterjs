@@ -276,13 +276,48 @@ body {
   color: #fff;
 }
 
+/* Timeline */
+
+.timeline-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.seek-slider {
+  flex: 1;
+  min-width: 0;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 3px;
+  border-radius: 999px;
+  background: var(--color-surface-hi);
+  outline: none;
+  cursor: pointer;
+  accent-color: var(--color-accent);
+}
+
+.seek-slider:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.time-label {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
 /* Rate */
 
 .rate-row {
   display: flex;
   align-items: center;
   gap: 0.4rem;
-  margin-left: auto;
   flex-shrink: 0;
 }
 

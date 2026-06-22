@@ -24,6 +24,8 @@ const elStopBtn = $("#stop-btn");
 const elReplayBtn = $("#replay-btn");
 const elStepFwdBtn = $("#step-fwd-btn");
 const elStepBwdBtn = $("#step-bwd-btn");
+const elSeekSlider = $<HTMLInputElement>("#seek-slider");
+const elTimeLabel = $("#time-label");
 const elRateSlider = $<HTMLInputElement>("#rate-slider");
 const elRateValue = $("#rate-value");
 const elAudioMuteBtn = $("#audio-mute-btn");
@@ -53,6 +55,11 @@ let rafId: number | null = null;
 let sandboxAudioEnabled = false;
 let sandboxAudioVolume = 1;
 
+let timelineCurrentTime = 0;
+let timelineDuration = 0;
+let playStartWall = 0;
+let playStartTimeline = 0;
+
 /**
  * Monotonically incrementing token used to discard results from stale runCode calls.
  * Whenever a new run starts, this counter is bumped; the async completion checks that
@@ -72,6 +79,73 @@ const initialRecipe = SANDBOX_RECIPES[0];
 
 const editorView = createSandboxEditor(elEditorContainer, initialRecipe.code);
 
+
+/**
+ * @description
+ * Format a millisecond value as a compact time string
+ *
+ * @param ms - Milliseconds to format
+ * @returns Formatted time string
+ */
+function formatTime(ms: number): string {
+  const clamped = Math.max(0, ms);
+
+  if (clamped < 1000) {
+    return `${Math.round(clamped)}ms`;
+  }
+
+  const totalSec = clamped / 1000;
+  const min = Math.floor(totalSec / 60);
+  const sec = Math.floor(totalSec % 60);
+  const tenths = Math.floor((clamped % 1000) / 100);
+
+  if (min === 0) {
+    return `${sec}.${tenths}s`;
+  }
+
+  return `${min}:${String(sec).padStart(2, "0")}.${tenths}`;
+}
+
+/**
+ * @description
+ * Update the seek slider and time label from current timeline values
+ */
+function syncTimelineUI(): void {
+  elSeekSlider.max = String(timelineDuration || 1);
+  elSeekSlider.value = String(timelineCurrentTime);
+  elTimeLabel.textContent = `${formatTime(timelineCurrentTime)} / ${formatTime(timelineDuration)}`;
+
+  const hasTimeline = activeTw !== null && timelineDuration > 0;
+  const state = activeTw?.getState();
+  const isIdle = state === undefined || state.status === EPlaybackStatus.IDLE;
+  const isStopped = state?.status === EPlaybackStatus.STOPPED;
+
+  elSeekSlider.toggleAttribute("disabled", !hasTimeline || isIdle || isStopped);
+}
+
+/**
+ * @description
+ * Pull current time + duration from the typewriter and refresh UI
+ */
+function syncTimelineFromState(): void {
+  if (activeTw === null) {
+    timelineCurrentTime = 0;
+    timelineDuration = 0;
+    syncTimelineUI();
+
+    return;
+  }
+
+  const s = activeTw.getState();
+
+  timelineCurrentTime = s.currentTime;
+
+  if (s.duration > 0) {
+    timelineDuration = s.duration;
+  }
+
+  syncTimelineUI();
+}
 
 /**
  * @description
@@ -179,18 +253,75 @@ function stopTick(): void {
 
 /**
  * @description
- * Single tick - syncs transport state and loops while playing
+ * Single tick - syncs transport and timeline state, loops while playing
  */
 function tick(): void {
   syncTransportState();
 
-  if (activeTw?.getState().status === EPlaybackStatus.PLAYING) {
+  if (activeTw === null) {
+    rafId = null;
+
+    return;
+  }
+
+  const s = activeTw.getState();
+
+  if (s.duration > 0) {
+    timelineDuration = s.duration;
+  }
+
+  if (s.status === EPlaybackStatus.PLAYING) {
+    const elapsed = (Date.now() - playStartWall) * s.rate;
+
+    timelineCurrentTime = Math.min(playStartTimeline + elapsed, timelineDuration);
+    syncTimelineUI();
     rafId = requestAnimationFrame(tick);
   }
   else {
+    timelineCurrentTime = s.currentTime;
+    syncTimelineUI();
     rafId = null;
     syncTransportState();
   }
+}
+
+/**
+ * @description
+ * Poll via RAF until playback transitions to PLAYING, then hand off to the
+ * main tick loop. This is needed because onCreated fires before the user
+ * snippet calls play(), so the status is still IDLE at that point.
+ */
+function waitForPlay(): void {
+  if (activeTw === null) {
+    rafId = null;
+
+    return;
+  }
+
+  const s = activeTw.getState();
+
+  if (s.duration > 0) {
+    timelineDuration = s.duration;
+    syncTimelineUI();
+  }
+
+  if (s.status === EPlaybackStatus.PLAYING) {
+    playStartWall = Date.now();
+    playStartTimeline = s.currentTime;
+    rafId = requestAnimationFrame(tick);
+
+    return;
+  }
+
+  if (s.status === EPlaybackStatus.IDLE) {
+    rafId = requestAnimationFrame(waitForPlay);
+
+    return;
+  }
+
+  rafId = null;
+  syncTimelineFromState();
+  syncTransportState();
 }
 
 
@@ -251,7 +382,10 @@ async function runCode(): Promise<void> {
 
   activeTw?.stop();
   activeTw = null;
+  timelineCurrentTime = 0;
+  timelineDuration = 0;
   syncTransportState();
+  syncTimelineUI();
 
   elPreviewDom.innerHTML = "";
   elPreviewString.textContent = "";
@@ -292,7 +426,19 @@ async function runCode(): Promise<void> {
 
     elRunBtn.removeAttribute("disabled");
     syncTransportState();
-    startTick();
+    syncTimelineFromState();
+
+    const s = tw.getState();
+
+    if (s.status === EPlaybackStatus.PLAYING) {
+      playStartWall = Date.now();
+      playStartTimeline = s.currentTime;
+      startTick();
+    }
+    else {
+      stopTick();
+      rafId = requestAnimationFrame(waitForPlay);
+    }
   });
 
   if (token !== runToken) {
@@ -317,6 +463,7 @@ async function runCode(): Promise<void> {
   pendingTw = null;
   activeTw = result.tw;
   syncTransportState();
+  syncTimelineFromState();
 }
 
 
@@ -811,24 +958,55 @@ function init(): void {
     elEditorShortcutHint.style.display = "none";
   });
 
+  elSeekSlider.addEventListener("input", () => {
+    if (activeTw === null) {
+      return;
+    }
+
+    const ms = Number(elSeekSlider.value);
+
+    activeTw.seek(ms);
+
+    const s = activeTw.getState();
+
+    if (s.status === EPlaybackStatus.PLAYING) {
+      playStartWall = Date.now();
+      playStartTimeline = ms;
+    }
+
+    timelineCurrentTime = ms;
+    syncTimelineUI();
+    syncTransportState();
+  });
+
   elPlayBtn.addEventListener("click", () => {
     if (activeTw === null) {
       return;
     }
 
+    const s = activeTw.getState();
+
+    playStartWall = Date.now();
+    playStartTimeline = s.currentTime;
     startTick();
-    activeTw.play().catch(() => null).finally(() => syncTransportState());
+    activeTw.play().catch(() => null).finally(() => {
+      syncTransportState();
+      syncTimelineFromState();
+    });
   });
 
   elPauseBtn.addEventListener("click", () => {
     activeTw?.pause();
     stopTick();
     syncTransportState();
+    syncTimelineFromState();
   });
 
   elStopBtn.addEventListener("click", () => {
     activeTw?.stop();
     stopTick();
+    timelineCurrentTime = 0;
+    syncTimelineUI();
     syncTransportState();
   });
 
@@ -837,18 +1015,25 @@ function init(): void {
       return;
     }
 
+    playStartWall = Date.now();
+    playStartTimeline = 0;
     startTick();
-    activeTw.replay().catch(() => null).finally(() => syncTransportState());
+    activeTw.replay().catch(() => null).finally(() => {
+      syncTransportState();
+      syncTimelineFromState();
+    });
   });
 
   elStepFwdBtn.addEventListener("click", () => {
     activeTw?.stepForward();
     syncTransportState();
+    syncTimelineFromState();
   });
 
   elStepBwdBtn.addEventListener("click", () => {
     activeTw?.stepBackward();
     syncTransportState();
+    syncTimelineFromState();
   });
 
   elRateSlider.addEventListener("input", () => {
