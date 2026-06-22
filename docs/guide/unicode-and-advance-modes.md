@@ -1,3 +1,103 @@
+<script setup>
+const charModeCode = `const tw = createTypewriter({ renderer });
+
+tw.timeline.type("Hello!", { by: "char", interval: 60 });
+
+await tw.play();`;
+
+const graphemeModeCode = `const tw = createTypewriter({ renderer });
+
+tw.timeline.type("I ❤️ open source 🚀", { by: "grapheme", interval: 80 });
+
+await tw.play();`;
+
+const wordModeCode = `const tw = createTypewriter({ renderer });
+
+tw.timeline.type("The quick brown fox", { by: "word", interval: 200 });
+
+await tw.play();`;
+
+const lineModeCode = `const tw = createTypewriter({ renderer });
+
+tw.timeline.type("Line one\\nLine two\\nLine three", { by: "line", interval: 400 });
+
+await tw.play();`;
+
+const wholeModeCode = `const tw = createTypewriter({ renderer });
+
+tw.timeline.type("Instant output", { by: "whole", interval: 0 });
+
+await tw.play();`;
+
+const objectFormCode = `const tw = createTypewriter({ renderer });
+
+tw.timeline.type("Loading...", { by: { unit: "char", amount: 3 }, interval: 60 });
+
+await tw.play();`;
+
+const objectFormWordCode = `const tw = createTypewriter({ renderer });
+
+tw.timeline.type("one two three four five", { by: { unit: "word", amount: 2 }, interval: 200 });
+
+await tw.play();`;
+
+const unicodeZwjCode = `const tw = createTypewriter({ renderer });
+
+tw.timeline.type("Hello 👨‍👩‍👧!", { by: "grapheme", interval: 80 });
+
+await tw.play();`;
+
+const unicodeFlagCode = `const tw = createTypewriter({ renderer });
+
+tw.timeline.type("🇺🇸 🇯🇵 🇩🇪", { by: "grapheme", interval: 150 });
+
+await tw.play();`;
+
+const unicodeDiacriticsCode = `const tw = createTypewriter({ renderer });
+
+tw.timeline.type("café résumé naïve", { by: "grapheme", interval: 70 });
+
+await tw.play();`;
+
+const unicodeMixedCode = `const tw = createTypewriter({ renderer });
+
+tw.timeline.type("Hello • مرحبا • 日本語", { by: "grapheme", interval: 80 });
+
+await tw.play();`;
+
+const deleteAdvanceModeCode = `const tw = createTypewriter({ renderer });
+
+tw.timeline
+  .type("Hello 👨‍👩‍👧 World")
+  .delete(-3, { by: "grapheme", interval: 60 });
+
+await tw.play();`;
+
+const deleteWordModeCode = `const tw = createTypewriter({ renderer });
+
+tw.timeline
+  .type("one two three four")
+  .delete(2, { by: "word", interval: 100 });
+
+await tw.play();`;
+
+const moveAdvanceModeCode = `const tw = createTypewriter({ renderer });
+
+tw.timeline
+  .type("café résumé")
+  .move(-3, { by: "grapheme", interval: 40 });
+
+await tw.play();`;
+
+const moveWordModeCode = `const tw = createTypewriter({ renderer });
+
+tw.timeline
+  .type("one two three four five")
+  .move(2, { by: "word", interval: 80 });
+
+await tw.play();`;
+</script>
+
 # Unicode and Advance Modes
 
 The `by` option on `.type()`, `.delete()`, `.move()`, and `.select()` controls how the input is segmented into steps. This page explains what each mode does, when to use each one, and how the library handles Unicode safely.
@@ -21,6 +121,8 @@ tw.timeline.type("Hello!", { by: "char", interval: 60 });
 
 **When to use:** ASCII or Latin text where every character maps to a single code unit.
 
+<DocsPlayground :code="charModeCode" />
+
 ### `"grapheme"`
 
 Steps one user-perceived character (grapheme cluster) at a time. Safe for all Unicode content.
@@ -34,6 +136,8 @@ Under the hood this uses the `Intl.Segmenter` API with `granularity: "grapheme"`
 
 **When to use:** Any text that may contain emoji, combining characters, accented letters, or content from scripts with complex composition rules. Prefer `"grapheme"` when in doubt.
 
+<DocsPlayground :code="graphemeModeCode" />
+
 ### `"word"`
 
 Steps one word at a time. Trailing whitespace is attached to the preceding word, so the cursor position stays natural.
@@ -42,6 +146,8 @@ Steps one word at a time. Trailing whitespace is attached to the preceding word,
 tw.timeline.type("The quick brown fox", { by: "word", interval: 200 });
 // steps: "The " → "The quick " → "The quick brown " → "The quick brown fox"
 ```
+
+<DocsPlayground :code="wordModeCode" />
 
 Uses `Intl.Segmenter` with `granularity: "word"`.
 
@@ -56,6 +162,8 @@ tw.timeline.type("Line one\nLine two\nLine three", { by: "line", interval: 400 }
 // steps: "Line one\n" → "Line one\nLine two\n" → "Line one\nLine two\nLine three"
 ```
 
+<DocsPlayground :code="lineModeCode" />
+
 **When to use:** Terminal output simulation, multi-line reveals, or anywhere the natural unit is a line.
 
 ### `"whole"`
@@ -67,6 +175,8 @@ tw.timeline.type("Instant output", { by: "whole", interval: 0 });
 // single step: "Instant output" (no animation delay)
 ```
 
+<DocsPlayground :code="wholeModeCode" />
+
 **When to use:** Instant rendering, server-side snapshots, or test environments where you want deterministic zero-step output.
 
 ### Object form: `{ unit, amount }`
@@ -77,11 +187,17 @@ Combine any unit with a step size greater than one:
 // 3 characters per step
 tw.timeline.type("Loading...", { by: { unit: "char", amount: 3 }, interval: 60 });
 // steps: "Loa" → "Loadin" → "Loading.." → "Loading..."
+```
 
+<DocsPlayground :code="objectFormCode" />
+
+```ts
 // 2 words per step
 tw.timeline.type("one two three four five", { by: { unit: "word", amount: 2 }, interval: 200 });
 // steps: "one two " → "one two three four " → "one two three four five"
 ```
+
+<DocsPlayground :code="objectFormWordCode" />
 
 This also works with `.delete()` and `.move()`.
 
@@ -110,6 +226,8 @@ tw.timeline.type("Hello 👨‍👩‍👧!", { by: "grapheme", interval: 80 });
 tw.timeline.type("Hello 👨‍👩‍👧!", { by: "char", interval: 80 });
 ```
 
+<DocsPlayground :code="unicodeZwjCode" />
+
 ### Flag emoji
 
 Country flags are pairs of regional indicator symbols. `"char"` splits the pair; `"grapheme"` treats the pair as one unit:
@@ -117,6 +235,8 @@ Country flags are pairs of regional indicator symbols. `"char"` splits the pair;
 ```ts
 tw.timeline.type("🇺🇸 🇯🇵 🇩🇪", { by: "grapheme", interval: 150 });
 ```
+
+<DocsPlayground :code="unicodeFlagCode" />
 
 ### Combining diacritics
 
@@ -126,11 +246,15 @@ Characters like `é` can be a single precomposed code point or a base letter + c
 tw.timeline.type("café résumé naïve", { by: "grapheme", interval: 70 });
 ```
 
+<DocsPlayground :code="unicodeDiacriticsCode" />
+
 ### Mixed scripts
 
 ```ts
 tw.timeline.type("Hello • مرحبا • 日本語", { by: "grapheme", interval: 80 });
 ```
+
+<DocsPlayground :code="unicodeMixedCode" />
 
 ## Delete and advance modes
 
@@ -146,6 +270,10 @@ tw.timeline.delete(2, { by: "word", interval: 100 });
 
 The sign of the numeric operand controls direction: negative deletes to the left of the cursor, positive deletes to the right.
 
+<DocsPlayground :code="deleteAdvanceModeCode" />
+
+<DocsPlayground :code="deleteWordModeCode" />
+
 ## Move and select
 
 `.move()` uses the same `by` granularity for cursor repositioning:
@@ -157,6 +285,10 @@ tw.timeline.move(-3, { by: "grapheme", interval: 40 });
 // Move right two words at a time
 tw.timeline.move(2, { by: "word", interval: 80 });
 ```
+
+<DocsPlayground :code="moveAdvanceModeCode" />
+
+<DocsPlayground :code="moveWordModeCode" />
 
 `.select()` follows the same rules; the selection grows by one `by` unit per step.
 
