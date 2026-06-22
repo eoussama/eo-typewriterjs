@@ -29,17 +29,18 @@ const isLoading = ref(false);
 const isCollapsed = ref(false);
 const isConsoleOpen = ref(false);
 
-type TLogEntry = { level: string; text: string };
+type TLogEntry = { level: string; text: string; atMs: number };
 
-const logs = ref<TLogEntry[]>([]);
+const allLogs = ref<TLogEntry[]>([]);
+
+const logs = computed(() => allLogs.value.filter(e => e.atMs <= currentTime.value));
 
 let tw: TTypewriter | null = null;
 let rafId: number | null = null;
 
-// Wall-clock baseline for estimating currentTime during async playback.
-// Only set when play() / replay() is explicitly called from the UI.
 let playStartWall = 0;
 let playStartTimeline = 0;
+let logRunStart = 0;
 
 function startTick(): void {
   stopTick();
@@ -62,7 +63,6 @@ function syncState(): void {
 
   playbackStatus.value = s.status;
   currentTime.value = s.currentTime;
-  // Duration is monotonic: once the controller reports a positive value, keep it.
   if (s.duration > 0) {
     duration.value = s.duration;
   }
@@ -82,8 +82,6 @@ function tick(): void {
   }
 
   if (s.status === EPlaybackStatus.PLAYING) {
-    // Estimate currentTime from wall clock because the async executor path
-    // does not update _currentTime until completion.
     const elapsed = (Date.now() - playStartWall) * s.rate;
 
     currentTime.value = Math.min(playStartTimeline + elapsed, duration.value);
@@ -108,17 +106,23 @@ async function boot(): Promise<void> {
   playbackStatus.value = EPlaybackStatus.IDLE;
   currentTime.value = 0;
   duration.value = 0;
-  logs.value = [];
+  allLogs.value = [];
   isLoading.value = true;
 
-  const renderer = props.showPreview ? domRenderer(previewEl.value) : domRenderer(document.createElement("div"));
+  const renderer = props.showPreview
+    ? domRenderer(previewEl.value)
+    : domRenderer(document.createElement("div"));
+
+  logRunStart = Date.now();
 
   const result = await runSnippet(
     props.code,
     renderer,
     undefined,
     (level, line) => {
-      logs.value = [...logs.value, { level, text: line }];
+      const atMs = Date.now() - logRunStart;
+
+      allLogs.value = [...allLogs.value, { level, text: line, atMs }];
       isConsoleOpen.value = true;
     },
   );
@@ -133,17 +137,25 @@ async function boot(): Promise<void> {
 
   tw = result.tw;
 
-  // The snippet has fully executed (including any await tw.play()).
-  // Duration is now set. Sync once, then give the browser one more frame
-  // to flush any in-flight state so the reactive values are accurate.
   syncState();
 
   await new Promise<void>((resolve) => {
     requestAnimationFrame(() => {
       syncState();
+      clampLogs();
       resolve();
     });
   });
+}
+
+function clampLogs(): void {
+  if (allLogs.value.length === 0 || currentTime.value <= 0) {
+    return;
+  }
+
+  const cap = currentTime.value;
+
+  allLogs.value = allLogs.value.map(e => e.atMs > cap ? { ...e, atMs: cap } : e);
 }
 
 function play(): void {
@@ -151,7 +163,8 @@ function play(): void {
     return;
   }
 
-  logs.value = [];
+  allLogs.value = [];
+  logRunStart = Date.now();
 
   const s = tw.getState();
 
@@ -164,6 +177,7 @@ function play(): void {
     .finally(() => {
       stopTick();
       syncState();
+      clampLogs();
     });
 }
 
@@ -190,7 +204,8 @@ function replay(): void {
     return;
   }
 
-  logs.value = [];
+  allLogs.value = [];
+  logRunStart = Date.now();
 
   playStartWall = Date.now();
   playStartTimeline = 0;
@@ -201,6 +216,7 @@ function replay(): void {
     .finally(() => {
       stopTick();
       syncState();
+      clampLogs();
     });
 }
 
@@ -317,7 +333,7 @@ onUnmounted(() => {
         {{ errorMsg }}
       </div>
 
-      <div v-if="logs.length > 0" class="docs-playground__console">
+      <div v-if="allLogs.length > 0" class="docs-playground__console">
         <div class="docs-playground__console-header" @click="isConsoleOpen = !isConsoleOpen">
           <span class="docs-playground__console-label">Console ({{ logs.length }})</span>
           <span class="docs-playground__console-toggle">{{ isConsoleOpen ? '▼' : '▲' }}</span>
