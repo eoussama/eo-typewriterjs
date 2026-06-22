@@ -12,6 +12,8 @@ tw.timeline.style(
 
 `.style()` is an **instant command**. It produces a single event at the current timeline clock position and does **not** advance the clock. The applied style is permanent - it persists in the document state until the marked text is deleted or `.unstyle()` removes it.
 
+`before` fires once before the style is applied. `after` fires once after the style is applied. The `audio` option, if set, triggers playback through the typing audio channel.
+
 ## Parameters
 
 | Parameter | Type | Description |
@@ -100,7 +102,7 @@ tw.timeline
   .style("highlight", "selection"); // styles that range
 ```
 
-`.style()` reads the selection range but does **not** clear the selection. Use `.move()` or `.unselect()` afterward to dismiss the visual highlight.
+`.style()` with `"selection"` reads the active selection range and then **clears the selection** as part of applying the event.
 
 ## Styling text as it is typed
 
@@ -162,8 +164,8 @@ tw.timeline
   .wait(500)
   .move(-9)
   .select(5)                         // selects "brown"
-  .style("emphasis", "selection")   // marks "brown"
-  .move("end");                      // clears selection, moves to end
+  .style("emphasis", "selection")   // marks "brown" and clears the selection
+  .move("end");                      // cursor moves to end
 
 await tw.play();
 // "brown" permanently carries the "emphasis" class
@@ -208,8 +210,7 @@ tw.timeline
   .type("Searching for pattern...", { by: "char", interval: 55 })
   .wait(800)
   .select("whole")
-  .style("searching", "selection")  // apply "searching" to everything
-  .unselect()
+  .style("searching", "selection")  // apply "searching" to everything; selection cleared
   .wait(1000)
   .unstyle({ from: 0, to: 24 })     // remove "searching"
   .style("found", { from: 0, to: 9 }); // apply "found" to "Searching"
@@ -252,7 +253,7 @@ When `.delete()` removes text that overlaps a styled range:
 
 - **`from === to`** - zero-width style; valid but has no visible effect.
 - **`from > to`** - undefined behavior; always use `from < to`.
-- **`"selection"` with no active selection** - applies a zero-width style at the cursor position. Effectively a no-op in renderers.
+- **`"selection"` with no active selection** - the state is returned unchanged; no style is applied.
 - **Multiple styles on the same range** - all accumulate; no deduplication is performed.
 - **Out-of-bounds range** - the style is stored with the given indices. Renderers clip to visible text length.
 

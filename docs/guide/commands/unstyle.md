@@ -11,6 +11,8 @@ tw.timeline.unstyle(
 
 `.unstyle()` is an **instant command**. It produces a single event at the current timeline clock position and does **not** advance the clock. Styles are never partially modified in-place - they are either removed entirely (if fully inside the range) or **clipped** to exclude the unstyle range (if they partially overlap).
 
+`before` fires once before the styles are removed. `after` fires once after the styles are removed. The `audio` option, if set, triggers playback through the typing audio channel.
+
 ## Parameters
 
 | Parameter | Type | Description |
@@ -52,7 +54,7 @@ tw.timeline.unstyle({ from: 6, to: 11 });
 
 ### Using `"selection"`
 
-When `range` is `"selection"`, the styles are removed from the targeted cursor's **current selection range** at the moment the event fires. Unlike `.style("...", "selection")`, `.unstyle("selection")` **does clear the selection** after it runs.
+When `range` is `"selection"`, the styles are removed from the targeted cursor's **current selection range** at the moment the event fires. Like `.style("...", "selection")`, `.unstyle("selection")` **clears the selection** after it runs.
 
 ```ts
 tw.timeline
@@ -171,13 +173,12 @@ tw.timeline
   .style("status-loading", { from: 8, to: 15 })
   .wait(1200)
   .move(-7)
-  .select(7)                          // selects "loading"
-  .unstyle("selection")               // remove "status-loading" from "loading"
-  .style("status-done", "selection"); // apply "status-done" to the same range
+  .select(7)                               // selects "loading" (indices 8–15)
+  .unstyle("selection")                    // remove "status-loading" from "loading"; selection cleared
+  .style("status-done", { from: 8, to: 15 }); // apply "status-done" to the same range
 
 await tw.play();
 // "loading" now carries "status-done" instead of "status-loading"
-// selection was cleared by unstyle
 ```
 
 ## Interaction with renderers
@@ -186,11 +187,11 @@ await tw.play();
 
 ## Relationship to `.style()`
 
-`.unstyle()` is the inverse of `.style()`. Both share the same range input format and support `"selection"`. The key difference in selection behavior:
+`.unstyle()` is the inverse of `.style()`. Both share the same range input format and support `"selection"`. Both clear the selection when used with `"selection"`:
 
 | Command | With `"selection"` | Clears selection afterward? |
 |---|---|---|
-| `.style()` | Reads selection range; applies style | No |
+| `.style()` | Reads selection range; applies style | Yes |
 | `.unstyle()` | Reads selection range; removes styles | Yes |
 
 ## Edge cases
