@@ -25,13 +25,19 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
       "require": "./dist/index.cjs"
+    },
+    "./audio-pack": {
+      "types": "./dist/audio-pack.d.ts",
+      "import": "./dist/audio-pack.js",
+      "require": "./dist/audio-pack.cjs"
     }
   },
   "main": "dist/index.cjs",
   "module": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": [
-    "dist"
+    "dist/**/*.cjs",
+    "dist/**/*.js"
   ],
   "scripts": {
     "dev": "vite",

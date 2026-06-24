@@ -17,8 +17,6 @@ import { TimelineBuilder } from "./core/timeline/index";
 
 export { AudioManagerHelper } from "./core/audio/index";
 export { EAudioStrategy } from "./core/audio/index";
-export { DEFAULT_SFX_PACK } from "./core/audio/index";
-
 export type { TAudioChannelOptions, TAudioCommandOverride, TAudioOptions, TAudioSfx, TAudioSfxPack, TAudioStrategy } from "./core/audio/index";
 
 export { ECommandKind } from "./core/commands/index";

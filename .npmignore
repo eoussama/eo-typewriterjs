@@ -2,6 +2,7 @@ node_modules/
 src/
 sandbox/
 docs/
+**/*.map
 
 .gitattributes
 .gitignore

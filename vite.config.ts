@@ -14,10 +14,13 @@ const __dirname = dirname(__filename);
 export default defineConfig({
   build: {
     lib: {
-      entry: resolve(__dirname, "src/index.ts"),
-      name: "EoTypewriterjs",
+      entry: {
+        "index": resolve(__dirname, "src/index.ts"),
+        "audio-pack": resolve(__dirname, "src/audio-pack.ts"),
+      },
+      name: "EOTypewriterJS",
       formats: ["es", "cjs"],
-      fileName: format => (format === "es" ? "index.js" : "index.cjs"),
+      fileName: (format, entryName) => format === "es" ? `${entryName}.js` : `${entryName}.cjs`,
     },
     rollupOptions: {
       external: id => id.includes("/devtools/"),
