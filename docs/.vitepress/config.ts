@@ -227,7 +227,6 @@ export default defineConfig({
             { text: "TAudioCommandOverride", link: "/api/type-aliases/TAudioCommandOverride" },
             { text: "TAudioSfx", link: "/api/type-aliases/TAudioSfx" },
             { text: "TAudioSfxPack", link: "/api/type-aliases/TAudioSfxPack" },
-            { text: "DEFAULT_SFX_PACK", link: "/api/variables/DEFAULT_SFX_PACK" },
           ],
         },
         {

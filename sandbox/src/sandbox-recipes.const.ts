@@ -1033,8 +1033,11 @@ console.log("Final status:", status);`,
     description: "Audio is off by default. Pass audio: { enabled: true } to opt in. Each keystroke plays a keyboard click from the built-in sfx pack.",
     category: "audio",
     code: `// Audio is OFF by default. Pass audio: { enabled: true } to opt in.
-// The built-in sfx pack has three keyboard-click samples played in
-// shuffle-bag order so the same sound never plays twice in a row.
+// When no custom sfxs are provided, the library uses a built-in pack of
+// three keyboard-click samples played in shuffle-bag order so the same
+// sound never plays twice in a row.
+// To reference the built-in pack directly in your own project, import it:
+//   import { DEFAULT_SFX_PACK } from "eo-typewriterjs/audio-pack";
 // Use the speaker button in the sandbox toolbar to mute at any time.
 const tw = createTypewriter({ renderer, audio: { enabled: true } });
 
@@ -1042,6 +1045,38 @@ tw.timeline
   .type("Typing sounds are enabled!", { by: "char", interval: 80 })
   .wait(400)
   .type("\\nEvery keystroke plays a click.", { by: "char", interval: 70 });
+
+await tw.play();`,
+  },
+
+  {
+    id: "audio-extend-builtin",
+    title: "Extend Built-in SFX Pack",
+    description: "Access DEFAULT_SFX_PACK directly and extend it with an extra sfx, then target the new entry per channel.",
+    category: "audio",
+    code: `// DEFAULT_SFX_PACK is available as a sandbox global.
+// In your own project import it from the subpath:
+//   import { DEFAULT_SFX_PACK } from "eo-typewriterjs/audio-pack";
+//
+// Spread it into your sfxs to keep the built-in sounds while adding new ones.
+const tw = createTypewriter({
+  renderer,
+  audio: {
+    enabled: true,
+    sfxs: {
+      ...DEFAULT_SFX_PACK,
+      soft: { samples: ["https://assets.mixkit.co/active_storage/sfx/2841/2841-preview.mp3"] },
+    },
+    typing: { sfx: "default" },
+    delete: { sfx: "soft" },
+  },
+});
+
+tw.timeline
+  .type("Built-in clicks while typing!", { by: "char", interval: 80 })
+  .wait(400)
+  .delete(-10, { by: "char", interval: 60 })
+  .type("deleting.", { by: "char", interval: 80 });
 
 await tw.play();`,
   },

@@ -70,6 +70,7 @@ const GLOBAL_COMPLETIONS: Completion[] = [
   { label: "TimelineBuilder", type: "class", detail: "class TimelineBuilder", info: "Fluent builder for constructing command timelines." },
   { label: "ECommandKind", type: "constant", detail: "enum-like object", info: "Contains all command kind string values." },
   { label: "EPlaybackStatus", type: "constant", detail: "enum-like object", info: "Contains all playback status string values." },
+  { label: "DEFAULT_SFX_PACK", type: "constant", detail: "TAudioSfxPack", info: "Built-in keyboard-click sfx pack. In your project: import { DEFAULT_SFX_PACK } from \"eo-typewriterjs/audio-pack\"" },
 ];
 
 /**

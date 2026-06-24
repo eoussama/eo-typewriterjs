@@ -1,5 +1,6 @@
 import type { IRenderer, TTypewriter } from "../index";
 
+import { DEFAULT_SFX_PACK } from "../audio-pack";
 import {
   createTypewriter,
   domRenderer,
@@ -80,6 +81,7 @@ export async function runSnippet(
     ECursorKind,
     EPlaybackStatus,
     EAudioStrategy,
+    DEFAULT_SFX_PACK,
     console: sandboxConsole,
   };
 
@@ -96,6 +98,7 @@ export default async function __snippet__(ctx) {
     ECursorKind,
     EPlaybackStatus,
     EAudioStrategy,
+    DEFAULT_SFX_PACK,
     console,
   } = ctx;
 

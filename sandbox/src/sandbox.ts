@@ -597,6 +597,7 @@ const HELP_SECTIONS: readonly THelpSection[] = [
       ["EPlaybackStatus", "Enum-like object of playback status values"],
       ["ECursorKind", "Cursor kinds: PIPE, BLOCK, UNDERSCORE, BLOCK_UNDERSCORE, CARET, CUSTOM"],
       ["EAudioStrategy", "Audio strategies: RANDOM, SHUFFLE_BAG, ROUND_ROBIN"],
+      ["DEFAULT_SFX_PACK", "Built-in keyboard-click sfx pack. In your project: import { DEFAULT_SFX_PACK } from \"eo-typewriterjs/audio-pack\""],
     ],
   },
   {
@@ -777,7 +778,7 @@ const HELP_SECTIONS: readonly THelpSection[] = [
     id: "audio",
     label: "Audio",
     title: "Audio Configuration",
-    desc: "Audio is disabled by default. Pass audio: { enabled: true } to createTypewriter() to opt in. All options can also be changed at runtime.",
+    desc: "Audio is disabled by default. Pass audio: { enabled: true } to createTypewriter() to opt in. The built-in keyboard-click pack is used automatically when no custom sfxs are provided. All options can also be changed at runtime.",
     rows: [
       ["audio: { enabled: true }", "Enable typing sounds in createTypewriter() options"],
       ["audio: { volume: 0.5 }", "Master volume, clamped to [0, 1]"],
@@ -787,6 +788,8 @@ const HELP_SECTIONS: readonly THelpSection[] = [
       ["audio: { typing: { volumeJitter: { min, max } } }", "Randomise per-step volume within a range"],
       ["audio: { sfxs: { name: { samples: [\"...\"] } } }", "Named sfx pack; each sfx has a samples array of audio URLs"],
       ["audio: { typing: { sfx: \"name\" } }", "Target a named sfx for a specific channel"],
+      ["DEFAULT_SFX_PACK", "Built-in keyboard-click sfx pack (sandbox global). In your project: import { DEFAULT_SFX_PACK } from \"eo-typewriterjs/audio-pack\""],
+      ["audio: { sfxs: { ...DEFAULT_SFX_PACK, ... } }", "Spread the built-in pack and add or override individual sfxs"],
       ["tw.setAudioEnabled(bool)", "Toggle audio on/off at runtime without rebuilding"],
       ["tw.setAudioVolume(n)", "Set master volume at runtime, clamped to [0, 1]"],
       ["tw.setAudioOptions(opts)", "Replace the full audio config at runtime"],

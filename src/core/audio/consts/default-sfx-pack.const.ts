@@ -6,7 +6,10 @@ import type { TAudioSfxPack } from "../types/audio-sfx.type";
  * @description
  * Built-in default typing sfx pack.
  * Contains three short keyboard-click samples for natural typing variance.
- * Used automatically when no custom sfxs are provided in TAudioOptions.
+ * Used internally by the audio engine when no custom sfxs are provided.
+ *
+ * Import from the subpath entry to reference it in your own code:
+ * `import { DEFAULT_SFX_PACK } from "eo-typewriterjs/audio-pack"`
  */
 export const DEFAULT_SFX_PACK: TAudioSfxPack = {
   default: {
@@ -17,4 +20,3 @@ export const DEFAULT_SFX_PACK: TAudioSfxPack = {
     ],
   },
 } as const;
-
