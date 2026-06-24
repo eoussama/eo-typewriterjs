@@ -200,6 +200,14 @@ const tw = createTypewriter({
 });
 ```
 
+When no custom `sfxs` are provided the audio engine automatically uses a built-in pack of keyboard-click samples. To reference or extend that pack in your own code, import it from the subpath entry:
+
+```ts
+import { DEFAULT_SFX_PACK } from "eo-typewriterjs/audio-pack";
+```
+
+The pack is code-split from the main bundle and only loaded when imported, so consumers who do not use audio pay no bundle cost.
+
 You can control audio at runtime without stopping playback:
 
 ```ts

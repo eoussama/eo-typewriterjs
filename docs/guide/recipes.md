@@ -353,12 +353,28 @@ await tw2.play();
 
 ## Typing sounds
 
-Enable audio and optionally supply a custom sound effects pack:
+Enable audio with the built-in keyboard-click samples:
+
+```ts
+import { createTypewriter, domRenderer } from "eo-typewriterjs";
+
+const el = document.getElementById("output")!;
+const tw = createTypewriter({
+  renderer: domRenderer(el),
+  audio: { enabled: true },
+});
+
+tw.timeline.type("Clicky keys", { by: "char", interval: 80 });
+await tw.play();
+```
+
+When no custom `sfxs` are provided the library automatically uses the built-in pack at runtime.
+
+To reference or extend the built-in pack, import it from the subpath entry:
 
 ```ts
 import { createTypewriter, domRenderer, EAudioStrategy } from "eo-typewriterjs";
-
-
+import { DEFAULT_SFX_PACK } from "eo-typewriterjs/audio-pack";
 
 const el = document.getElementById("output")!;
 const tw = createTypewriter({
@@ -367,13 +383,14 @@ const tw = createTypewriter({
     enabled: true,
     volume: 0.6,
     sfxs: {
+      ...DEFAULT_SFX_PACK,
       key: { samples: ["/sounds/key1.mp3", "/sounds/key2.mp3"] },
     },
     typing: { sfx: "key", strategy: EAudioStrategy.SHUFFLE_BAG },
   },
 });
 
-tw.timeline.type("Clicky keys", { by: "char", interval: 80 });
+tw.timeline.type("Custom keys plus built-in fallback", { by: "char", interval: 80 });
 await tw.play();
 ```
 

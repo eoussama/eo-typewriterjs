@@ -132,7 +132,13 @@ Check that:
 2. The volume is above `0`.
 3. The `sfxs` sample URLs are reachable and the audio files are in a format the browser supports.
 
-The built-in default SFX pack is used if you do not supply custom `sfxs`. If those URLs are not bundled or hosted with your app, audio will silently fail.
+If no custom `sfxs` are provided, the audio engine automatically uses the built-in keyboard-click samples at runtime. To reference or extend that pack in your own code, import it from the dedicated subpath:
+
+```ts
+import { DEFAULT_SFX_PACK } from "eo-typewriterjs/audio-pack";
+```
+
+The pack is code-split from the main bundle so it is only loaded when explicitly imported.
 
 ### How do I silence one command while keeping audio on globally?
 

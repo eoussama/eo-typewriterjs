@@ -84,7 +84,7 @@ Controls the built-in audio engine. All fields are optional; audio is **disabled
 | `enabled` | `boolean` | `false` | Master switch. |
 | `volume` | `number` | `1` | Master volume, clamped to `[0, 1]`. |
 | `strategy` | `TAudioStrategy` | `EAudioStrategy.ROUND_ROBIN` | How samples are picked when a sound fires. |
-| `sfxs` | `Record<string, TAudioSfx>` | built-in pack | Named sound effect sets. Each entry has a `samples` array of URLs and an optional per-sfx `strategy`. |
+| `sfxs` | `Record<string, TAudioSfx>` | `undefined` | Named sound effect sets. Each entry has a `samples` array of URLs and an optional per-sfx `strategy`. When omitted, the audio engine falls back to the built-in keyboard-click samples internally. |
 | `typing` | `TAudioChannelOptions` | _(uses `sfxs.typing`)_ | Channel config for type events. |
 | `deleting` | `TAudioChannelOptions` | _(uses `sfxs.deleting`)_ | Channel config for delete events. |
 
@@ -111,6 +111,27 @@ const tw = createTypewriter({
 | `EAudioStrategy.ROUND_ROBIN` | `"roundRobin"` | Cycles through samples in order. |
 | `EAudioStrategy.RANDOM` | `"random"` | Picks a random sample each time. |
 | `EAudioStrategy.SHUFFLE_BAG` | `"shuffleBag"` | Shuffles all samples, then cycles; reshuffles when exhausted. |
+
+#### Built-in SFX pack
+
+The library ships a built-in pack of three keyboard-click samples. It is used automatically at runtime when `sfxs` is not provided. To reference or extend it in your own code, import it from the subpath entry:
+
+```ts
+import { DEFAULT_SFX_PACK } from "eo-typewriterjs/audio-pack";
+
+const tw = createTypewriter({
+  renderer: domRenderer(el),
+  audio: {
+    enabled: true,
+    sfxs: {
+      ...DEFAULT_SFX_PACK,
+      mykey: { samples: ["/sounds/custom.mp3"] },
+    },
+  },
+});
+```
+
+The pack is code-split from the main bundle so consumers who do not use audio do not pay the byte cost.
 
 #### Changing audio options at runtime
 
