@@ -991,11 +991,17 @@ function init(): void {
     }
 
     const s = activeTw.getState();
+    const isCompleted = s.status === EPlaybackStatus.COMPLETED;
 
     playStartWall = Date.now();
-    playStartTimeline = s.currentTime;
+    playStartTimeline = isCompleted ? 0 : s.currentTime;
     startTick();
-    activeTw.play().catch(() => null).finally(() => {
+
+    const action = isCompleted
+      ? activeTw.replay()
+      : activeTw.play();
+
+    action.catch(() => null).finally(() => {
       syncTransportState();
       syncTimelineFromState();
     });
