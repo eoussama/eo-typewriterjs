@@ -5,6 +5,7 @@ import { CALLBACKS_SCENARIOS } from "./callbacks.scenarios";
 import { CONTROLS_SCENARIOS } from "./controls.scenarios";
 import { CURSOR_SCENARIOS } from "./cursor.scenarios";
 import { EDITING_SCENARIOS } from "./editing.scenarios";
+import { REGRESSION_SCENARIOS } from "./regression.scenarios";
 import { STYLING_SCENARIOS } from "./styling.scenarios";
 
 
@@ -16,4 +17,5 @@ export const SCENARIOS: readonly TScenario[] = [
   ...STYLING_SCENARIOS,
   ...CALLBACKS_SCENARIOS,
   ...CONTROLS_SCENARIOS,
+  ...REGRESSION_SCENARIOS,
 ];

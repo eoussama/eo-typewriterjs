@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-import { getOutputLocator, getOutputText, getStatus, gotoScenario } from "../helpers/harness.helper";
+import { getOutputLocator, getOutputText, getStatus, gotoScenario } from "../../helpers/harness.helper";
 
 
 
