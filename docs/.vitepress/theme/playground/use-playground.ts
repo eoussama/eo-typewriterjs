@@ -2,7 +2,7 @@ import type { Ref } from "vue";
 import type { IRenderer, TPlaybackStatus, TTypewriter, TTypewriterState } from "../../../../src/index";
 import type { TLogLevel, TSnippetError } from "./run-snippet";
 
-import { onBeforeUnmount, onMounted, ref, shallowRef } from "vue";
+import { onBeforeUnmount, onMounted, ref, shallowRef, watch } from "vue";
 import { domRenderer, EPlaybackStatus } from "../../../../src/index";
 import { formatValue, runSnippet } from "./run-snippet";
 
@@ -74,6 +74,66 @@ function textRenderer(el: HTMLElement): IRenderer {
 
 /**
  * @description
+ * A renderer whose mode can change while it is in use
+ */
+type TSwitchableRenderer = IRenderer & {
+  readonly setMode: (mode: TPreviewMode) => void;
+};
+
+/**
+ * @description
+ * Create the renderer of a mode
+ *
+ * @param el - The element to render into
+ * @param mode - The render mode
+ * @returns The renderer
+ */
+function rendererFor(el: HTMLElement, mode: TPreviewMode): IRenderer {
+  return mode === "dom" ? domRenderer(el) : textRenderer(el);
+}
+
+/**
+ * @description
+ * A renderer that can switch between DOM and text output, repainting the last state it
+ * received, so switching modes keeps what is on screen instead of starting over
+ *
+ * @param el - The element to render into
+ * @param mode - The initial render mode
+ * @returns The renderer
+ */
+function switchableRenderer(el: HTMLElement, mode: TPreviewMode): TSwitchableRenderer {
+  let inner = rendererFor(el, mode);
+  let last: TTypewriterState | null = null;
+
+  return {
+    mount: (state) => {
+      last = state;
+
+      return inner.mount?.(state);
+    },
+    render: (state) => {
+      last = state;
+
+      return inner.render(state);
+    },
+    unmount: () => {
+      last = null;
+
+      return inner.unmount?.();
+    },
+    setMode: (next) => {
+      el.replaceChildren();
+      inner = rendererFor(el, next);
+
+      if (last !== null) {
+        void inner.mount?.(last);
+      }
+    },
+  };
+}
+
+/**
+ * @description
  * Run snippets and control every typewriter they create from one transport.
  * Used by the sandbox page and by the playgrounds embedded in the docs.
  *
@@ -93,6 +153,7 @@ export function usePlayground(options: TPlaygroundOptions) {
   const logs = shallowRef<readonly TLogEntry[]>([]);
 
   let typewriters: TTypewriter[] = [];
+  let renderers: TSwitchableRenderer[] = [];
   let audible = new Map<TTypewriter, boolean>();
   let controller: AbortController | null = null;
   let frame: number | null = null;
@@ -145,6 +206,18 @@ export function usePlayground(options: TPlaygroundOptions) {
     startTicking();
   };
 
+  const track = (renderer: TSwitchableRenderer): TSwitchableRenderer => {
+    renderers.push(renderer);
+
+    return renderer;
+  };
+
+  watch(options.mode, (mode) => {
+    for (const renderer of renderers) {
+      renderer.setMode(mode);
+    }
+  });
+
   /**
    * @description
    * Create an extra preview below the main one
@@ -164,7 +237,7 @@ export function usePlayground(options: TPlaygroundOptions) {
     figure.append(caption, output);
     options.extras.value?.append(figure);
 
-    return options.mode.value === "dom" ? domRenderer(output) : textRenderer(output);
+    return track(switchableRenderer(output, options.mode.value));
   };
 
   /**
@@ -175,6 +248,7 @@ export function usePlayground(options: TPlaygroundOptions) {
     controller?.abort();
     controller = null;
     typewriters = [];
+    renderers = [];
     audible = new Map();
     running.value = false;
     ready.value = false;
@@ -210,7 +284,7 @@ export function usePlayground(options: TPlaygroundOptions) {
     startTicking();
 
     const result = await runSnippet(code, {
-      renderer: options.mode.value === "dom" ? domRenderer(main) : textRenderer(main),
+      renderer: track(switchableRenderer(main, options.mode.value)),
       preview,
       signal: current.signal,
       onConsole: log,

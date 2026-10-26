@@ -163,6 +163,35 @@ watch(() => pg.error.value, (error) => {
   }
 });
 
+/**
+ * @description
+ * Load the code or recipe named in the URL hash, if any
+ *
+ * @returns Whether the hash named something to load
+ */
+function loadFromHash(): boolean {
+  const hash = new URLSearchParams(location.hash.slice(1));
+  const shared = hash.has("code") ? decode(hash.get("code")!) : null;
+  const linked = RECIPES.find(recipe => recipe.id === hash.get("recipe"));
+
+  if (shared !== null) {
+    setCode(shared);
+  }
+  else if (linked !== undefined) {
+    active.value = linked;
+    setCode(linked.code);
+  }
+
+  return shared !== null || linked !== undefined;
+}
+
+// Following a shared link while the sandbox is open only changes the hash.
+function onHashChange(): void {
+  if (loadFromHash()) {
+    run();
+  }
+}
+
 function onKey(event: KeyboardEvent): void {
   if (event.key === "Escape") {
     drawerOpen.value = false;
@@ -202,11 +231,13 @@ onMounted(() => {
   }
 
   window.addEventListener("keydown", onKey);
+  window.addEventListener("hashchange", onHashChange);
   run();
 });
 
 onBeforeUnmount(() => {
   window.removeEventListener("keydown", onKey);
+  window.removeEventListener("hashchange", onHashChange);
   editor.value?.destroy();
 });
 </script>
@@ -303,10 +334,10 @@ onBeforeUnmount(() => {
             <div class="sb-card__head">
               <span class="sb-card__title">Preview</span>
               <div class="sb-segmented" role="group" aria-label="Renderer">
-                <button type="button" :aria-pressed="mode === 'dom'" @click="mode = 'dom'; run()">
+                <button type="button" :aria-pressed="mode === 'dom'" @click="mode = 'dom'">
                   DOM
                 </button>
-                <button type="button" :aria-pressed="mode === 'text'" @click="mode = 'text'; run()">
+                <button type="button" :aria-pressed="mode === 'text'" @click="mode = 'text'">
                   Text
                 </button>
               </div>
