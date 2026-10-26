@@ -1,10 +1,11 @@
-import process from "node:process";
+import type { PlaywrightTestConfig } from "@playwright/test";
 
+import process from "node:process";
 import { defineConfig, devices } from "@playwright/test";
 
 
 
-export default defineConfig({
+const config: PlaywrightTestConfig = defineConfig({
   testDir: "e2e/specs",
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
@@ -26,3 +27,5 @@ export default defineConfig({
     reuseExistingServer: !process.env.CI,
   },
 });
+
+export default config;

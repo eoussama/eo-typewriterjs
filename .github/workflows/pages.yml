@@ -23,8 +23,6 @@ jobs:
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v6
-        with:
-          version: 11.4.0
 
       - name: Setup Node
         uses: actions/setup-node@v6
@@ -38,17 +36,17 @@ jobs:
       - name: Install Playwright browsers
         run: pnpm exec playwright install --with-deps chromium
 
+      - name: Type check
+        run: pnpm typecheck
+
       - name: Lint
         run: pnpm lint
 
       - name: Unit tests
         run: pnpm test
 
-      - name: Coverage
-        run: pnpm coverage
-
       - name: E2E tests
-        run: pnpm e2e
+        run: pnpm test:e2e
 
   build:
     needs: verify
@@ -59,8 +57,6 @@ jobs:
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v6
-        with:
-          version: 11.4.0
 
       - name: Setup Node
         uses: actions/setup-node@v6

@@ -144,3 +144,13 @@ docs/api/
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 .vite/
+
+# Playwright
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/
+
+# Stryker
+reports/
+.stryker-tmp/

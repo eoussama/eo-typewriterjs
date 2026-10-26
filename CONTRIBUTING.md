@@ -46,7 +46,7 @@ Please read and follow our [Code of Conduct](CODE_OF_CONDUCT.md) before contribu
 
 1. Ensure your code follows our [Coding Standards](#coding-standards)
 2. Update the README.md with details of changes if applicable
-3. Make sure all tests pass before submitting: `pnpm test`, `pnpm coverage` and `pnpm e2e`
+3. Make sure all tests pass before submitting: `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm test:e2e` (or `pnpm check` for everything)
 4. Your pull request will be reviewed by maintainers
 5. Once approved, your pull request will be merged
 

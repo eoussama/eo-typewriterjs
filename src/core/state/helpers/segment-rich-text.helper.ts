@@ -105,8 +105,8 @@ export function segmentRichText(document: TRichTextDocument): TRichTextSegment[]
   const segments: TRichTextSegment[] = [];
 
   for (let i = 0; i < boundaries.length - 1; i++) {
-    const from = boundaries[i];
-    const to = boundaries[i + 1];
+    const from = boundaries[i]!;
+    const to = boundaries[i + 1]!;
 
     /* v8 ignore next 3 */
     if (from >= to) {

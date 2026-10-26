@@ -1,14 +1,14 @@
 <p align="center">
-    <a href="http://eoussama.github.io/eo-typewriterjs">
+    <a href="https://eo-typewriterjs.ouss.es">
       <img src="https://raw.githubusercontent.com/eoussama/eo-typewriterjs/refs/heads/master/assets/logo.svg" alt="Logo" width="200px">
       <h1 align="center">eo-typewriterjs</h1>
     </a>
     <p align="center">Build rich typewriter animations with a composable timeline, full Unicode support, and a renderer-agnostic architecture that works in the browser and on the server.</p>
     <p align="center">
-        <img src="https://img.shields.io/github/release/EOussama/typewriterjs.svg">
-        <img src="https://img.shields.io/github/downloads/EOussama/typewriterjs/latest/total.svg">
-        <img src="https://img.shields.io/github/languages/code-size/EOussama/typewriterjs.svg">
-        <img src="https://img.shields.io/github/license/EOussama/typewriterjs.svg">
+        <img src="https://img.shields.io/npm/v/eo-typewriterjs.svg" alt="npm version">
+        <img src="https://img.shields.io/npm/dm/eo-typewriterjs.svg" alt="npm downloads">
+        <img src="https://img.shields.io/github/actions/workflow/status/eoussama/eo-typewriterjs/ci.yml?branch=master&label=CI" alt="CI status">
+        <img src="https://img.shields.io/github/license/eoussama/eo-typewriterjs.svg" alt="License">
     </p>
 </p>
 
@@ -74,16 +74,19 @@ Try the library live in the interactive [sandbox](https://ouss.es/eo-typewriterj
 The library is covered by two test layers:
 
 - **Unit tests** (`pnpm test`): Vitest suite covering core logic, reducers, renderers, and edge cases.
-- **End-to-end tests** (`pnpm e2e`): Playwright suite running real playback scenarios in a browser harness, including typing flows, waiting, multiline output, cursor movement, selection, editing, and callbacks.
+- **End-to-end tests** (`pnpm test:e2e`): Playwright suite running real playback scenarios in a browser harness, including typing flows, waiting, multiline output, cursor movement, selection, editing, and callbacks.
 
 ## Development
 
 ```bash
-pnpm dev           # start dev server
+pnpm dev           # rebuild the library on change
 pnpm build         # build the library
-pnpm test          # run unit tests
-pnpm e2e           # run end-to-end tests
+pnpm typecheck     # type check with TypeScript 7
+pnpm test          # run unit tests with coverage
+pnpm test:smoke    # test the built package
+pnpm test:e2e      # run end-to-end tests
 pnpm lint          # lint
+pnpm check         # run every check CI runs
 pnpm sandbox       # start the sandbox
 pnpm docs:dev      # start the docs site
 ```
