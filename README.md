@@ -57,17 +57,17 @@ await tw.play();
 
 Full documentation, guides, and the API reference are available on the docs site.
 
-- [Docs site](https://ouss.es/eo-typewriterjs/)
-- [Getting started](https://ouss.es/eo-typewriterjs/guide/getting-started)
-- [Core concepts](https://ouss.es/eo-typewriterjs/guide/core-concepts)
-- [Timeline](https://ouss.es/eo-typewriterjs/guide/timeline)
-- [Renderers](https://ouss.es/eo-typewriterjs/guide/renderers)
-- [Recipes](https://ouss.es/eo-typewriterjs/guide/recipes)
-- [API reference](https://ouss.es/eo-typewriterjs/api/)
+- [Docs site](https://eo-typewriterjs.ouss.es/)
+- [Getting started](https://eo-typewriterjs.ouss.es/guide/getting-started)
+- [Core concepts](https://eo-typewriterjs.ouss.es/guide/core-concepts)
+- [Timeline](https://eo-typewriterjs.ouss.es/guide/timeline)
+- [Renderers](https://eo-typewriterjs.ouss.es/guide/renderers)
+- [Recipes](https://eo-typewriterjs.ouss.es/guide/recipes)
+- [API reference](https://eo-typewriterjs.ouss.es/api/)
 
 ## Sandbox
 
-Try the library live in the interactive [sandbox](https://ouss.es/eo-typewriterjs/sandbox/), write timelines, run them, and see output in real time without any setup.
+Try the library live in the interactive [sandbox](https://eo-typewriterjs.ouss.es/sandbox/), write timelines, run them, and see output in real time without any setup.
 
 ## Testing
 

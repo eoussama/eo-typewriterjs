@@ -192,4 +192,4 @@ tw.setAudioOptions({
 - See the [Renderers](./renderers) guide for DOM, string, and custom renderer targets.
 - Explore the [Timeline](./timeline) page for all available commands and advance modes.
 - Browse the [Commands reference](./commands/) for per-command options, including [type](./commands/type), [delete](./commands/delete), [wait](./commands/wait), [move](./commands/move), [select](./commands/select), [style](./commands/style), and [call](./commands/call).
-- Try the interactive **[Sandbox](https://eoussama.github.io/eo-typewriterjs/sandbox/)** to experiment with timelines in real time without any setup.
+- Try the interactive **[Sandbox](https://eo-typewriterjs.ouss.es/sandbox/)** to experiment with timelines in real time without any setup.

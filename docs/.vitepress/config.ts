@@ -33,10 +33,10 @@ export default defineConfig({
 
   title: "EO TypewriterJS",
   description: "JavaScript utility for advanced typewriter-like animations.",
-  base: "/eo-typewriterjs/",
+  base: "/",
   cleanUrls: true,
 
-  head: [["link", { rel: "icon", href: "/eo-typewriterjs/logo.svg" }]],
+  head: [["link", { rel: "icon", href: "/logo.svg" }]],
 
   themeConfig: {
     logo: "/logo.svg",
@@ -45,7 +45,7 @@ export default defineConfig({
     nav: [
       { text: "Guide", link: "/guide/getting-started" },
       { text: "API Reference", link: "/api/" },
-      { text: "Sandbox", link: "https://eoussama.github.io/eo-typewriterjs/sandbox/", target: "_blank" },
+      { text: "Sandbox", link: "https://eo-typewriterjs.ouss.es/sandbox/", target: "_blank" },
     ],
 
     sidebar: {
