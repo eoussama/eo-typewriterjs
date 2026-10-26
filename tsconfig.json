@@ -4,6 +4,12 @@
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "module": "ESNext",
     "moduleResolution": "bundler",
+    // Type check the smoke tests' self-imports against the sources, so no build is needed
+    // first. At runtime Vitest ignores these paths and the smoke tests load the built dist.
+    "paths": {
+      "eo-typewriterjs": ["./src/index.ts"],
+      "eo-typewriterjs/audio-pack": ["./src/audio-pack.ts"]
+    },
     "resolveJsonModule": true,
     "types": ["node"],
     "strict": true,

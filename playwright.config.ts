@@ -6,7 +6,8 @@ import { defineConfig, devices } from "@playwright/test";
 
 
 const HARNESS_URL = "http://localhost:5175";
-const SITE_URL = "http://localhost:4173";
+// A dedicated port, so tests never hit a preview server left over from manual work.
+const SITE_URL = "http://localhost:4317";
 
 const config: PlaywrightTestConfig = defineConfig({
   testDir: "e2e/specs",
@@ -37,10 +38,11 @@ const config: PlaywrightTestConfig = defineConfig({
       url: HARNESS_URL,
       reuseExistingServer: !process.env.CI,
     },
+    // Never reused: a preview server caches its file list and would serve a stale build.
     {
-      command: "vitepress preview docs --port 4173",
+      command: "vitepress preview docs --port 4317",
       url: SITE_URL,
-      reuseExistingServer: !process.env.CI,
+      reuseExistingServer: false,
     },
   ],
 });
