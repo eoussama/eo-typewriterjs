@@ -30,7 +30,8 @@ const config: ViteUserConfig = defineConfig({
       include: ["src/**/*.ts"],
       exclude: [
         // Barrel files only re-export; they hold no executable logic.
-        "**/index.ts",
+        "src/core/**/index.ts",
+        "src/renderers/**/index.ts",
         // Snippet runner used by the docs playground and sandbox, not part of the published library.
         "src/devtools/**",
       ],

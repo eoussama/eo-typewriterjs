@@ -3,11 +3,11 @@ import type { TCursorSelector } from "./core/commands/types/type-command.type";
 import type { TCursorRenderOptions } from "./core/cursor/index";
 import type { TPlaybackControllerState } from "./core/player/index";
 import type { IRenderer } from "./core/renderer/index";
-import type { TTypewriterState } from "./core/state/index";
+import type { TCursorState, TTypewriterState } from "./core/state/index";
 
 import { AudioManagerHelper } from "./core/audio/index";
 import { normalizeCursors } from "./core/commands/index";
-import { compile } from "./core/compiler/index";
+import { compileSteps } from "./core/compiler/index";
 import { mergeCursorOptions } from "./core/cursor/index";
 import { PlaybackController } from "./core/player/index";
 import { createInitialState } from "./core/state/index";
@@ -93,6 +93,15 @@ export type TTypewriter = {
   stepForward: () => void;
   stepBackward: () => void;
   setRate: (rate: number) => void;
+
+  /**
+   * @description
+   * Stop playback and unmount the renderer.
+   * Call it when the typewriter is no longer needed, e.g. when its element is removed.
+   * Playing again mounts the renderer afresh.
+   */
+  destroy: () => void;
+
   getState: () => TPlaybackControllerState;
 
   /**
@@ -142,7 +151,9 @@ export type TTypewriter = {
   /**
    * @description
    * Show or hide one or all cursors at runtime.
-   * Changes take effect immediately on the next render.
+   * Changes take effect immediately. Called from inside a hook or `call` callback,
+   * the change only applies to the current run; called anywhere else, it also
+   * applies to replays and seeks.
    *
    * @param visible - Whether the cursor(s) should be visible
    * @param cursor - Optional cursor selector; defaults to all cursors when omitted
@@ -153,7 +164,9 @@ export type TTypewriter = {
    * @description
    * Update the render options of one or all cursors at runtime.
    * Only the provided fields are changed; others keep their current values.
-   * Changes take effect immediately on the next render.
+   * Changes take effect immediately. Called from inside a hook or `call` callback,
+   * the change only applies to the current run; called anywhere else, it also
+   * applies to replays and seeks.
    *
    * @param options - Partial render options to apply
    * @param cursor - Optional cursor selector; defaults to all cursors when omitted
@@ -171,38 +184,60 @@ export type TTypewriter = {
  * @returns A TTypewriter instance with a timeline builder and full playback controls
  */
 export function createTypewriter(options: TTypewriterOptions): TTypewriter {
-  const {
-    renderer,
-    cursor: cursorDefaults,
-    audio: audioOptions,
-  } = options;
+  const { renderer, cursor: cursorDefaults, audio: audioOptions } = options;
   const timeline = new TimelineBuilder();
-
-  // Build the initial state using any cursor defaults provided
-  let currentState = createInitialState(cursorDefaults);
 
   // Audio is disabled by default when no audio config is provided.
   // Passing audio: { enabled: true } (or any options) opts into sound.
   const audioManager = new AudioManagerHelper(audioOptions ?? { enabled: false });
-
-  const controller = new PlaybackController(renderer, currentState, audioManager);
+  const controller = new PlaybackController(renderer, createInitialState(cursorDefaults), audioManager);
 
   let cachedVersion = -1;
 
   /**
    * @description
-   * Recompile the timeline if the version has changed since last load.
-   * Also syncs the current state into the controller so runtime cursor
-   * mutations (setCursorVisible / setCursorOptions) are preserved across
-   * a load() call.
+   * Recompile the timeline if it changed since it was last loaded
    */
   function ensureLoaded(): void {
     if (timeline.version !== cachedVersion) {
-      const commands = [...timeline.commands];
-
-      controller.load(compile(commands), commands);
+      controller.load(compileSteps(timeline.commands, controller.getInitialState()));
       cachedVersion = timeline.version;
     }
+  }
+
+  /**
+   * @description
+   * Apply a change to the selected cursors and re-render.
+   * Changes made from inside a hook or `call` callback only affect the current run;
+   * changes made anywhere else also become the baseline for replay and seek.
+   *
+   * @param cursor - Optional cursor selector; all cursors when omitted
+   * @param update - Returns the updated cursor
+   */
+  function updateCursors(cursor: TCursorSelector | undefined, update: (state: TCursorState) => TCursorState): void {
+    const apply = (state: TTypewriterState): TTypewriterState => {
+      const ids = cursor === undefined ? Object.keys(state.cursors) : normalizeCursors(cursor);
+      const cursors = { ...state.cursors };
+
+      for (const id of ids) {
+        const existing = cursors[id];
+
+        if (existing !== undefined) {
+          cursors[id] = update(existing);
+        }
+      }
+
+      return { ...state, cursors };
+    };
+
+    if (!controller.isRunningCallback()) {
+      controller.setInitialState(apply(controller.getInitialState()));
+    }
+
+    const live = apply(controller.getLiveState());
+
+    controller.setLiveState(live);
+    void Promise.resolve(renderer.render(live)).catch(() => {});
   }
 
   return {
@@ -251,6 +286,10 @@ export function createTypewriter(options: TTypewriterOptions): TTypewriter {
       controller.setRate(rate);
     },
 
+    destroy(): void {
+      controller.destroy();
+    },
+
     getState() {
       return controller.getState();
     },
@@ -276,104 +315,19 @@ export function createTypewriter(options: TTypewriterOptions): TTypewriter {
     },
 
     setCursorVisible(visible: boolean, cursor?: TCursorSelector): void {
-      const liveState = controller.getLiveState();
-      const ids = resolveCursorIds(cursor, liveState);
-      let updatedLive = liveState;
-
-      for (const id of ids) {
-        const existing = updatedLive.cursors[id];
-
-        if (existing === undefined) {
-          continue;
-        }
-
-        const updated = mergeCursorOptions(existing.renderOptions, { visible });
-
-        updatedLive = {
-          ...updatedLive,
-          cursors: {
-            ...updatedLive.cursors,
-            [id]: { ...existing, visible, renderOptions: updated },
-          },
-        };
-
-        const baseExisting = currentState.cursors[id];
-
-        if (baseExisting !== undefined) {
-          currentState = {
-            ...currentState,
-            cursors: {
-              ...currentState.cursors,
-              [id]: { ...baseExisting, visible, renderOptions: updated },
-            },
-          };
-        }
-      }
-
-      controller.setInitialState(currentState);
-      controller.setLiveState(updatedLive);
-      renderer.render(updatedLive);
+      updateCursors(cursor, existing => ({
+        ...existing,
+        visible,
+        renderOptions: mergeCursorOptions(existing.renderOptions, { visible }),
+      }));
     },
 
     setCursorOptions(opts: TCursorRenderOptions, cursor?: TCursorSelector): void {
-      const liveState = controller.getLiveState();
-      const ids = resolveCursorIds(cursor, liveState);
-      let updatedLive = liveState;
-
-      for (const id of ids) {
-        const existing = updatedLive.cursors[id];
-
-        if (existing === undefined) {
-          continue;
-        }
-
-        const updated = mergeCursorOptions(existing.renderOptions, opts);
-        const newVisible = opts.visible ?? existing.visible;
-
-        updatedLive = {
-          ...updatedLive,
-          cursors: {
-            ...updatedLive.cursors,
-            [id]: { ...existing, visible: newVisible, renderOptions: updated },
-          },
-        };
-
-        const baseExisting = currentState.cursors[id];
-
-        if (baseExisting !== undefined) {
-          currentState = {
-            ...currentState,
-            cursors: {
-              ...currentState.cursors,
-              [id]: { ...baseExisting, visible: newVisible, renderOptions: updated },
-            },
-          };
-        }
-      }
-
-      controller.setInitialState(currentState);
-      controller.setLiveState(updatedLive);
-      renderer.render(updatedLive);
+      updateCursors(cursor, existing => ({
+        ...existing,
+        visible: opts.visible ?? existing.visible,
+        renderOptions: mergeCursorOptions(existing.renderOptions, opts),
+      }));
     },
   };
-}
-
-/**
- * @description
- * Resolve a TCursorSelector to an array of cursor IDs present in state.
- * When no selector is provided all cursor IDs are returned.
- *
- * @param cursor - Optional cursor selector
- * @param state - Current typewriter state
- * @returns Array of matching cursor IDs
- */
-function resolveCursorIds(
-  cursor: TCursorSelector | undefined,
-  state: ReturnType<typeof createInitialState>,
-): string[] {
-  if (cursor === undefined) {
-    return Object.keys(state.cursors);
-  }
-
-  return normalizeCursors(cursor).filter(id => id in state.cursors);
 }

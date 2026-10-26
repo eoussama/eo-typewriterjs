@@ -2,15 +2,17 @@ export { DEFAULT_INTERVAL, MOTION_ADVANCE_UNITS, MOVE_BOUNDARIES, RANGE_BOUNDARI
 export { compileDelete } from "./helpers/compile-delete.helper";
 export { compileMove } from "./helpers/compile-move.helper";
 export { compileSelect } from "./helpers/compile-select.helper";
+export { compileSteps } from "./helpers/compile-steps.helper";
 export { compileStyle } from "./helpers/compile-style.helper";
 export { compileType } from "./helpers/compile-type.helper";
 export { compileUnselect } from "./helpers/compile-unselect.helper";
-export { compileUnstyle } from "./helpers/compile-unstyle.helper";
 
-export { compile } from "./helpers/compile.helper";
+export { compileUnstyle } from "./helpers/compile-unstyle.helper";
+export { compile, compileCommand } from "./helpers/compile.helper";
 
 export { nextEventId } from "./helpers/event-id.helper";
 export { resolveMotionAdvanceMode, resolveTypeAdvanceMode } from "./helpers/resolve-advance-mode.helper";
 
 export type { TCommand } from "./types/command.type";
 export type { TCompileResult } from "./types/compile-result.type";
+export type { TPlaybackProgram, TPlaybackSound, TPlaybackStep } from "./types/playback-step.type";
