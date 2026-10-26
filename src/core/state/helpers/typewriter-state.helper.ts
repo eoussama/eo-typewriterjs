@@ -1,7 +1,6 @@
 import type { TNullable } from "@eoussama/core";
 
 import type { TCursorRenderOptions, TResolvedCursorRenderOptions } from "../../cursor/types/cursor-render-options.type";
-import type { TCursorState } from "../types/cursor-state.type";
 import type { TSelectionState, TTypewriterState } from "../types/typewriter-state.type";
 import { DEFAULT_CURSOR_RENDER_OPTIONS } from "../../cursor/consts/cursor-defaults.const";
 import { mergeCursorOptions } from "../../cursor/helpers/merge-cursor-options.helper";
@@ -129,17 +128,4 @@ export function withCursor(state: TTypewriterState, cursorId: string): TTypewrit
  */
 export function getSelection(state: TTypewriterState, cursorId: string): TNullable<TSelectionState> {
   return state.selections[cursorId] ?? null;
-}
-
-/**
- * @description
- * Cast state.cursors[cursorId] as TCursorState (safe when cursor is known to exist).
- *
- * @param state - The current typewriter state
- * @param cursorId - The cursor id to retrieve
- * @returns The TCursorState or undefined
- */
-// v8 ignore next
-export function getCursor(state: TTypewriterState, cursorId: string): TCursorState | undefined {
-  return state.cursors[cursorId]; // v8 ignore
 }

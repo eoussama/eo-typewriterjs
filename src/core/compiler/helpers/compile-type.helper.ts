@@ -40,7 +40,7 @@ export function compileType(command: TTypeCommand, startTime: number): TCompileR
         time: startTime + index * interval,
         cursorId,
         text: chunk,
-        ...(command.style !== undefined ? { style: command.style } : {}),
+        style: command.style,
         sourceCommandId: command.id,
       });
     }

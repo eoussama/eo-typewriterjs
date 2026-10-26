@@ -1,7 +1,7 @@
-import type { IRenderer, TTypewriterState } from "../src/index";
+import type { IRenderer, TTypewriterState } from "../../src/index";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { compileSteps } from "../src/core/compiler/helpers/compile-steps.helper";
-import { createTypewriter, EPlaybackStatus, stringRenderer } from "../src/index";
+import { compileSteps } from "../../src/core/compiler/helpers/compile-steps.helper";
+import { createTypewriter, EPlaybackStatus, stringRenderer } from "../../src/index";
 
 
 
@@ -105,7 +105,7 @@ describe("compileSteps", () => {
 
     const sounds = compileSteps(tw.timeline.commands).steps.map(s => s.sound);
 
-    expect(sounds).toEqual(["typing", "delete", "move", null, null, null, "typing", "typing", null]);
+    expect(sounds).toEqual(["typing", "delete", "move", null, null, null, "typing", null, null]);
   });
 });
 

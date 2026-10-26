@@ -27,47 +27,29 @@ export function resolveStyleRef(ref: TStyleRef): TStyleObject {
  * @returns A single merged TStyleObject
  */
 export function mergeStyles(styles: readonly TStyleRef[]): TStyleObject {
-  let merged: TStyleObject = {};
+  const merged: { -readonly [K in keyof TStyleObject]: TStyleObject[K] } = {};
 
   for (const ref of styles) {
-    const resolved = resolveStyleRef(ref);
+    const { className, attrs, css, ansi, meta } = resolveStyleRef(ref);
 
-    merged = {
-      className: resolved.className ?? merged.className,
-      attrs: resolved.attrs !== undefined ? { ...merged.attrs, ...resolved.attrs } : merged.attrs,
-      css: resolved.css !== undefined ? { ...merged.css, ...resolved.css } : merged.css,
-      ansi: resolved.ansi !== undefined ? { ...merged.ansi, ...resolved.ansi } : merged.ansi,
-      meta: resolved.meta !== undefined ? { ...merged.meta, ...resolved.meta } : merged.meta,
-    };
-
-    if (merged.className === undefined) {
-      const { className: _c, ...rest } = merged;
-
-      merged = rest;
+    if (className !== undefined) {
+      merged.className = className;
     }
 
-    if (merged.attrs === undefined) {
-      const { attrs: _a, ...rest } = merged;
-
-      merged = rest;
+    if (attrs !== undefined) {
+      merged.attrs = { ...merged.attrs, ...attrs };
     }
 
-    if (merged.css === undefined) {
-      const { css: _s, ...rest } = merged;
-
-      merged = rest;
+    if (css !== undefined) {
+      merged.css = { ...merged.css, ...css };
     }
 
-    if (merged.ansi === undefined) {
-      const { ansi: _n, ...rest } = merged;
-
-      merged = rest;
+    if (ansi !== undefined) {
+      merged.ansi = { ...merged.ansi, ...ansi };
     }
 
-    if (merged.meta === undefined) {
-      const { meta: _m, ...rest } = merged;
-
-      merged = rest;
+    if (meta !== undefined) {
+      merged.meta = { ...merged.meta, ...meta };
     }
   }
 
@@ -88,10 +70,6 @@ export function segmentRichText(document: TRichTextDocument): TRichTextSegment[]
 
   if (text.length === 0) {
     return [];
-  }
-
-  if (styles.length === 0) {
-    return [{ text, from: 0, to: text.length, styles: [] }];
   }
 
   const clamp = (point: number): number => Math.max(0, Math.min(text.length, point));

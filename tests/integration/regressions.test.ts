@@ -1,17 +1,17 @@
 // @vitest-environment happy-dom
-import type { TTypewriterState } from "../src/core/state/types/typewriter-state.type";
+import type { TTypewriterState } from "../../src/core/state/types/typewriter-state.type";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { compile } from "../src/core/compiler/helpers/compile.helper";
-import { DEFAULT_CURSOR_RENDER_OPTIONS } from "../src/core/cursor/consts/cursor-defaults.const";
-import { advanceIndex } from "../src/core/reducer/helpers/advance-index.helper";
-import { applyStyle } from "../src/core/reducer/helpers/apply-style.helper";
-import { insertTextAtCursor } from "../src/core/reducer/helpers/insert.helper";
-import { move } from "../src/core/reducer/helpers/move.helper";
-import { removeStyles } from "../src/core/reducer/helpers/remove-styles.helper";
-import { createInitialState } from "../src/core/state/helpers/typewriter-state.helper";
-import { graphemesLengthAfter, graphemesLengthBefore, segmentText } from "../src/core/stepping/helpers/segment-text.helper";
-import { createTypewriter, segmentRichText, stringRenderer, TimelineBuilder } from "../src/index";
-import { DomRenderer } from "../src/renderers/dom/dom-renderer";
+import { compile } from "../../src/core/compiler/helpers/compile.helper";
+import { DEFAULT_CURSOR_RENDER_OPTIONS } from "../../src/core/cursor/consts/cursor-defaults.const";
+import { advanceIndex } from "../../src/core/reducer/helpers/advance-index.helper";
+import { applyStyle } from "../../src/core/reducer/helpers/apply-style.helper";
+import { insertTextAtCursor } from "../../src/core/reducer/helpers/insert.helper";
+import { move } from "../../src/core/reducer/helpers/move.helper";
+import { removeStyles } from "../../src/core/reducer/helpers/remove-styles.helper";
+import { createInitialState } from "../../src/core/state/helpers/typewriter-state.helper";
+import { graphemesLengthAfter, graphemesLengthBefore, segmentText } from "../../src/core/stepping/helpers/segment-text.helper";
+import { createTypewriter, segmentRichText, stringRenderer, TimelineBuilder } from "../../src/index";
+import { DomRenderer } from "../../src/renderers/dom/dom-renderer";
 
 
 
@@ -349,7 +349,7 @@ describe("lazy default sfx pack", () => {
       }
     });
 
-    const { AudioManagerHelper } = await import("../src/core/audio/helpers/audio-manager.helper");
+    const { AudioManagerHelper } = await import("../../src/core/audio/helpers/audio-manager.helper");
     const manager = new AudioManagerHelper({ enabled: true });
 
     manager.playTyping();

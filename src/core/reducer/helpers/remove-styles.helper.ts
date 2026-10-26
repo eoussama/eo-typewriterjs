@@ -23,19 +23,14 @@ import { resolveStyleTarget } from "./resolve-style-target.helper";
 function clipStyles(styles: readonly TTextStyle[], from: number, to: number): readonly TTextStyle[] {
   const result: TTextStyle[] = [];
 
+  // Keep the part of each style before the range and the part after it, when non-empty.
   for (const entry of styles) {
-    if (entry.to <= from || entry.from >= to) {
-      result.push(entry);
+    if (entry.from < from) {
+      result.push({ ...entry, to: Math.min(entry.to, from) });
     }
-    else if (entry.from < from && entry.to > to) {
-      result.push({ ...entry, to: from });
-      result.push({ ...entry, from: to });
-    }
-    else if (entry.from < from) {
-      result.push({ ...entry, to: from });
-    }
-    else if (entry.to > to) {
-      result.push({ ...entry, from: to });
+
+    if (entry.to > to) {
+      result.push({ ...entry, from: Math.max(entry.from, to) });
     }
   }
 
@@ -69,5 +64,6 @@ export function removeStyles(state: TTypewriterState, event: TUnstyleEvent): TTy
     },
   };
 
+  // Stryker disable next-line ConditionalExpression: a range event has no cursor id, so clearing its selection changes nothing.
   return event.mode === "selection" ? withSelectionCleared(withUpdatedStyles, event.cursorId) : withUpdatedStyles;
 }

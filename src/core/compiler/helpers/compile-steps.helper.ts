@@ -10,7 +10,6 @@ import type { TPlaybackProgram, TPlaybackSound, TPlaybackStep } from "../types/p
 import { ECommandKind } from "../../commands/enums/command-kind.enum";
 import { reduce } from "../../reducer/helpers/reduce.helper";
 import { createInitialState } from "../../state/helpers/typewriter-state.helper";
-import { DEFAULT_INTERVAL } from "../consts/compiler.const";
 import { compileCommand } from "./compile.helper";
 import { resolveMotionAdvanceMode, resolveTypeAdvanceMode } from "./resolve-advance-mode.helper";
 
@@ -100,10 +99,10 @@ function resolveSound(command: TCommand): TPlaybackSound | null {
  */
 function groupSteps(events: readonly TTimelineEvent[]): [number, TTimelineEvent[]][] {
   const groups: [number, TTimelineEvent[]][] = [];
-  const counts = new Map<string, number>();
+  const counts = new Map<string | undefined, number>();
 
   for (const event of events) {
-    const key = "cursorId" in event ? event.cursorId : "";
+    const key = "cursorId" in event ? event.cursorId : undefined;
     const index = counts.get(key) ?? 0;
 
     counts.set(key, index + 1);
@@ -137,7 +136,7 @@ function hasEffect(prev: TTypewriterState, next: TTypewriterState, events: reado
     const before = prev.selections[event.cursorId];
     const after = next.selections[event.cursorId];
 
-    return prev.cursors[event.cursorId]?.index !== next.cursors[event.cursorId]?.index
+    return prev.cursors[event.cursorId]?.index !== next.cursors[event.cursorId]!.index
       || before?.from !== after?.from
       || before?.to !== after?.to;
   });
@@ -173,7 +172,6 @@ export function compileSteps(commands: readonly TCommand[], initialState: TTypew
       events: [],
       before: true,
       after: true,
-      call: false,
       sound,
       ...overrides,
     });
@@ -181,12 +179,7 @@ export function compileSteps(commands: readonly TCommand[], initialState: TTypew
     if (command.kind === ECommandKind.WAIT) {
       steps.push(step(time, { after: false }));
       time += command.duration;
-      steps.push(step(time, { before: false }));
-      continue;
-    }
-
-    if (command.kind === ECommandKind.CALL) {
-      steps.push(step(time, { call: true }));
+      steps.push(step(time, { before: false, sound: null }));
       continue;
     }
 
@@ -215,8 +208,8 @@ export function compileSteps(commands: readonly TCommand[], initialState: TTypew
       steps.push(step(at, { stepIndex: index, stepCount: kept, events: group }));
     }
 
-    // A stalled motion command ends one interval after its last kept step.
-    time = motion !== null && kept < groups.length ? groups[kept - 1]![0] + (motion.interval ?? DEFAULT_INTERVAL) : endTime;
+    // A stalled command ends where its first dropped step would have started.
+    time = kept < groups.length ? groups[kept]![0] : endTime;
   }
 
   return { steps, duration: steps.at(-1)?.time ?? 0 };

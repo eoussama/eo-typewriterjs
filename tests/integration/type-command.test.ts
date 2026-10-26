@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
-
-import { compile } from "../src/core/compiler/helpers/compile.helper";
-import { createTypewriter, stringRenderer } from "../src/index";
+import { compile } from "../../src/core/compiler/helpers/compile.helper";
+import { createTypewriter, stringRenderer } from "../../src/index";
 
 
 
@@ -28,7 +27,6 @@ function assertInvariants(tw: ReturnType<typeof createTypewriter>): void {
     expect(s.from).toBeLessThanOrEqual(s.to);
   }
 }
-
 
 describe("type - all valid units produce full text", () => {
   const CASES: Array<{ by: "char" | "grapheme" | "word" | "line" | "whole"; text: string }> = [

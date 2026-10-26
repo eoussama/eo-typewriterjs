@@ -26,29 +26,22 @@ export function removeRange(
   const deletedLength = removeEnd - removeStart;
   const text = state.document.text;
 
-  const shiftPoint = (point: number): number => {
-    if (point >= removeEnd) {
-      return point - deletedLength;
-    }
-
-    return point > removeStart ? removeStart : point;
-  };
+  // Points inside the range collapse to its start; points after it move left by its length.
+  const shiftPoint = (point: number): number => point - Math.min(deletedLength, Math.max(0, point - removeStart));
 
   const styles = state.document.styles
     .filter(entry => !(entry.from >= removeStart && entry.to <= removeEnd))
     .map(entry => ({ ...entry, from: shiftPoint(entry.from), to: shiftPoint(entry.to) }));
 
+  // The acting cursor is always inside the range, so shifting places it at `removeStart`.
   const cursors = Object.fromEntries(
-    Object.entries(state.cursors).map(([id, cur]) => [
-      id,
-      { ...cur, index: id === cursorId ? removeStart : shiftPoint(cur.index) },
-    ]),
+    Object.entries(state.cursors).map(([id, cur]) => [id, { ...cur, index: shiftPoint(cur.index) }]),
   );
 
   const selections = Object.fromEntries(
     Object.entries(state.selections).map(([id, sel]): [string, TSelectionState] => [
       id,
-      id === cursorId ? sel : { from: shiftPoint(sel.from), to: shiftPoint(sel.to) },
+      { from: shiftPoint(sel.from), to: shiftPoint(sel.to) },
     ]),
   );
 

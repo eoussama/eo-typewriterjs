@@ -1,10 +1,9 @@
 // @vitest-environment happy-dom
 import { describe, expect, it } from "vitest";
-import { DEFAULT_CURSOR_RENDER_OPTIONS } from "../src/core/cursor/consts/cursor-defaults.const";
-import { createInitialState } from "../src/core/state/index";
-
-import { createTypewriter } from "../src/index";
-import { DomRenderer, domRenderer } from "../src/renderers/dom/dom-renderer";
+import { DEFAULT_CURSOR_RENDER_OPTIONS } from "../../src/core/cursor/consts/cursor-defaults.const";
+import { createInitialState } from "../../src/core/state/index";
+import { createTypewriter } from "../../src/index";
+import { DomRenderer, domRenderer } from "../../src/renderers/dom/dom-renderer";
 
 
 

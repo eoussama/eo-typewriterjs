@@ -1,0 +1,40 @@
+{
+  "$schema": "./node_modules/@stryker-mutator/core/schema/stryker-schema.json",
+  "packageManager": "pnpm",
+  "plugins": [
+    "@stryker-mutator/vitest-runner"
+  ],
+  "testRunner": "vitest",
+  "vitest": {
+    "configFile": "vitest.config.ts",
+    "related": false
+  },
+  "mutate": [
+    "src/**/*.ts",
+    "!src/core/**/index.ts",
+    "!src/renderers/**/index.ts",
+    "!src/devtools/**",
+    "!src/core/audio/consts/default-sfx-pack.const.ts"
+  ],
+  "coverageAnalysis": "perTest",
+  "incremental": true,
+  "incrementalFile": "reports/stryker-incremental.json",
+  "reporters": [
+    "clear-text",
+    "progress",
+    "html",
+    "json"
+  ],
+  "htmlReporter": {
+    "fileName": "reports/mutation/index.html"
+  },
+  "jsonReporter": {
+    "fileName": "reports/mutation/mutation.json"
+  },
+  "thresholds": {
+    "high": 100,
+    "low": 95,
+    "break": 95
+  },
+  "ignoreStatic": true
+}

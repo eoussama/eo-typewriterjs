@@ -2,8 +2,7 @@ import type { TDeleteEvent } from "../../events/types/delete-event.type";
 import type { TCursorState } from "../../state/types/cursor-state.type";
 import type { TTypewriterState } from "../../state/types/typewriter-state.type";
 
-import { getSelection, withCursor, withSelectionCleared } from "../../state/helpers/typewriter-state.helper";
-import { segmentText } from "../../stepping/helpers/segment-text.helper";
+import { getSelection, withCursor } from "../../state/helpers/typewriter-state.helper";
 import { advanceIndex } from "./advance-index.helper";
 import { removeRange } from "./remove-range.helper";
 
@@ -43,12 +42,12 @@ function applyWholeDelete(state: TTypewriterState): TTypewriterState {
  */
 function resolveDeleteRange(text: string, cursorIndex: number, event: TDeleteEvent): [number, number] {
   if (event.unit === "line") {
-    if (event.direction === -1 && cursorIndex < text.length && segmentText(text.slice(0, cursorIndex), "line").length === 0) {
-      return [cursorIndex, advanceIndex(text, cursorIndex, event.count, "line")];
+    if (event.direction === -1 && cursorIndex === 0) {
+      return [0, advanceIndex(text, 0, event.count, "line")];
     }
 
-    if (event.direction === 1 && cursorIndex > 0 && segmentText(text.slice(cursorIndex), "line").length === 0) {
-      return [text.lastIndexOf("\n", cursorIndex - 1) + 1, cursorIndex];
+    if (event.direction === 1 && cursorIndex === text.length) {
+      return [text.lastIndexOf("\n") + 1, cursorIndex];
     }
   }
 
@@ -109,10 +108,6 @@ export function deleteTextAtCursor(state: TTypewriterState, event: TDeleteEvent)
   }
   else {
     [removeStart, removeEnd] = resolveDeleteRange(text, cursorIndex, event);
-  }
-
-  if (removeStart === removeEnd) {
-    return withSelectionCleared(ensured, event.cursorId);
   }
 
   return removeRange(ensured, event.cursorId, removeStart, removeEnd);

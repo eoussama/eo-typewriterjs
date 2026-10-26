@@ -1,7 +1,5 @@
 import { describe, expect, it } from "vitest";
-
-import { createTypewriter, stringRenderer } from "../src/index";
-import { StringRenderer } from "../src/renderers/string/string-renderer";
+import { createTypewriter, stringRenderer, StringRenderer } from "../../src/index";
 
 
 
@@ -344,5 +342,90 @@ describe("stringRenderer, playback snapshots", () => {
 
     expect(txt.length).toBeGreaterThanOrEqual(0);
     expect(txt.length).toBeLessThanOrEqual(18);
+  });
+});
+
+
+describe("stringRenderer.toAnsiString", () => {
+  it("returns empty string when nothing rendered", () => {
+    const renderer = new StringRenderer();
+
+    expect(renderer.toAnsiString()).toBe("");
+  });
+
+  it("returns plain text when no ansi styles are present", async () => {
+    const renderer = stringRenderer();
+    const tw = createTypewriter({ renderer });
+
+    tw.timeline.type("Hello", { by: "char", interval: 1 });
+    await tw.play();
+
+    expect(renderer.toAnsiString()).toBe("Hello");
+  });
+
+  it("returns plain text when styles have no ansi property", async () => {
+    const renderer = stringRenderer();
+    const tw = createTypewriter({ renderer });
+
+    tw.timeline
+      .type("Hello", { by: "char", interval: 1 })
+      .style("tw-class", { from: 0, to: 5 });
+    await tw.play();
+
+    // style has no ansi, plain text returned
+    expect(renderer.toAnsiString()).toBe("Hello");
+  });
+
+  it("applies ANSI codes for styles with ansi property", async () => {
+    const renderer = stringRenderer();
+    const tw = createTypewriter({ renderer });
+
+    tw.timeline
+      .type("Hi", { by: "char", interval: 1 })
+      .style({ ansi: { bold: "1" } }, { from: 0, to: 2 });
+    await tw.play();
+
+    const result = renderer.toAnsiString();
+
+    expect(result).toContain("\x1B[");
+    expect(result).toContain("Hi");
+  });
+
+  it("returns plain text when segment has no ansi in merged styles", async () => {
+    const renderer = stringRenderer();
+    const tw = createTypewriter({ renderer });
+
+    tw.timeline
+      .type("AB", { by: "char", interval: 1 })
+      .style({ css: { color: "red" } }, { from: 0, to: 2 });
+    await tw.play();
+
+    // css style but no ansi, treated as plain text
+    expect(renderer.toAnsiString()).toBe("AB");
+  });
+
+  it("returns plain text when ansi object is empty", async () => {
+    const renderer = stringRenderer();
+    const tw = createTypewriter({ renderer });
+
+    tw.timeline
+      .type("AB", { by: "char", interval: 1 })
+      .style({ ansi: {} }, { from: 0, to: 2 });
+    await tw.play();
+
+    // empty ansi map, no codes to emit, treated as plain text
+    expect(renderer.toAnsiString()).toBe("AB");
+  });
+
+  it("returns empty string when document text is empty (segments.length === 0)", async () => {
+    const renderer = stringRenderer();
+    const tw = createTypewriter({ renderer });
+
+    tw.timeline.type("Hi", { by: "char", interval: 1 });
+    await tw.play();
+    tw.stop(); // resets state to empty text and re-renders
+
+    // _state is set (not null) but text is empty → segmentRichText returns []
+    expect(renderer.toAnsiString()).toBe("");
   });
 });

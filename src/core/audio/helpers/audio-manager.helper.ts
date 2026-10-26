@@ -3,7 +3,7 @@ import type { TAudioChannel } from "../types/audio-channel.type";
 import type { TAudioCommandOverride } from "../types/audio-command-override.type";
 import type { TAudioOptions } from "../types/audio-options.type";
 
-import { DEFAULT_CHANNEL_VARIANCE } from "../consts/channel-variance.const";
+import { defaultChannelVariance } from "../consts/channel-variance.const";
 import { EAudioStrategy } from "../enums/audio-strategy.enum";
 import { getLoadedDefaultSfxPack, loadDefaultSfxPack } from "./load-default-sfx-pack.helper";
 
@@ -32,20 +32,15 @@ class ShuffleBagHelper {
     if (this._bag.length === 0) {
       this._bag = this._shuffle([...pool]);
 
-      if (
-        avoidImmediateRepeat
-        && this._lastPlayed !== null
-        && this._bag.length > 1
-        && this._bag[0] === this._lastPlayed
-      ) {
+      if (avoidImmediateRepeat && this._bag.length > 1 && this._bag[0] === this._lastPlayed) {
         const swapIdx = 1 + Math.floor(Math.random() * (this._bag.length - 1));
 
         [this._bag[0], this._bag[swapIdx]] = [this._bag[swapIdx]!, this._bag[0]!];
       }
     }
 
-    /* v8 ignore next */
-    const sample = this._bag.shift() ?? pool[0]!;
+    // The bag was refilled above if it was empty, so it always holds a sample here.
+    const sample = this._bag.shift()!;
 
     this._lastPlayed = sample;
 
@@ -191,15 +186,10 @@ function pickRandom(
   lastPlayed: string | null,
   avoidImmediateRepeat: boolean,
 ): string {
-  if (!avoidImmediateRepeat || lastPlayed === null) {
-    return pool[Math.floor(Math.random() * pool.length)]!;
-  }
+  const eligible = avoidImmediateRepeat ? pool.filter(s => s !== lastPlayed) : pool;
 
-  const eligible = pool.filter(s => s !== lastPlayed);
-
-  return eligible.length > 0
-    ? eligible[Math.floor(Math.random() * eligible.length)]!
-    : pool[Math.floor(Math.random() * pool.length)]!;
+  // When every sample is the last one played, repeating it is the only option.
+  return eligible.length > 0 ? eligible[Math.floor(Math.random() * eligible.length)]! : lastPlayed!;
 }
 
 /**
@@ -385,9 +375,8 @@ export class AudioManagerHelper {
    * @returns The resolved channel options
    */
   private _resolveChannelOpts(channel: TAudioChannel): TAudioChannelOptions {
-    const inherited = channel === "typing" ? {} : pickSelection(this._options.typing);
-
-    return { ...DEFAULT_CHANNEL_VARIANCE[channel], ...inherited, ...this._options[channel] };
+    // Typing's own options are spread last for the typing channel, so inheriting is harmless there.
+    return { ...defaultChannelVariance(channel), ...pickSelection(this._options.typing), ...this._options[channel] };
   }
 
   /**
@@ -449,14 +438,10 @@ export class AudioManagerHelper {
     state: TChannelState,
   ): string {
     const samples = pool.samples;
-
-    if (samples.length === 1) {
-      return samples[0]!;
-    }
-
     const avoidRepeat = channelOpts.avoidImmediateRepeat ?? true;
 
-    switch (channelOpts.strategy ?? EAudioStrategy.SHUFFLE_BAG) {
+    // Shuffle-bag is the default strategy.
+    switch (channelOpts.strategy) {
       case EAudioStrategy.ROUND_ROBIN:
         return getPoolState(state, pool.key).roundRobin.next(samples);
 
@@ -470,8 +455,8 @@ export class AudioManagerHelper {
 
   /**
    * @description
-   * Emit audio for the given sample. No-ops gracefully in non-browser environments
-   * or when the browser blocks autoplay.
+   * Emit audio for the given sample. No-ops gracefully in non-browser environments,
+   * where `Audio` does not exist, or when the browser blocks autoplay.
    *
    * @param src - The audio source URL or data URL
    * @param volume - Resolved volume in [0, 1]
@@ -486,11 +471,6 @@ export class AudioManagerHelper {
     overlap: boolean,
     state: TChannelState,
   ): void {
-    /* v8 ignore start */
-    if (typeof Audio === "undefined") {
-      return;
-    }
-
     try {
       let audio: HTMLAudioElement;
 
@@ -502,10 +482,7 @@ export class AudioManagerHelper {
       }
       else {
         audio = new Audio(src);
-
-        if (!overlap) {
-          state.currentAudio = audio;
-        }
+        state.currentAudio = audio;
       }
 
       audio.volume = volume;
@@ -517,8 +494,7 @@ export class AudioManagerHelper {
       audio.play().catch(() => {});
     }
     catch {
-      // Swallow synchronous errors such as unsupported sources
+      // Swallow synchronous errors: `Audio` missing outside browsers, unsupported sources
     }
-    /* v8 ignore stop */
   }
 }

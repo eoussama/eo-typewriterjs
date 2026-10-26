@@ -14,13 +14,16 @@ import type { TSelectionState, TTypewriterState } from "../../state/types/typewr
  * @returns The non-empty range to act on, or null when there is nothing to act on
  */
 export function resolveStyleTarget(state: TTypewriterState, target: TStyleTarget): TSelectionState | null {
-  if (target.mode === "selection") {
-    return state.selections[target.cursorId] ?? null;
+  switch (target.mode) {
+    case "selection":
+      return state.selections[target.cursorId] ?? null;
+
+    case "range": {
+      const length = state.document.text.length;
+      const from = Math.max(0, Math.min(length, target.from));
+      const to = Math.max(0, Math.min(length, target.to));
+
+      return from < to ? { from, to } : null;
+    }
   }
-
-  const length = state.document.text.length;
-  const from = Math.max(0, Math.min(length, target.from));
-  const to = Math.max(0, Math.min(length, target.to));
-
-  return from < to ? { from, to } : null;
 }

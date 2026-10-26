@@ -1,7 +1,7 @@
-import type { TAudioOptions } from "../src/index";
+import type { TAudioOptions } from "../../src/index";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { AudioManagerHelper } from "../src/core/audio/helpers/audio-manager.helper";
-import { createTypewriter, stringRenderer } from "../src/index";
+import { AudioManagerHelper } from "../../src/core/audio/helpers/audio-manager.helper";
+import { createTypewriter, stringRenderer } from "../../src/index";
 
 
 
@@ -100,6 +100,53 @@ describe("audio channels", () => {
     const [typing] = playEach(0.5, { typing: { playbackRateJitter: undefined, volumeJitter: undefined } });
 
     expect(typing).toMatchObject({ playbackRate: 1, volume: 1 });
+  });
+
+  it("reuses one element per channel when overlap is off", () => {
+    const elements: { src: string; paused: number; currentTime: number }[] = [];
+
+    vi.stubGlobal("Audio", class {
+      volume = 1;
+      playbackRate = 1;
+      preservesPitch = true;
+      paused = 0;
+      currentTime = 5;
+
+      constructor(public src: string) {
+        elements.push(this);
+      }
+
+      pause(): void {
+        this.paused++;
+      }
+
+      play(): Promise<void> {
+        return Promise.resolve();
+      }
+    });
+
+    const manager = new AudioManagerHelper({
+      sfxs: { a: { samples: ["a.mp3"] }, b: { samples: ["b.mp3"] } },
+      typing: { overlap: false, strategy: "roundRobin", sfxs: ["a", "b"] },
+    });
+
+    manager.playTyping();
+    manager.playTyping();
+
+    expect(elements).toHaveLength(1);
+    expect(elements[0]).toMatchObject({ src: "b.mp3", paused: 1, currentTime: 0 });
+  });
+
+  it("ignores audio elements that throw synchronously", () => {
+    vi.stubGlobal("Audio", class {
+      constructor() {
+        throw new Error("unsupported");
+      }
+    });
+
+    const manager = new AudioManagerHelper({ sfxs: { a: { samples: ["a.mp3"] } } });
+
+    expect(() => manager.playTyping()).not.toThrow();
   });
 
   it("silences a channel with a false override", () => {

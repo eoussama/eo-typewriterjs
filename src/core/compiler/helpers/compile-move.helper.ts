@@ -49,6 +49,7 @@ export function compileMove(command: TMoveCommand, startTime: number): TCompileR
       cursorId,
       boundary,
       offset: 0,
+      // Stryker disable next-line all: boundary moves and selections ignore the advance mode.
       by: command.by ?? "char",
       sourceCommandId: command.id,
     }));
@@ -56,13 +57,10 @@ export function compileMove(command: TMoveCommand, startTime: number): TCompileR
     return { events, endTime: startTime + interval };
   }
 
-  if (command.offset === 0) {
-    return { events: [], endTime: startTime };
-  }
 
   const mode = resolveMotionAdvanceMode(command.by, "move");
   const amount = mode.amount;
-  const direction: 1 | -1 = command.offset > 0 ? 1 : -1;
+  const direction = Math.sign(command.offset) as 1 | -1;
   const totalUnits = Math.abs(command.offset);
   const steps = Math.ceil(totalUnits / amount);
 

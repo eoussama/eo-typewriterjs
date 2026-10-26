@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
-
-import { createTypewriter, stringRenderer } from "../src/index";
+import { createTypewriter, stringRenderer } from "../../src/index";
 
 
 
@@ -54,6 +53,7 @@ describe("delete - forward, all valid units", () => {
   }
 });
 
+
 describe("delete - backward, all valid units", () => {
   const UNITS = ["char", "grapheme", "word", "line"] as const;
 
@@ -73,6 +73,7 @@ describe("delete - backward, all valid units", () => {
     });
   }
 });
+
 
 describe("delete - boundary operands", () => {
   it("delete('start') removes text from cursor to start", async () => {
@@ -155,6 +156,7 @@ describe("delete - boundary operands", () => {
   });
 });
 
+
 describe("delete - amount > 1", () => {
   it("backward amount:2 removes 2 words per step", async () => {
     const r = stringRenderer();
@@ -183,6 +185,7 @@ describe("delete - amount > 1", () => {
     assertInvariants(tw);
   });
 });
+
 
 describe("delete - with active selection", () => {
   it("delete(-1) with selection removes selected range", async () => {
@@ -264,6 +267,7 @@ describe("delete - with active selection", () => {
   });
 });
 
+
 describe("delete - before/after hooks", () => {
   it("before fires once per backward step", async () => {
     const r = stringRenderer();
@@ -306,6 +310,7 @@ describe("delete - before/after hooks", () => {
   });
 });
 
+
 describe("delete - clamping", () => {
   it("backward delete clamped at document start", async () => {
     const r = stringRenderer();
@@ -334,6 +339,7 @@ describe("delete - clamping", () => {
     assertInvariants(tw);
   });
 });
+
 
 describe("delete - by line on single-line text", () => {
   it("forward delete by line from end removes the entire single line", async () => {
@@ -412,6 +418,7 @@ describe("delete - by line on single-line text", () => {
   });
 });
 
+
 describe("delete - style range interactions", () => {
   it("delete inside styled range trims the style", async () => {
     const r = stringRenderer();
@@ -443,10 +450,6 @@ describe("delete - style range interactions", () => {
 });
 
 
-// ---------------------------------------------------------------------------
-// move
-// ---------------------------------------------------------------------------
-
 describe("move - all valid units forward", () => {
   const UNITS = ["char", "grapheme", "word", "line"] as const;
 
@@ -468,6 +471,7 @@ describe("move - all valid units forward", () => {
   }
 });
 
+
 describe("move - all valid units backward", () => {
   const UNITS = ["char", "grapheme", "word", "line"] as const;
 
@@ -487,6 +491,7 @@ describe("move - all valid units backward", () => {
     });
   }
 });
+
 
 describe("move - boundary operands", () => {
   it("move('start') jumps to index 0", async () => {
@@ -532,6 +537,7 @@ describe("move - boundary operands", () => {
     assertInvariants(tw);
   });
 });
+
 
 describe("move - clamping", () => {
   it("large positive offset clamps to document end", async () => {
@@ -606,6 +612,7 @@ describe("move - clamping", () => {
   });
 });
 
+
 describe("move - clears selection", () => {
   it("any move clears the active selection", async () => {
     const r = stringRenderer();
@@ -637,6 +644,7 @@ describe("move - clears selection", () => {
   });
 });
 
+
 describe("move - before/after hooks", () => {
   it("before fires before each step, after fires after each step", async () => {
     const r = stringRenderer();
@@ -656,6 +664,7 @@ describe("move - before/after hooks", () => {
     expect(log).toStrictEqual([5, 4, 4, 3]);
   });
 });
+
 
 describe("move - step-by-step semantics", () => {
   it("move(-3) fires before and after hooks once per step", async () => {
@@ -819,6 +828,7 @@ describe("move - step-by-step semantics", () => {
   });
 });
 
+
 describe("move - multi-cursor", () => {
   it("move targets only the specified cursor", async () => {
     const r = stringRenderer();
@@ -835,10 +845,6 @@ describe("move - multi-cursor", () => {
   });
 });
 
-
-// ---------------------------------------------------------------------------
-// select
-// ---------------------------------------------------------------------------
 
 describe("select - all valid units forward", () => {
   const UNITS = ["char", "grapheme", "word", "line"] as const;
@@ -863,6 +869,7 @@ describe("select - all valid units forward", () => {
   }
 });
 
+
 describe("select - all valid units backward", () => {
   const UNITS = ["char", "grapheme", "word", "line"] as const;
 
@@ -884,6 +891,7 @@ describe("select - all valid units backward", () => {
     });
   }
 });
+
 
 describe("select - boundary operands", () => {
   it("select('start') selects from cursor to document start", async () => {
@@ -956,6 +964,7 @@ describe("select - boundary operands", () => {
   });
 });
 
+
 describe("select - replaces previous selection", () => {
   it("second select replaces first", async () => {
     const r = stringRenderer();
@@ -971,6 +980,7 @@ describe("select - replaces previous selection", () => {
     assertInvariants(tw);
   });
 });
+
 
 describe("select - amount > 1", () => {
   it("amount:2 word selects two words forward", async () => {
@@ -989,6 +999,7 @@ describe("select - amount > 1", () => {
     assertInvariants(tw);
   });
 });
+
 
 describe("select - before/after hooks", () => {
   it("before fires once per step, after fires once per step", async () => {
@@ -1035,6 +1046,7 @@ describe("select - before/after hooks", () => {
     assertInvariants(tw);
   });
 });
+
 
 describe("select - step-by-step semantics", () => {
   it("select(-3) fires before and after hooks 3 times", async () => {
@@ -1216,6 +1228,7 @@ describe("select - step-by-step semantics", () => {
     assertInvariants(tw);
   });
 });
+
 
 describe("select - multi-cursor", () => {
   it("select targets only the specified cursor", async () => {

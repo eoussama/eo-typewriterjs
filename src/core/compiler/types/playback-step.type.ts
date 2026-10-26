@@ -14,7 +14,7 @@ export type TPlaybackSound = TAudioChannel;
 /**
  * @description
  * One scheduled unit of playback. A step runs at `time` and, in order:
- * fires the command's `before` hook, invokes the call callback, applies `events`
+ * fires the command's `before` hook, invokes the callback of a `call` command, applies `events`
  * and renders, plays its sound, then fires the command's `after` hook.
  *
  * Segmented commands (type, delete, move, select) produce one step per unit step;
@@ -30,7 +30,6 @@ export type TPlaybackStep = {
   readonly events: readonly TTimelineEvent[];
   readonly before: boolean;
   readonly after: boolean;
-  readonly call: boolean;
   readonly sound: TPlaybackSound | null;
 };
 

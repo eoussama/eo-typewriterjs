@@ -1,10 +1,10 @@
 import type { TNullable } from "@eoussama/core";
-import type { TCursorAnimation, TCursorAnimationOptions } from "../../core/cursor/types/cursor-render-options.type";
+import type { TCursorAnimation, TCursorAnimationOptions, TResolvedCursorRenderOptions } from "../../core/cursor/types/cursor-render-options.type";
 import type { IRenderer } from "../../core/renderer/interfaces/renderer.interface";
 import type { TStyleRef } from "../../core/state/types/rich-text-document.type";
-import type { TSelectionState, TTypewriterState } from "../../core/state/types/typewriter-state.type";
+import type { TTypewriterState } from "../../core/state/types/typewriter-state.type";
 
-import { resolveStyleRef, segmentRichText } from "../../core/state/helpers/segment-rich-text.helper";
+import { resolveStyleRef } from "../../core/state/helpers/segment-rich-text.helper";
 
 
 
@@ -30,7 +30,6 @@ const BLINK_STYLE_ID = "typewriter-blink-style";
  * Subsequent calls are no-ops. Safe to call from every DomRenderer constructor.
  */
 function ensureBlinkStylesheet(): void {
-  /* v8 ignore next 3 */
   if (typeof document === "undefined") {
     return;
   }
@@ -76,7 +75,7 @@ const URL_ATTRIBUTES: ReadonlySet<string> = new Set(["href", "src", "action", "f
  * @returns Whether the attribute is safe to set
  */
 function isSafeAttribute(name: string, value: string): boolean {
-  const lowerName = name.trim().toLowerCase();
+  const lowerName = name.toLowerCase();
 
   if (lowerName.startsWith("on")) {
     return false;
@@ -134,22 +133,8 @@ function setStyleProperty(el: HTMLElement, prop: string, value: string): void {
  * @returns The individual class names
  */
 function splitClasses(className: string): string[] {
-  return className.split(/\s+/).filter(Boolean);
+  return className.match(/\S+/g) ?? [];
 }
-
-// ---------------------------------------------------------------------------
-// Boundary type
-// ---------------------------------------------------------------------------
-
-/**
- * @description
- * A boundary point used to segment the document text for multi-cursor/multi-selection rendering
- */
-type TBoundary = {
-  readonly index: number;
-  readonly kind: "cursor" | "selStart" | "selEnd";
-  readonly cursorId: string;
-};
 
 // ---------------------------------------------------------------------------
 // DomRenderer
@@ -308,12 +293,34 @@ export class DomRenderer implements IRenderer {
 
   /**
    * @description
-   * Paint the document text into the target element.
-   * Segments the text at every style boundary, cursor position, and selection boundary,
-   * rendering cursor markers and selection highlights at their correct positions.
-   * Text styles are applied as className, inline CSS, and/or HTML attributes on spans.
-   * Adjacent segments with identical style stacks and selection state are coalesced
-   * into a single DOM node before appending to reduce overall node count.
+   * Create the element of a visible cursor
+   *
+   * @param cursorId - The cursor id
+   * @param opts - The cursor's render options
+   * @returns The cursor element
+   */
+  private _createCursor(cursorId: string, opts: TResolvedCursorRenderOptions): HTMLElement {
+    const cursorEl = document.createElement("span");
+
+    // Attributes go first so a `class` attribute cannot wipe the cursor classes.
+    applyAttributes(cursorEl, opts.attrs);
+    cursorEl.classList.add("typewriter-cursor", ...splitClasses(opts.className));
+    cursorEl.dataset.cursorKind = opts.kind;
+    cursorEl.textContent = opts.content;
+    this._applyCursorAnimation(cursorEl, opts.animation);
+    cursorEl.setAttribute("aria-hidden", "true");
+    cursorEl.dataset.cursorId = cursorId;
+
+    return cursorEl;
+  }
+
+  /**
+   * @description
+   * Paint the document into the target element.
+   * The text is cut at every style edge, cursor and selection edge. Visible cursors are
+   * drawn at their cut point, and the text between cut points is wrapped in its style
+   * and selection spans. Adjacent pieces with the same styles and selections are merged
+   * into one run to keep the DOM small.
    *
    * @param state - The typewriter state to render
    */
@@ -322,209 +329,99 @@ export class DomRenderer implements IRenderer {
       return;
     }
 
-    const textLength = state.document.text.length;
-    const segmented = segmentRichText(state.document);
+    const { text, styles } = state.document;
+    const clamp = (index: number): number => Math.max(0, Math.min(text.length, index));
+    const cursors = Object.values(state.cursors).filter(cursor => cursor.renderOptions.visible);
+    const selections = Object.entries(state.selections);
 
-    // An empty document still needs one (empty) segment so cursors are drawn.
-    const richSegments = segmented.length > 0 ? segmented : [{ text: "", from: 0, to: 0, styles: [] }];
-    const clamp = (index: number): number => Math.max(0, Math.min(textLength, index));
-
-    // Collect all cursor/selection boundaries
-    const boundaries: TBoundary[] = [];
-
-    for (const cursor of Object.values(state.cursors)) {
-      boundaries.push({ index: clamp(cursor.index), kind: "cursor", cursorId: cursor.id });
-    }
-
-    for (const [cursorId, sel] of Object.entries(state.selections) as [string, TSelectionState][]) {
-      boundaries.push({ index: clamp(sel.from), kind: "selStart", cursorId });
-      boundaries.push({ index: clamp(sel.to), kind: "selEnd", cursorId });
-    }
-
-    // Sort boundaries: within same index: selStart < cursor < selEnd
-    const kindOrder: Record<TBoundary["kind"], number> = { selStart: 0, cursor: 1, selEnd: 2 };
-
-    boundaries.sort((a, b) => a.index - b.index || kindOrder[a.kind] - kindOrder[b.kind]);
+    const points = [...new Set([
+      0,
+      text.length,
+      ...styles.flatMap(entry => [clamp(entry.from), clamp(entry.to)]),
+      ...cursors.map(cursor => clamp(cursor.index)),
+      ...selections.flatMap(([, sel]) => [clamp(sel.from), clamp(sel.to)]),
+    ])].sort((a, b) => a - b);
 
     const fragment = document.createDocumentFragment();
-    const openSelections = new Set<string>();
+    // Declared through a cast: assignments made inside `flush` are invisible to narrowing.
+    let run = null as { text: string; styles: readonly TStyleRef[]; selected: boolean; key: string } | null;
 
-    // Coalescing run buffer - accumulates consecutive text slices that share
-    // the same style stack and selection state into a single DOM subtree.
-    let runText = "";
-    let runStylesKey = "";
-    let runSelectionsKey = "";
-    let runStyles: readonly TStyleRef[] = [];
-    let runSelections = new Set<string>();
-    let runActive = false;
-
-    const getSelectionsKey = (): string => [...openSelections].sort().join(",");
-
-    const flushRun = (): void => {
-      /* v8 ignore next 3 */
-      if (!runActive) {
-        return;
+    const flush = (): void => {
+      if (run !== null) {
+        this._appendStyledText(fragment, run.text, run.styles, run.selected);
+        run = null;
       }
-
-      this._appendStyledText(fragment, runText, runStyles, runSelections);
-      runActive = false;
-      runText = "";
     };
 
-    const bufferText = (text: string, styles: readonly TStyleRef[]): void => {
-      const sKey = JSON.stringify(styles);
-      const selKey = getSelectionsKey();
+    for (const [i, from] of points.entries()) {
+      for (const cursor of cursors) {
+        if (clamp(cursor.index) === from) {
+          flush();
+          fragment.appendChild(this._createCursor(cursor.id, cursor.renderOptions));
+        }
+      }
 
-      if (runActive && sKey === runStylesKey && selKey === runSelectionsKey) {
-        runText += text;
+      const to = points[i + 1];
+
+      if (to === undefined) {
+        break;
+      }
+
+      const active = styles.filter(entry => entry.from <= from && entry.to >= to).map(entry => entry.style);
+      const selectedBy = selections.filter(([, sel]) => sel.from <= from && sel.to >= to).map(([id]) => id);
+      const key = JSON.stringify([active, selectedBy]);
+
+      if (run?.key === key) {
+        run.text += text.slice(from, to);
       }
       else {
-        flushRun();
-        runText = text;
-        runStyles = styles;
-        runSelections = new Set(openSelections);
-        runStylesKey = sKey;
-        runSelectionsKey = selKey;
-        runActive = true;
-      }
-    };
-
-    for (const segment of richSegments) {
-      const segBoundaries = boundaries.filter(b => b.index >= segment.from && b.index <= segment.to);
-
-      let pos = segment.from;
-
-      for (const boundary of segBoundaries) {
-        if (boundary.index > pos) {
-          const sliceText = segment.text.slice(pos - segment.from, boundary.index - segment.from);
-
-          /* v8 ignore next 3 */
-          if (sliceText.length > 0) {
-            bufferText(sliceText, segment.styles);
-          }
-        }
-
-        const isTrailingCursorBoundary = boundary.kind === "cursor"
-          && boundary.index === segment.to
-          && segment !== richSegments[richSegments.length - 1];
-
-        pos = boundary.index;
-
-        if (isTrailingCursorBoundary) {
-          continue;
-        }
-
-        if (boundary.kind === "selStart") {
-          flushRun();
-          openSelections.add(boundary.cursorId);
-        }
-        /* v8 ignore start */
-        else if (boundary.kind === "selEnd") {
-          flushRun();
-          openSelections.delete(boundary.cursorId);
-        }
-        else if (boundary.kind === "cursor") {
-          const cursor = state.cursors[boundary.cursorId];
-
-          if (cursor !== undefined && !cursor.renderOptions.visible) {
-            continue;
-          }
-
-          flushRun();
-
-          const cursorEl = document.createElement("span");
-          const opts = cursor?.renderOptions;
-
-          // Attributes go first so a `class` attribute cannot wipe the cursor classes.
-          if (opts?.attrs !== undefined) {
-            applyAttributes(cursorEl, opts.attrs);
-          }
-
-          cursorEl.classList.add("typewriter-cursor");
-
-          if (opts?.className !== undefined) {
-            cursorEl.classList.add(...splitClasses(opts.className));
-          }
-
-          if (opts?.kind !== undefined) {
-            cursorEl.dataset.cursorKind = opts.kind;
-          }
-
-          if (opts?.content !== undefined) {
-            cursorEl.textContent = opts.content;
-          }
-
-          this._applyCursorAnimation(cursorEl, opts?.animation ?? "blink");
-
-          cursorEl.setAttribute("aria-hidden", "true");
-          cursorEl.dataset.cursorId = boundary.cursorId;
-          fragment.appendChild(cursorEl);
-        }
-        /* v8 ignore stop */
-      }
-
-      if (pos < segment.to) {
-        const remainingText = segment.text.slice(pos - segment.from);
-
-        /* v8 ignore next 3 */
-        if (remainingText.length > 0) {
-          bufferText(remainingText, segment.styles);
-        }
+        flush();
+        run = { text: text.slice(from, to), styles: active, selected: selectedBy.length > 0, key };
       }
     }
 
-    flushRun();
-
-    this._target.innerHTML = "";
-    this._target.appendChild(fragment);
+    flush();
+    this._target.replaceChildren(fragment);
   }
 
   /**
    * @description
    * Append a styled (or plain) text node to the fragment.
    * When styles are present, wraps in one span per style ref (innermost = last applied).
-   * When a selection is active, adds the outermost selection highlight span.
+   * When selected, adds the outermost selection highlight span.
    *
    * @param fragment - The document fragment to append to
    * @param text - The text content to append
    * @param styles - The style refs to apply, ordered from first-applied (outermost) to last
-   * @param openSelections - The set of currently open selection cursor ids
+   * @param selected - Whether the text is inside a selection
    */
   private _appendStyledText(
     fragment: DocumentFragment,
     text: string,
     styles: readonly TStyleRef[],
-    openSelections: ReadonlySet<string>,
+    selected: boolean,
   ): void {
-    const hasStyle = styles.length > 0;
-    const hasSelection = openSelections.size > 0;
+    let current: Node = document.createTextNode(text);
 
-    if (hasStyle || hasSelection) {
-      let current: Node = document.createTextNode(text);
+    // Wrap in one span per style ref, innermost = last style applied
+    for (let i = styles.length - 1; i >= 0; i--) {
+      const el = document.createElement("span");
 
-      // Wrap in one span per style ref, innermost = last style applied
-      for (let i = styles.length - 1; i >= 0; i--) {
-        const el = document.createElement("span");
-
-        this._applySingleStyleRef(el, styles[i]!);
-        el.appendChild(current);
-        current = el;
-      }
-
-      // Selection highlight is the outermost wrapper
-      if (hasSelection) {
-        const selEl = document.createElement("span");
-
-        selEl.classList.add("typewriter-selection");
-        selEl.appendChild(current);
-        current = selEl;
-      }
-
-      fragment.appendChild(current);
+      this._applySingleStyleRef(el, styles[i]!);
+      el.appendChild(current);
+      current = el;
     }
-    else {
-      fragment.appendChild(document.createTextNode(text));
+
+    // Selection highlight is the outermost wrapper
+    if (selected) {
+      const selEl = document.createElement("span");
+
+      selEl.classList.add("typewriter-selection");
+      selEl.appendChild(current);
+      current = selEl;
     }
+
+    fragment.appendChild(current);
   }
 }
 

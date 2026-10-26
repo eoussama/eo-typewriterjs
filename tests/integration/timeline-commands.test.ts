@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
-
-import { createTypewriter, EPlaybackStatus, stringRenderer } from "../src/index";
+import { createTypewriter, EPlaybackStatus, stringRenderer } from "../../src/index";
 
 
 
@@ -88,6 +87,7 @@ describe("style - absolute range", () => {
   });
 });
 
+
 describe("style - selection-based range", () => {
   it("style('selection') applies style over active selection", async () => {
     const r = stringRenderer();
@@ -136,6 +136,7 @@ describe("style - selection-based range", () => {
   });
 });
 
+
 describe("style - multi-cursor", () => {
   it("multi-cursor selection style applies per-cursor ranges", async () => {
     const r = stringRenderer();
@@ -150,6 +151,7 @@ describe("style - multi-cursor", () => {
     assertInvariants(tw);
   });
 });
+
 
 describe("style - before/after hooks", () => {
   it("before fires before style is applied", async () => {
@@ -168,10 +170,6 @@ describe("style - before/after hooks", () => {
   });
 });
 
-
-// ---------------------------------------------------------------------------
-// unstyle
-// ---------------------------------------------------------------------------
 
 describe("unstyle - absolute range", () => {
   it("removes a style entirely inside the unstyle range", async () => {
@@ -264,6 +262,7 @@ describe("unstyle - absolute range", () => {
   });
 });
 
+
 describe("unstyle - selection-based range", () => {
   it("unstyle('selection') removes styles in selection range", async () => {
     const r = stringRenderer();
@@ -314,10 +313,6 @@ describe("unstyle - selection-based range", () => {
   });
 });
 
-
-// ---------------------------------------------------------------------------
-// unselect
-// ---------------------------------------------------------------------------
 
 describe("unselect", () => {
   it("clears an active selection without changing cursor position", async () => {
@@ -386,10 +381,6 @@ describe("unselect", () => {
 });
 
 
-// ---------------------------------------------------------------------------
-// wait
-// ---------------------------------------------------------------------------
-
 describe("wait", () => {
   it("wait does not change document text", async () => {
     const r = stringRenderer();
@@ -444,10 +435,6 @@ describe("wait", () => {
   });
 });
 
-
-// ---------------------------------------------------------------------------
-// call
-// ---------------------------------------------------------------------------
 
 describe("call", () => {
   it("callback fires during playback", async () => {
@@ -523,10 +510,6 @@ describe("call", () => {
 });
 
 
-// ---------------------------------------------------------------------------
-// mixed command chains (invariant checks)
-// ---------------------------------------------------------------------------
-
 describe("mixed chains - select → style → move", () => {
   it("select whole, style, then move clears selection", async () => {
     const r = stringRenderer();
@@ -545,6 +528,7 @@ describe("mixed chains - select → style → move", () => {
   });
 });
 
+
 describe("mixed chains - type → move → select → delete", () => {
   it("selects a word mid-sentence and deletes it", async () => {
     const r = stringRenderer();
@@ -561,6 +545,7 @@ describe("mixed chains - type → move → select → delete", () => {
     assertInvariants(tw);
   });
 });
+
 
 describe("mixed chains - type → select → type (replacement) → type", () => {
   it("replaces selected text and continues typing", async () => {
@@ -579,6 +564,7 @@ describe("mixed chains - type → select → type (replacement) → type", () =>
     assertInvariants(tw);
   });
 });
+
 
 describe("mixed chains - type → style → unstyle → restyle", () => {
   it("unstyle then restyle produces one style entry", async () => {
@@ -600,6 +586,7 @@ describe("mixed chains - type → style → unstyle → restyle", () => {
   });
 });
 
+
 describe("mixed chains - move by word → delete by word → type", () => {
   it("corrects the second word in a sentence", async () => {
     const r = stringRenderer();
@@ -618,6 +605,7 @@ describe("mixed chains - move by word → delete by word → type", () => {
   });
 });
 
+
 describe("mixed chains - wait between operations", () => {
   it("wait between type and delete does not affect final output", async () => {
     const r = stringRenderer();
@@ -633,6 +621,7 @@ describe("mixed chains - wait between operations", () => {
     assertInvariants(tw);
   });
 });
+
 
 describe("mixed chains - call interleaved with type", () => {
   it("call fires between type steps with correct state", async () => {
@@ -652,6 +641,7 @@ describe("mixed chains - call interleaved with type", () => {
   });
 });
 
+
 describe("mixed chains - multi-cursor complex", () => {
   it("two cursors type then one deletes and types", async () => {
     const r = stringRenderer();
@@ -667,6 +657,7 @@ describe("mixed chains - multi-cursor complex", () => {
     assertInvariants(tw);
   });
 });
+
 
 describe("mixed chains - playback status after complex flow", () => {
   it("status is COMPLETED after a multi-command chain", async () => {

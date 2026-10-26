@@ -52,6 +52,7 @@ export function compileDelete(command: TDeleteCommand, startTime: number): TComp
       cursorId,
       boundary,
       count: 0,
+      // Stryker disable next-line StringLiteral: boundary deletes ignore the unit.
       unit: "char",
       direction: 1,
       sourceCommandId: command.id,
@@ -63,7 +64,7 @@ export function compileDelete(command: TDeleteCommand, startTime: number): TComp
   const mode = resolveMotionAdvanceMode(command.by, "delete");
   const amount = mode.amount;
 
-  const direction: 1 | -1 = command.count >= 0 ? 1 : -1;
+  const direction = Math.sign(command.count) as 1 | -1;
   const totalUnits = Math.abs(command.count);
   const steps = Math.ceil(totalUnits / amount);
 

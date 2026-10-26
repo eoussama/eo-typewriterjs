@@ -32,5 +32,6 @@ export function applyStyle(state: TTypewriterState, event: TStyleEvent): TTypewr
     },
   };
 
+  // Stryker disable next-line ConditionalExpression: a range event has no cursor id, so clearing its selection changes nothing.
   return event.mode === "selection" ? withSelectionCleared(withStyle, event.cursorId) : withStyle;
 }

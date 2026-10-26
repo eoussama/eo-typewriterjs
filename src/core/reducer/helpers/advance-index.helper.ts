@@ -19,10 +19,7 @@ import { graphemesLengthAfter, graphemesLengthBefore, segmentText } from "../../
 export function advanceIndex(text: string, startIndex: number, count: number, unit: TAdvanceUnit): number {
   const start = Math.max(0, Math.min(text.length, startIndex));
 
-  if (count === 0) {
-    return start;
-  }
-
+  // Stryker disable next-line ConditionalExpression,LogicalOperator,StringLiteral,BlockStatement: the general path below gives the same result, only slower.
   if (unit === "char" || unit === "grapheme") {
     return count > 0
       ? start + graphemesLengthAfter(text, start, count)

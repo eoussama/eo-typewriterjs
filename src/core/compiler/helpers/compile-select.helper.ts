@@ -51,6 +51,7 @@ export function compileSelect(command: TSelectCommand, startTime: number): TComp
       cursorId,
       boundary,
       count: 0,
+      // Stryker disable next-line all: boundary moves and selections ignore the advance mode.
       by: command.by ?? "char",
       sourceCommandId: command.id,
     }));
@@ -58,13 +59,10 @@ export function compileSelect(command: TSelectCommand, startTime: number): TComp
     return { events, endTime: startTime + interval };
   }
 
-  if (command.count === 0) {
-    return { events: [], endTime: startTime };
-  }
 
   const mode = resolveMotionAdvanceMode(command.by, "select");
   const amount = mode.amount;
-  const direction: 1 | -1 = command.count > 0 ? 1 : -1;
+  const direction = Math.sign(command.count) as 1 | -1;
   const totalUnits = Math.abs(command.count);
   const steps = Math.ceil(totalUnits / amount);
 

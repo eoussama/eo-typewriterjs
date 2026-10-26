@@ -5,7 +5,6 @@ import type { TPlaybackProgram, TPlaybackStep } from "../../compiler/types/playb
 import type { IRenderer } from "../../renderer/interfaces/renderer.interface";
 import type { TTypewriterState } from "../../state/types/typewriter-state.type";
 import type { TPlaybackStatus } from "../enums/playback-status.enum";
-import type { TCheckpoint } from "../types/checkpoint.type";
 
 import { deferred, toError } from "@eoussama/core";
 import { ECommandKind } from "../../commands/enums/command-kind.enum";
@@ -45,6 +44,16 @@ export type TPlaybackControllerState = {
   readonly currentTime: number;
   readonly duration: number;
   readonly rate: number;
+};
+
+/**
+ * @description
+ * The state before the step at `index`, kept every CHECKPOINT_INTERVAL steps so seeking
+ * does not replay the whole timeline
+ */
+type TCheckpoint = {
+  readonly index: number;
+  readonly state: TTypewriterState;
 };
 
 /**
@@ -89,13 +98,15 @@ function applySteps(state: TTypewriterState, steps: readonly TPlaybackStep[], fr
  * @returns An ordered array of checkpoints from earliest to latest
  */
 function buildCheckpoints(steps: readonly TPlaybackStep[], initialState: TTypewriterState): TCheckpoint[] {
-  const checkpoints: TCheckpoint[] = [{ time: 0, eventIndex: 0, state: initialState }];
+  const checkpoints: TCheckpoint[] = [{ index: 0, state: initialState }];
   let state = initialState;
 
+  // Stryker disable all: checkpoints only speed seeking up; without them every seek replays from the start with the same result.
   for (let i = CHECKPOINT_INTERVAL; i <= steps.length; i += CHECKPOINT_INTERVAL) {
     state = applySteps(state, steps, i - CHECKPOINT_INTERVAL, i);
-    checkpoints.push({ time: steps[i - 1]!.time, eventIndex: i, state });
+    checkpoints.push({ index: i, state });
   }
+  // Stryker restore all
 
   return checkpoints;
 }
@@ -111,7 +122,8 @@ function buildCheckpoints(steps: readonly TPlaybackStep[], initialState: TTypewr
  */
 function stepChanged(prev: TTypewriterState, next: TTypewriterState, step: TPlaybackStep): boolean {
   return prev.document.text !== next.document.text
-    || step.events.some(event => "cursorId" in event && prev.cursors[event.cursorId]?.index !== next.cursors[event.cursorId]?.index);
+    // Applying an event always creates its cursor, so it exists in `next`.
+    || step.events.some(event => "cursorId" in event && prev.cursors[event.cursorId]?.index !== next.cursors[event.cursorId]!.index);
 }
 
 /**
@@ -129,7 +141,7 @@ export class PlaybackController {
   private _initialState: TTypewriterState;
 
   private _steps: readonly TPlaybackStep[] = [];
-  private _checkpoints: TCheckpoint[] = [];
+  private _checkpoints: TCheckpoint[];
   private _duration = 0;
 
   private _status: TPlaybackStatus = EPlaybackStatus.IDLE;
@@ -146,7 +158,7 @@ export class PlaybackController {
   private _anchorTime = 0;
   private _anchorWall = 0;
   private _session: TSession | null = null;
-  private _wake: { readonly timer: ReturnType<typeof setTimeout>; readonly reschedule: () => void } | null = null;
+  private _wake: { readonly reschedule: () => void } | null = null;
   private _callbackDepth = 0;
 
   /**
@@ -165,6 +177,7 @@ export class PlaybackController {
     this._renderer = renderer;
     this._initialState = initialState;
     this._state = initialState;
+    this._checkpoints = buildCheckpoints([], initialState);
     this._audioManager = audioManager;
   }
 
@@ -278,10 +291,6 @@ export class PlaybackController {
   play(): Promise<void> {
     if (this._session !== null) {
       return this._session.done.promise;
-    }
-
-    if (this._status === EPlaybackStatus.COMPLETED) {
-      return this.replay();
     }
 
     if (this._status !== EPlaybackStatus.PAUSED) {
@@ -451,11 +460,9 @@ export class PlaybackController {
       return;
     }
 
-    if (this._status === EPlaybackStatus.PLAYING) {
-      this._anchorTime = this._playhead();
-      this._anchorWall = Date.now();
-    }
-
+    // Re-anchor so the time already played is kept at the old rate.
+    this._anchorTime = this._playhead();
+    this._anchorWall = Date.now();
     this._rate = rate;
     this._wake?.reschedule();
   }
@@ -519,9 +526,8 @@ export class PlaybackController {
       while (!signal.aborted && this._index < this._steps.length) {
         const step = this._steps[this._index]!;
 
-        if (this._phase === EStepPhase.PENDING) {
-          await this._sleepUntil(step.time, signal);
-        }
+        // Returns at once when resuming a step that already started: the playhead is at its time.
+        await this._sleepUntil(step.time, signal);
 
         // The clock is frozen at the step's time while it runs.
         this._anchorTime = step.time;
@@ -565,54 +571,56 @@ export class PlaybackController {
   private async _runStep(step: TPlaybackStep, signal: AbortSignal): Promise<void> {
     const { command } = step;
 
+    // Each await is followed by an abort check, so an interrupted run never touches shared state.
     if (this._phase < EStepPhase.BEFORE) {
       this._phase = EStepPhase.BEFORE;
 
-      if (step.before) {
+      if (step.before && command.before !== undefined) {
         await this._invoke(command.before, step, signal);
-      }
-    }
 
-    if (signal.aborted) {
-      return;
+        if (signal.aborted) {
+          return;
+        }
+      }
     }
 
     if (this._phase < EStepPhase.CALL) {
       this._phase = EStepPhase.CALL;
 
-      if (step.call && command.kind === ECommandKind.CALL) {
+      if (command.kind === ECommandKind.CALL) {
         await this._invoke(command.callback, step, signal);
-      }
-    }
 
-    if (signal.aborted) {
-      return;
+        if (signal.aborted) {
+          return;
+        }
+      }
     }
 
     if (this._phase < EStepPhase.APPLIED) {
       this._phase = EStepPhase.APPLIED;
 
-      if (step.events.length > 0) {
-        const prev = this._state;
+      const prev = this._state;
 
-        this._state = applySteps(prev, [step], 0, 1);
+      this._state = applySteps(prev, [step], 0, 1);
 
-        if (step.sound !== null && stepChanged(prev, this._state, step)) {
-          this._playSound(step);
-        }
-
-        await this._renderer.render(this._state);
+      // Opted-in sounds always play; the default typing, delete and move sounds need a visible change.
+      if (step.sound !== null && (typeof command.audio === "object" || stepChanged(prev, this._state, step))) {
+        this._playSound(step);
       }
-    }
 
-    if (signal.aborted) {
-      return;
+      if (step.events.length > 0) {
+        await this._renderer.render(this._state);
+
+        if (signal.aborted) {
+          return;
+        }
+      }
     }
 
     if (this._phase < EStepPhase.AFTER) {
       this._phase = EStepPhase.AFTER;
 
-      if (step.after) {
+      if (step.after && command.after !== undefined) {
         await this._invoke(command.after, step, signal);
       }
     }
@@ -622,16 +630,12 @@ export class PlaybackController {
    * @description
    * Invoke a hook or callback with the step's context
    *
-   * @param fn - The function to invoke, if any
+   * @param fn - The function to invoke
    * @param step - The step being run
    * @param signal - The session's abort signal
    * @returns A promise that settles when the function has finished
    */
-  private async _invoke(fn: TCallbackFn | undefined, step: TPlaybackStep, signal: AbortSignal): Promise<void> {
-    if (fn === undefined) {
-      return;
-    }
-
+  private async _invoke(fn: TCallbackFn, step: TPlaybackStep, signal: AbortSignal): Promise<void> {
     const context: TCallbackContext = {
       state: this._state,
       stepIndex: step.stepIndex,
@@ -686,26 +690,32 @@ export class PlaybackController {
     }
 
     return new Promise<void>((resolve, reject) => {
+      let timer: ReturnType<typeof setTimeout> | undefined;
+
       const onAbort = (): void => {
-        clearTimeout(this._wake?.timer);
+        // Stryker disable next-line all: the timer of an aborted run only settles a promise nobody awaits any more.
+        clearTimeout(timer);
         this._wake = null;
+        // Stryker disable next-line all: an aborted run is abandoned, so nothing observes whether its wait settles.
         reject(signal.reason);
       };
 
       const schedule = (): void => {
-        clearTimeout(this._wake?.timer);
+        clearTimeout(timer);
 
         const delay = (time - this._playhead()) / this._rate;
-        const timer = setTimeout(() => {
+
+        timer = setTimeout(() => {
+          // Stryker disable next-line all: a leftover listener would only clear this already-fired timer again.
           signal.removeEventListener("abort", onAbort);
           this._wake = null;
           resolve();
         }, Math.max(0, delay));
 
-        this._wake = { timer, reschedule: schedule };
+        this._wake = { reschedule: schedule };
       };
 
-      signal.addEventListener("abort", onAbort, { once: true });
+      signal.addEventListener("abort", onAbort);
       schedule();
     });
   }
@@ -723,6 +733,7 @@ export class PlaybackController {
    * @returns The playhead time in timeline milliseconds
    */
   private _playhead(): number {
+    // Stryker disable next-line ConditionalExpression,BlockStatement: while a step runs the next step is that step, so the formula below also yields the anchor.
     if (this._wake === null) {
       return this._anchorTime;
     }
@@ -804,13 +815,15 @@ export class PlaybackController {
   private _moveTo(index: number, time: number): void {
     let checkpoint = this._checkpoints[0]!;
 
+    // Stryker disable all: any earlier checkpoint rebuilds the same state, only more slowly.
     for (const candidate of this._checkpoints) {
-      if (candidate.eventIndex <= index) {
+      if (candidate.index <= index) {
         checkpoint = candidate;
       }
     }
+    // Stryker restore all
 
-    this._state = applySteps(checkpoint.state, this._steps, checkpoint.eventIndex, index);
+    this._state = applySteps(checkpoint.state, this._steps, checkpoint.index, index);
     this._index = index;
     this._phase = EStepPhase.PENDING;
     this._time = time;

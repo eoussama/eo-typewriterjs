@@ -7,8 +7,7 @@ import { defineConfig } from "vitest/config";
 const unit: TestProjectInlineConfiguration = {
   test: {
     name: "unit",
-    include: ["tests/**/*.test.ts"],
-    exclude: ["tests/smoke/**"],
+    include: ["tests/unit/**/*.test.ts", "tests/integration/**/*.test.ts"],
     environment: "node",
   },
 };

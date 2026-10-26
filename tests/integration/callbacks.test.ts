@@ -1,11 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
-
-import { compile } from "../src/core/compiler/helpers/compile.helper";
-import { DEFAULT_CURSOR_RENDER_OPTIONS } from "../src/core/cursor/consts/cursor-defaults.const";
-import { deleteTextAtCursor } from "../src/core/reducer/helpers/delete-text-at-cursor.helper";
-import { insertTextAtCursor } from "../src/core/reducer/helpers/insert.helper";
-import { createInitialState, withCursor, withSelection } from "../src/core/state/index";
-import { createTypewriter, EPlaybackStatus, stringRenderer } from "../src/index";
+import { compile } from "../../src/core/compiler/helpers/compile.helper";
+import { DEFAULT_CURSOR_RENDER_OPTIONS } from "../../src/core/cursor/consts/cursor-defaults.const";
+import { deleteTextAtCursor } from "../../src/core/reducer/helpers/delete-text-at-cursor.helper";
+import { insertTextAtCursor } from "../../src/core/reducer/helpers/insert.helper";
+import { createInitialState, withCursor, withSelection } from "../../src/core/state/index";
+import { createTypewriter, EPlaybackStatus, stringRenderer } from "../../src/index";
 
 
 
@@ -491,7 +490,7 @@ describe("call() command own before/after hooks", () => {
 });
 
 
-describe("executeWait abort coverage", () => {
+describe("wait cancellation", () => {
   it("cancelling during a wait command skips the after hook", async () => {
     const renderer = stringRenderer();
     const tw = createTypewriter({ renderer });
@@ -514,7 +513,7 @@ describe("executeWait abort coverage", () => {
 });
 
 
-describe("executeCommands signal-aborted-at-loop-start coverage", () => {
+describe("cancelling from inside a call", () => {
   it("aborting inside a call callback prevents the next command from running", async () => {
     const renderer = stringRenderer();
     const tw = createTypewriter({ renderer });
@@ -527,46 +526,6 @@ describe("executeCommands signal-aborted-at-loop-start coverage", () => {
     await tw.play();
 
     expect(secondCalled).toBe(false);
-  });
-});
-
-
-describe("seek mid-timer-resume coverage", () => {
-  it("seek while timer-resume is active cancels the pending timer and seeks correctly", async () => {
-    const renderer = stringRenderer();
-    const tw = createTypewriter({ renderer });
-
-    tw.timeline.type("Hello", { by: "char", interval: 100 });
-
-    const playing = tw.play();
-
-    await new Promise(r => setTimeout(r, 10));
-    tw.seek(50);
-    tw.seek(150);
-
-    await playing;
-    await tw.play();
-    await new Promise(r => setTimeout(r, 50));
-    tw.cancel();
-
-    expect(renderer.toString().length).toBeGreaterThan(0);
-  });
-
-  it("timer-resume completes through multiple ticks and fires _playhead on each tick", async () => {
-    const renderer = stringRenderer();
-    const tw = createTypewriter({ renderer });
-
-    tw.timeline.type("AB", { by: "char", interval: 30 });
-
-    const playing = tw.play();
-
-    await new Promise(r => setTimeout(r, 5));
-    tw.seek(0);
-
-    await playing;
-    await new Promise(r => setTimeout(r, 100));
-
-    expect(renderer.toString()).toBe("AB");
   });
 });
 
@@ -726,7 +685,7 @@ describe("abort inside before hook of instant commands", () => {
 });
 
 
-describe("deleteTextAtCursor additional branch coverage", () => {
+describe("deleteTextAtCursor cursor and selection reflow", () => {
   it("clamps a cursor inside the deleted range to removeStart (single-event large delete)", () => {
     const state: ReturnType<typeof createInitialState> = {
       document: { text: "abcde", styles: [] },

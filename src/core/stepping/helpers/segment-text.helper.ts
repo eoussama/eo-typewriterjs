@@ -24,6 +24,7 @@ const GRAPHEME_WINDOW = 16;
  * @returns An array of grapheme cluster strings
  */
 function segmentGraphemes(text: string): string[] {
+  // Stryker disable next-line ObjectLiteral: grapheme is also the default granularity.
   graphemeSegmenter ??= new Intl.Segmenter(undefined, { granularity: "grapheme" });
 
   return Array.from(graphemeSegmenter.segment(text), s => s.segment);
