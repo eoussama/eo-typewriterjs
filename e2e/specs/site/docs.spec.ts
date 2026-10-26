@@ -21,6 +21,24 @@ test.describe("docs site", () => {
     expect(errors).toEqual([]);
   });
 
+  test("the hero logo types its first lines and settles", async ({ page }) => {
+    await page.goto("/");
+
+    const paper = page.locator(".tw-logo-paper");
+    const line = page.locator(".tw-logo-line--2");
+
+    await expect(page.getByRole("img", { name: /EO TypewriterJS logo/ })).toBeVisible();
+    await expect.poll(() => paper.evaluate(el => getComputedStyle(el).transform), { timeout: 5000 }).toMatch(/^(?:none|matrix\(1, 0, 0, 1, 0, 0\))$/);
+    await expect.poll(() => line.evaluate(el => getComputedStyle(el).strokeDashoffset)).toMatch(/^0(?:px)?$/);
+  });
+
+  test("the hero logo shows its final frame straight away with reduced motion", async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await page.goto("/");
+
+    expect(await page.locator(".tw-logo-paper").evaluate(el => getComputedStyle(el).animationName)).toBe("none");
+  });
+
   test("an embedded playground plays its example", async ({ page }) => {
     await page.goto("/guide/commands/type");
 

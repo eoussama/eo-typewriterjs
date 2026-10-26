@@ -5,9 +5,6 @@ hero:
   name: "EO TypewriterJS"
   text: "Cinematic typewriter animation engine"
   tagline: "Compose rich text playback scenes with a chainable timeline, live editing commands, full Unicode support, and a renderer-agnostic architecture that works in the browser and on the server."
-  image:
-    src: /logo.svg
-    alt: EO TypewriterJS Logo
   actions:
     - theme: brand
       text: Get Started
@@ -16,7 +13,7 @@ hero:
       text: API Reference
       link: /api/
     - theme: alt
-      text: "Sandbox ↗\uFE0E"
+      text: Sandbox
       link: /sandbox
       target: _blank
 

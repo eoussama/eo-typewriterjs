@@ -4,6 +4,7 @@ import DefaultTheme from "vitepress/theme";
 import { h } from "vue";
 
 import DocsPlayground from "./components/docs-playground.vue";
+import HeroLogo from "./components/hero-logo.vue";
 import SandboxApp from "./components/sandbox-app.vue";
 import VersionBadge from "./version-badge.vue";
 import "./layout.css";
@@ -16,6 +17,7 @@ const theme: Theme = {
   Layout() {
     return h(DefaultTheme.Layout, null, {
       "nav-bar-title-after": () => h(VersionBadge),
+      "home-hero-image": () => h(HeroLogo),
     });
   },
   enhanceApp({ app }) {
