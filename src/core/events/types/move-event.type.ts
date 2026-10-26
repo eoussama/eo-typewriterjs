@@ -1,4 +1,5 @@
 import type { TAdvanceModeInput } from "../../commands/types/type-command.type";
+import type { EEventKind } from "../enums/event-kind.enum";
 import type { TBaseEvent } from "./base-event.type";
 
 
@@ -17,6 +18,7 @@ import type { TBaseEvent } from "./base-event.type";
  * This event is instant - it does not consume any timeline duration.
  */
 export type TMoveEvent = TBaseEvent & {
+  readonly kind: typeof EEventKind.MOVE;
   readonly time: number;
   readonly cursorId: string;
   readonly boundary?: "start" | "end";

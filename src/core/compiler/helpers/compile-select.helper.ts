@@ -63,7 +63,7 @@ export function compileSelect(command: TSelectCommand, startTime: number): TComp
   }
 
   const mode = resolveMotionAdvanceMode(command.by, "select");
-  const amount = Math.max(1, mode.amount);
+  const amount = mode.amount;
   const direction: 1 | -1 = command.count > 0 ? 1 : -1;
   const totalUnits = Math.abs(command.count);
   const steps = Math.ceil(totalUnits / amount);
@@ -88,8 +88,7 @@ export function compileSelect(command: TSelectCommand, startTime: number): TComp
     }
   }
 
-  /* v8 ignore next */
-  const endTime = steps > 0 ? startTime + (steps - 1) * interval + interval : startTime;
+  const endTime = startTime + steps * interval;
 
   return { events, endTime };
 }

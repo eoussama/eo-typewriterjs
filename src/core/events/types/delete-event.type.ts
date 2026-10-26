@@ -1,4 +1,5 @@
 import type { TAdvanceUnit } from "../../commands/types/type-command.type";
+import type { EEventKind } from "../enums/event-kind.enum";
 import type { TBaseEvent } from "./base-event.type";
 
 
@@ -19,6 +20,7 @@ import type { TBaseEvent } from "./base-event.type";
  * The reducer resolves the unit to a character count at apply time.
  */
 export type TDeleteEvent = TBaseEvent & {
+  readonly kind: typeof EEventKind.DELETE;
   readonly time: number;
   readonly cursorId: string;
   readonly boundary?: "start" | "end" | "whole";

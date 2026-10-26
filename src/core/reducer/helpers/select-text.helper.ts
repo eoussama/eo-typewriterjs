@@ -4,63 +4,26 @@ import type { TCursorState } from "../../state/types/cursor-state.type";
 import type { TTypewriterState } from "../../state/types/typewriter-state.type";
 
 import { withCursor, withSelection } from "../../state/helpers/typewriter-state.helper";
-import { segmentText } from "../../stepping/helpers/segment-text.helper";
+import { advanceIndex } from "./advance-index.helper";
 
 
 
 /**
  * @description
- * Resolve an advance mode input into a canonical unit string
- *
- * @param by - The advance mode input
- * @returns The canonical advance unit string
- */
-function resolveUnit(by: TAdvanceModeInput): string {
-  return typeof by === "string" ? by : by.unit;
-}
-
-/**
- * @description
- * Resolve an advance mode input into the number of units per step
- *
- * @param by - The advance mode input
- * @returns The amount of units per step
- */
-function resolveAmount(by: TAdvanceModeInput): number {
-  return typeof by === "string" ? 1 : by.amount;
-}
-
-/**
- * @description
- * Compute the character index boundary reached by advancing `n` whole units
- * (forward or backward) from `startIndex` in `text`.
- * Returns the clamped absolute index.
+ * Compute the selection endpoint reached by advancing `count` steps of the advance mode
+ * from `startIndex`.
  *
  * @param text - The current document text
  * @param startIndex - The cursor position to start from
- * @param count - Number of units; positive selects forward, negative selects backward
- * @param by - The advance mode controlling unit granularity
+ * @param count - Number of steps; positive selects forward, negative selects backward
+ * @param by - The advance mode controlling unit granularity and units per step
  * @returns The resolved endpoint index clamped to [0, text.length]
  */
 function resolveEndIndex(text: string, startIndex: number, count: number, by: TAdvanceModeInput): number {
-  const unit = resolveUnit(by) as Parameters<typeof segmentText>[1];
-  const amount = Math.max(1, resolveAmount(by));
-  const absCount = Math.abs(count) * amount;
+  const unit = typeof by === "string" ? by : by.unit;
+  const amount = typeof by === "string" ? 1 : by.amount;
 
-  if (count > 0) {
-    const tail = text.slice(startIndex);
-    const segments = segmentText(tail, unit);
-    const taken = segments.slice(0, absCount).join("").length;
-
-    return Math.min(text.length, startIndex + taken);
-  }
-  else {
-    const head = text.slice(0, startIndex);
-    const segments = segmentText(head, unit);
-    const taken = segments.slice(Math.max(0, segments.length - absCount)).join("").length;
-
-    return Math.max(0, startIndex - taken);
-  }
+  return advanceIndex(text, startIndex, count * amount, unit);
 }
 
 /**

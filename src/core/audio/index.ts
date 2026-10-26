@@ -1,5 +1,3 @@
-export { DEFAULT_SFX_PACK } from "./consts/default-sfx-pack.const";
-
 export { EAudioStrategy } from "./enums/audio-strategy.enum";
 export type { TAudioStrategy } from "./enums/audio-strategy.enum";
 

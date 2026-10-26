@@ -154,7 +154,7 @@ function findEventIndexAtTime(events: readonly TTimelineEvent[], time: number): 
  */
 export class PlaybackController {
   private readonly _renderer: IRenderer;
-  private _audioManager: AudioManagerHelper | null;
+  private readonly _audioManager: AudioManagerHelper | null;
   private _initialState: TTypewriterState;
 
   private _commands: TCommand[] = [];
@@ -541,18 +541,6 @@ export class PlaybackController {
     this._currentTime = (this._events[targetEventIndex - 1] as TTimelineEvent).time;
     this._renderer.render(this._state);
     this._status = EPlaybackStatus.PAUSED;
-  }
-
-  /**
-   * @description
-   * Set the audio manager instance used during playback.
-   * Changes take effect on the next play or replay.
-   * Pass `null` to disable audio.
-   *
-   * @param audioManager - The new audio manager, or null to disable audio
-   */
-  setAudioManager(audioManager: AudioManagerHelper | null): void {
-    this._audioManager = audioManager;
   }
 
   /**

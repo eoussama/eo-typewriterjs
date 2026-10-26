@@ -9,6 +9,20 @@ import { mergeStyles, segmentRichText } from "../../core/state/helpers/segment-r
 
 /**
  * @description
+ * Control characters other than tab, line feed and carriage return.
+ * Stripped from text so typed content cannot inject terminal escape sequences.
+ */
+// eslint-disable-next-line no-control-regex
+const CONTROL_CHARACTERS = /[\u0000-\u0008\v\f\u000E-\u001F\u007F-\u009F]/g;
+
+/**
+ * @description
+ * A valid SGR parameter list, such as `1` or `38;5;208`
+ */
+const SGR_PARAMETERS = /^\d+(?:;\d+)*$/;
+
+/**
+ * @description
  * A headless renderer that stores the latest typewriter state in memory.
  * Useful for testing, server-side rendering, and string snapshot assertions.
  *
@@ -51,7 +65,9 @@ export class StringRenderer implements IRenderer {
   /**
    * @description
    * Return the document text with ANSI escape sequences applied from text styles.
-   * Only styles that include an `ansi` map contribute escape sequences.
+   * Only styles that include an `ansi` map contribute escape sequences, and only values
+   * that are valid SGR parameter lists (digits separated by `;`) are used.
+   * Control characters in the text itself are removed so they cannot inject escapes.
    * Segments without any ANSI styles are emitted as plain text.
    * The string is always terminated with the ANSI reset sequence when any styling was applied.
    *
@@ -62,34 +78,17 @@ export class StringRenderer implements IRenderer {
       return "";
     }
 
-    const segments = segmentRichText(this._state.document);
-
-    if (segments.length === 0) {
-      return "";
-    }
-
     let result = "";
-    let anyAnsi = false;
 
-    for (const segment of segments) {
-      if (segment.styles.length === 0) {
-        result += segment.text;
-        continue;
-      }
+    for (const segment of segmentRichText(this._state.document)) {
+      const text = segment.text.replace(CONTROL_CHARACTERS, "");
+      const ansi = mergeStyles(segment.styles).ansi ?? {};
+      const codes = Object.values(ansi).filter(code => SGR_PARAMETERS.test(code));
 
-      const merged = mergeStyles(segment.styles);
-      const ansiCodes = merged.ansi !== undefined ? Object.values(merged.ansi) : [];
-
-      if (ansiCodes.length === 0) {
-        result += segment.text;
-        continue;
-      }
-
-      anyAnsi = true;
-      result += `\x1B[${ansiCodes.join(";")}m${segment.text}\x1B[0m`;
+      result += codes.length > 0 ? `\x1B[${codes.join(";")}m${text}\x1B[0m` : text;
     }
 
-    return anyAnsi ? result : this._state.document.text;
+    return result;
   }
 }
 

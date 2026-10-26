@@ -12,6 +12,8 @@ import { getSelection, withCursor, withSelectionCleared } from "../../state/help
  * Apply an insert event to the typewriter state.
  * The text is inserted at the cursor's current index, the cursor advances
  * forward by the length of the inserted text, and any style is recorded as a style.
+ * Existing styles after the insertion point shift right, and a style that the
+ * insertion lands strictly inside grows to include the new text.
  * All other cursors whose index is strictly after the insertion point are shifted
  * forward by the inserted length so that their logical positions remain correct.
  * The cursor's active selection is cleared.
@@ -38,10 +40,25 @@ export function insertTextAtCursor(state: TTypewriterState, event: TInsertEvent)
     const nextText = currentText.slice(0, insertIndex) + text + currentText.slice(insertIndex);
     const nextIndex = insertIndex + insertedLength;
 
-    const nextStyles: TTextStyle[] = [...ensured.document.styles];
+    // Styles after the insertion point shift right; a style the insertion lands inside grows with it.
+    const nextStyles: TTextStyle[] = ensured.document.styles.map((entry) => {
+      if (entry.from >= insertIndex) {
+        return { ...entry, from: entry.from + insertedLength, to: entry.to + insertedLength };
+      }
+
+      return entry.to > insertIndex ? { ...entry, to: entry.to + insertedLength } : entry;
+    });
 
     if (event.style !== undefined) {
-      nextStyles.push({ from: insertIndex, to: nextIndex, style: event.style });
+      const last = nextStyles[nextStyles.length - 1];
+
+      // Consecutive chunks typed with the same style extend one entry instead of stacking new ones.
+      if (last !== undefined && last.style === event.style && last.to === insertIndex) {
+        nextStyles[nextStyles.length - 1] = { ...last, to: nextIndex };
+      }
+      else {
+        nextStyles.push({ from: insertIndex, to: nextIndex, style: event.style });
+      }
     }
 
     const updatedCursors = Object.fromEntries(

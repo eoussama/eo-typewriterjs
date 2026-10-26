@@ -1,14 +1,7 @@
-import type { TDeleteCommand } from "../../commands/types/delete-command.type";
-import type { TMoveCommand } from "../../commands/types/move-command.type";
-import type { TSelectCommand } from "../../commands/types/select-command.type";
-import type { TStyleCommand } from "../../commands/types/style-command.type";
-import type { TTypeCommand } from "../../commands/types/type-command.type";
-import type { TUnselectCommand } from "../../commands/types/unselect-command.type";
-import type { TUnstyleCommand } from "../../commands/types/unstyle-command.type";
-import type { TWaitCommand } from "../../commands/types/wait-command.type";
 import type { TTimelineEvent } from "../../events/types/timeline-event.type";
 
 import type { TCommand } from "../types/command.type";
+import type { TCompileResult } from "../types/compile-result.type";
 import { ECommandKind } from "../../commands/enums/command-kind.enum";
 import { compileDelete } from "./compile-delete.helper";
 import { compileMove } from "./compile-move.helper";
@@ -26,6 +19,47 @@ export type { TCommand } from "../types/command.type";
 
 /**
  * @description
+ * Compile a single command into its timed events, starting at the given time.
+ * `wait` and `call` produce no events; `wait` only advances the clock.
+ *
+ * @param command - The command to compile
+ * @param startTime - The absolute time at which the command begins
+ * @returns The produced events and the time at which the next command starts
+ */
+export function compileCommand(command: TCommand, startTime: number): TCompileResult<TTimelineEvent> {
+  switch (command.kind) {
+    case ECommandKind.TYPE:
+      return compileType(command, startTime);
+
+    case ECommandKind.DELETE:
+      return compileDelete(command, startTime);
+
+    case ECommandKind.MOVE:
+      return compileMove(command, startTime);
+
+    case ECommandKind.SELECT:
+      return compileSelect(command, startTime);
+
+    case ECommandKind.UNSELECT:
+      return compileUnselect(command, startTime);
+
+    case ECommandKind.STYLE:
+      return compileStyle(command, startTime);
+
+    case ECommandKind.UNSTYLE:
+      return compileUnstyle(command, startTime);
+
+    case ECommandKind.WAIT:
+      return { events: [], endTime: startTime + command.duration };
+
+    // Calls produce no events, and unknown kinds are ignored.
+    default:
+      return { events: [], endTime: startTime };
+  }
+}
+
+/**
+ * @description
  * Compile an ordered list of commands into a flat, time-sorted list of
  * scheduled playback events. Commands are placed sequentially, each command
  * starts after the last event of the previous command.
@@ -33,77 +67,17 @@ export type { TCommand } from "../types/command.type";
  * @param commands - The ordered command list from the timeline builder
  * @returns A flat array of TTimelineEvents sorted by absolute time
  */
-export function compile(commands: TCommand[]): TTimelineEvent[] {
+export function compile(commands: readonly TCommand[]): TTimelineEvent[] {
   const events: TTimelineEvent[] = [];
   let cursor = 0;
 
   for (const command of commands) {
-    switch (command.kind) {
-      case ECommandKind.TYPE: {
-        const result = compileType(command as TTypeCommand, cursor);
+    const result = compileCommand(command, cursor);
 
-        events.push(...result.events);
-        cursor = result.endTime;
-        break;
-      }
-
-      case ECommandKind.WAIT: {
-        cursor += (command as TWaitCommand).duration;
-        break;
-      }
-
-      case ECommandKind.DELETE: {
-        const result = compileDelete(command as TDeleteCommand, cursor);
-
-        events.push(...result.events);
-        cursor = result.endTime;
-        break;
-      }
-
-      case ECommandKind.MOVE: {
-        const result = compileMove(command as TMoveCommand, cursor);
-
-        events.push(...result.events);
-        cursor = result.endTime;
-        break;
-      }
-
-      case ECommandKind.SELECT: {
-        const result = compileSelect(command as TSelectCommand, cursor);
-
-        events.push(...result.events);
-        cursor = result.endTime;
-        break;
-      }
-
-      case ECommandKind.UNSELECT: {
-        const result = compileUnselect(command as TUnselectCommand, cursor);
-
-        events.push(...result.events);
-        break;
-      }
-
-      case ECommandKind.STYLE: {
-        const result = compileStyle(command as TStyleCommand, cursor);
-
-        events.push(...result.events);
-        break;
-      }
-
-      case ECommandKind.UNSTYLE: {
-        const result = compileUnstyle(command as TUnstyleCommand, cursor);
-
-        events.push(...result.events);
-        break;
-      }
-
-      case ECommandKind.CALL:
-        break;
-
-      default:
-        break;
-    }
+    events.push(...result.events);
+    cursor = result.endTime;
   }
 
+  // Multi-cursor commands emit each cursor's events in turn; the stable sort interleaves them by time.
   return events.sort((a, b) => a.time - b.time);
 }

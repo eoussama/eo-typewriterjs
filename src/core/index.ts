@@ -4,8 +4,6 @@ export { compile } from "./compiler/index";
 export type { TCommand } from "./compiler/index";
 export { EEventKind } from "./events/index";
 export type { TEventKind, TInsertEvent, TTimelineEvent } from "./events/index";
-export { play } from "./player/index";
-export type { TPlayerOptions } from "./player/index";
 
 export { insertTextAtCursor, reduce } from "./reducer/index";
 export type { IRenderer } from "./renderer/index";

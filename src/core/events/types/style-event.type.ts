@@ -1,21 +1,19 @@
 import type { TStyleRef } from "../../state/types/rich-text-document.type";
 
+import type { EEventKind } from "../enums/event-kind.enum";
 import type { TBaseEvent } from "./base-event.type";
+import type { TStyleTarget } from "./style-target.type";
 
 
 
 /**
  * @description
  * A low-level scheduled event that applies a style to a document range.
- * When `from` and `to` are both `-1`, the event is selection-based and `cursorId`
- * must be present - the reducer resolves the actual range from the cursor's selection.
+ * The range is either fixed or resolved from a cursor's selection, see `TStyleTarget`.
  */
-export type TStyleEvent = TBaseEvent & {
+export type TStyleEvent = TBaseEvent & TStyleTarget & {
+  readonly kind: typeof EEventKind.STYLE;
   readonly time: number;
-  readonly from: number;
-  readonly to: number;
   readonly style: TStyleRef;
   readonly sourceCommandId: string;
-  /** Present only for selection-based style events (from === -1 && to === -1) */
-  readonly cursorId?: string;
 };

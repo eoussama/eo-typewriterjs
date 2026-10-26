@@ -1,5 +1,6 @@
 import type { TStyleRef } from "../../state/types/rich-text-document.type";
 
+import type { EEventKind } from "../enums/event-kind.enum";
 import type { TBaseEvent } from "./base-event.type";
 
 
@@ -9,6 +10,7 @@ import type { TBaseEvent } from "./base-event.type";
  * A low-level scheduled event that inserts text at a cursor position
  */
 export type TInsertEvent = TBaseEvent & {
+  readonly kind: typeof EEventKind.INSERT;
   readonly time: number;
   readonly cursorId: string;
   readonly text: string;

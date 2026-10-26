@@ -4,41 +4,25 @@ import type { TCursorState } from "../../state/types/cursor-state.type";
 import type { TTypewriterState } from "../../state/types/typewriter-state.type";
 
 import { withCursor, withSelectionCleared } from "../../state/helpers/typewriter-state.helper";
-import { segmentText } from "../../stepping/helpers/segment-text.helper";
+import { advanceIndex } from "./advance-index.helper";
 
 
 
 /**
  * @description
- * Compute the absolute character index reached by advancing `offset` units from
- * `startIndex` in `text`. Positive offset moves right; negative offset moves left.
+ * Compute the index reached by advancing `offset` steps of the advance mode from `startIndex`.
  *
  * @param text - The current document text
  * @param startIndex - The cursor position to start from
- * @param offset - Number of units to move; positive = right, negative = left
- * @param by - The advance mode controlling unit granularity
+ * @param offset - Number of steps to move; positive = right, negative = left
+ * @param by - The advance mode controlling unit granularity and units per step
  * @returns The resolved absolute index clamped to [0, text.length]
  */
 function resolveIndex(text: string, startIndex: number, offset: number, by: TAdvanceModeInput): number {
-  /* v8 ignore start */
-  const unit = (typeof by === "string" ? by : by.unit) as Parameters<typeof segmentText>[1];
-  const amount = Math.max(1, typeof by === "string" ? 1 : by.amount);
-  const absOffset = Math.abs(offset) * amount;
-  /* v8 ignore stop */
+  const unit = typeof by === "string" ? by : by.unit;
+  const amount = typeof by === "string" ? 1 : by.amount;
 
-  if (offset > 0) {
-    const tail = text.slice(startIndex);
-    const segments = segmentText(tail, unit);
-    const taken = segments.slice(0, absOffset).join("").length;
-
-    return Math.min(text.length, startIndex + taken);
-  }
-
-  const head = text.slice(0, startIndex);
-  const segments = segmentText(head, unit);
-  const taken = segments.slice(Math.max(0, segments.length - absOffset)).join("").length;
-
-  return Math.max(0, startIndex - taken);
+  return advanceIndex(text, startIndex, offset * amount, unit);
 }
 
 /**

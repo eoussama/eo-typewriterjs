@@ -1,3 +1,7 @@
+import type { TValueOf } from "@eoussama/core";
+
+
+
 /**
  * @description
  * Enum-like map of all supported command kind identifiers
@@ -18,4 +22,4 @@ export const ECommandKind = {
  * @description
  * Union of all valid command kind string values
  */
-export type TCommandKind = (typeof ECommandKind)[keyof typeof ECommandKind];
+export type TCommandKind = TValueOf<typeof ECommandKind>;

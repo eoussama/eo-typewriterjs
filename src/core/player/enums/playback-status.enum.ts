@@ -1,3 +1,7 @@
+import type { TValueOf } from "@eoussama/core";
+
+
+
 /**
  * @description
  * The possible playback statuses for a typewriter controller
@@ -11,4 +15,4 @@ export const EPlaybackStatus = {
   CANCELLED: "cancelled",
 } as const;
 
-export type TPlaybackStatus = (typeof EPlaybackStatus)[keyof typeof EPlaybackStatus];
+export type TPlaybackStatus = TValueOf<typeof EPlaybackStatus>;

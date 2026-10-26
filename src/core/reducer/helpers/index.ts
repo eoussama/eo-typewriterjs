@@ -1,8 +1,11 @@
+export { advanceIndex } from "./advance-index.helper";
 export { applyStyle } from "./apply-style.helper";
 export { deleteTextAtCursor } from "./delete-text-at-cursor.helper";
 export { insertTextAtCursor } from "./insert.helper";
 export { move } from "./move.helper";
 export { reduce } from "./reduce.helper";
+export { removeRange } from "./remove-range.helper";
 export { removeStyles } from "./remove-styles.helper";
+export { resolveStyleTarget } from "./resolve-style-target.helper";
 export { selectText } from "./select-text.helper";
 export { unselect } from "./unselect.helper";

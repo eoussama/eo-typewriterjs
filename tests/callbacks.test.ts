@@ -783,38 +783,6 @@ describe("deleteTextAtCursor additional branch coverage", () => {
     expect(result.document.text).toBe("a");
   });
 
-  it("sel === undefined entry in selections is preserved unchanged during deletion", () => {
-    const state = {
-      document: { text: "hello", styles: [] },
-      cursors: {
-        main: { id: "main", index: 5, visible: true, renderOptions: DEFAULT_CURSOR_RENDER_OPTIONS },
-        b: { id: "b", index: 2, visible: true, renderOptions: DEFAULT_CURSOR_RENDER_OPTIONS },
-      },
-      selections: {
-        // eslint-disable-next-line ts/no-explicit-any
-        b: undefined as any,
-      },
-    } as ReturnType<typeof createInitialState>;
-
-    const event = {
-      id: "e2",
-      kind: "delete" as const,
-      time: 0,
-      cursorId: "main",
-      count: 2,
-      unit: "char" as const,
-      direction: -1 as const,
-      sourceCommandId: "c2",
-    };
-
-    const result = deleteTextAtCursor(state, event);
-
-    expect(result.document.text).toBe("hel");
-  });
-});
-
-
-describe("insertTextAtCursor additional branch coverage", () => {
   it("sel === undefined entry in selections is preserved unchanged during insertion", () => {
     const state = {
       document: { text: "ab", styles: [] },

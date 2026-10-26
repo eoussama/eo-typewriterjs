@@ -56,6 +56,88 @@ function ensureBlinkStylesheet(): void {
 }
 
 // ---------------------------------------------------------------------------
+// Attribute and style helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * @description
+ * Attributes whose value is navigated to or loaded as a URL
+ */
+const URL_ATTRIBUTES: ReadonlySet<string> = new Set(["href", "src", "action", "formaction", "xlink:href"]);
+
+/**
+ * @description
+ * Decide whether an attribute from a style or cursor `attrs` map may be set.
+ * Event handler attributes (`on*`) and script URLs are rejected, so style data
+ * cannot be used to run code.
+ *
+ * @param name - The attribute name
+ * @param value - The attribute value
+ * @returns Whether the attribute is safe to set
+ */
+function isSafeAttribute(name: string, value: string): boolean {
+  const lowerName = name.trim().toLowerCase();
+
+  if (lowerName.startsWith("on")) {
+    return false;
+  }
+
+  if (!URL_ATTRIBUTES.has(lowerName)) {
+    return true;
+  }
+
+  // Browsers ignore whitespace and control characters inside the URL scheme.
+  // eslint-disable-next-line no-control-regex
+  const compact = value.replace(/[\s\u0000-\u001F]/g, "").toLowerCase();
+
+  return !compact.startsWith("javascript:") && !compact.startsWith("vbscript:");
+}
+
+/**
+ * @description
+ * Set the safe entries of an `attrs` map on an element
+ *
+ * @param el - The element to update
+ * @param attrs - The attributes to set
+ */
+function applyAttributes(el: Element, attrs: Readonly<Record<string, string>>): void {
+  for (const [name, value] of Object.entries(attrs)) {
+    if (isSafeAttribute(name, value)) {
+      el.setAttribute(name, value);
+    }
+  }
+}
+
+/**
+ * @description
+ * Set an inline style property. Custom properties (`--name`) and kebab-case names go
+ * through `setProperty`; camelCase names are assigned directly.
+ *
+ * @param el - The element to style
+ * @param prop - The CSS property name
+ * @param value - The CSS value
+ */
+function setStyleProperty(el: HTMLElement, prop: string, value: string): void {
+  if (prop.includes("-")) {
+    el.style.setProperty(prop, value);
+  }
+  else {
+    (el.style as unknown as Record<string, string>)[prop] = value;
+  }
+}
+
+/**
+ * @description
+ * Split a space-separated class string into its non-empty class names
+ *
+ * @param className - The class string
+ * @returns The individual class names
+ */
+function splitClasses(className: string): string[] {
+  return className.split(/\s+/).filter(Boolean);
+}
+
+// ---------------------------------------------------------------------------
 // Boundary type
 // ---------------------------------------------------------------------------
 
@@ -109,7 +191,13 @@ export class DomRenderer implements IRenderer {
    */
   mount(state: TTypewriterState): void {
     if (typeof this._selector === "string") {
-      this._target = document.querySelector(this._selector);
+      const target = document.querySelector(this._selector);
+
+      if (target === null) {
+        throw new Error(`DomRenderer: no element matches the selector "${this._selector}".`);
+      }
+
+      this._target = target;
     }
     else {
       this._target = this._selector;
@@ -202,19 +290,18 @@ export class DomRenderer implements IRenderer {
   private _applySingleStyleRef(el: HTMLElement, ref: TStyleRef): void {
     const resolved = resolveStyleRef(ref);
 
-    if (resolved.className !== undefined) {
-      el.classList.add(...resolved.className.split(/\s+/).filter(Boolean));
+    // Attributes go first so a `class` attribute cannot wipe the style's classes.
+    if (resolved.attrs !== undefined) {
+      applyAttributes(el, resolved.attrs);
     }
 
-    if (resolved.attrs !== undefined) {
-      for (const [key, value] of Object.entries(resolved.attrs)) {
-        el.setAttribute(key, value);
-      }
+    if (resolved.className !== undefined) {
+      el.classList.add(...splitClasses(resolved.className));
     }
 
     if (resolved.css !== undefined) {
       for (const [prop, value] of Object.entries(resolved.css)) {
-        (el.style as unknown as Record<string, string>)[prop] = value;
+        setStyleProperty(el, prop, value);
       }
     }
   }
@@ -235,18 +322,23 @@ export class DomRenderer implements IRenderer {
       return;
     }
 
-    const richSegments = segmentRichText(state.document);
+    const textLength = state.document.text.length;
+    const segmented = segmentRichText(state.document);
+
+    // An empty document still needs one (empty) segment so cursors are drawn.
+    const richSegments = segmented.length > 0 ? segmented : [{ text: "", from: 0, to: 0, styles: [] }];
+    const clamp = (index: number): number => Math.max(0, Math.min(textLength, index));
 
     // Collect all cursor/selection boundaries
     const boundaries: TBoundary[] = [];
 
     for (const cursor of Object.values(state.cursors)) {
-      boundaries.push({ index: cursor.index, kind: "cursor", cursorId: cursor.id });
+      boundaries.push({ index: clamp(cursor.index), kind: "cursor", cursorId: cursor.id });
     }
 
     for (const [cursorId, sel] of Object.entries(state.selections) as [string, TSelectionState][]) {
-      boundaries.push({ index: sel.from, kind: "selStart", cursorId });
-      boundaries.push({ index: sel.to, kind: "selEnd", cursorId });
+      boundaries.push({ index: clamp(sel.from), kind: "selStart", cursorId });
+      boundaries.push({ index: clamp(sel.to), kind: "selEnd", cursorId });
     }
 
     // Sort boundaries: within same index: selStart < cursor < selEnd
@@ -343,12 +435,15 @@ export class DomRenderer implements IRenderer {
           const cursorEl = document.createElement("span");
           const opts = cursor?.renderOptions;
 
-          cursorEl.className = "typewriter-cursor";
+          // Attributes go first so a `class` attribute cannot wipe the cursor classes.
+          if (opts?.attrs !== undefined) {
+            applyAttributes(cursorEl, opts.attrs);
+          }
 
-          if (opts?.className !== undefined && opts.className.trim().length > 0) {
-            const extraClasses = opts.className.trim().split(/\s+/).filter(Boolean);
+          cursorEl.classList.add("typewriter-cursor");
 
-            cursorEl.classList.add(...extraClasses);
+          if (opts?.className !== undefined) {
+            cursorEl.classList.add(...splitClasses(opts.className));
           }
 
           if (opts?.kind !== undefined) {
@@ -357,12 +452,6 @@ export class DomRenderer implements IRenderer {
 
           if (opts?.content !== undefined) {
             cursorEl.textContent = opts.content;
-          }
-
-          if (opts?.attrs !== undefined) {
-            for (const [attrKey, attrValue] of Object.entries(opts.attrs)) {
-              cursorEl.setAttribute(attrKey, attrValue);
-            }
           }
 
           this._applyCursorAnimation(cursorEl, opts?.animation ?? "blink");

@@ -1,2 +1,2 @@
 export { chunkSteps } from "./helpers/chunk-steps.helper";
-export { segmentText } from "./helpers/segment-text.helper";
+export { graphemesLengthAfter, graphemesLengthBefore, segmentText } from "./helpers/segment-text.helper";

@@ -11,8 +11,8 @@ import { nextEventId } from "./event-id.helper";
 /**
  * @description
  * Compile a single TStyleCommand into TStyleEvents scheduled at the given start time.
- * When the range is `"selection"`, one event per cursor is emitted using a placeholder
- * range of `{ from: -1, to: -1 }` - the reducer resolves the actual selection at play time.
+ * When the range is `"selection"`, one selection-mode event per cursor is emitted -
+ * the reducer resolves the actual selection at play time.
  * When the range is a fixed `TStyleRange`, a single event is emitted regardless of cursors.
  *
  * @param command - The style command to compile
@@ -30,11 +30,10 @@ export function compileStyle(command: TStyleCommand, startTime: number): TCompil
         id: nextEventId("style"),
         kind: EEventKind.STYLE,
         time: startTime,
-        from: -1,
-        to: -1,
+        mode: "selection",
+        cursorId,
         style: command.style,
         sourceCommandId: command.id,
-        cursorId,
       });
     }
   }
@@ -43,6 +42,7 @@ export function compileStyle(command: TStyleCommand, startTime: number): TCompil
       id: nextEventId("style"),
       kind: EEventKind.STYLE,
       time: startTime,
+      mode: "range",
       from: command.range.from,
       to: command.range.to,
       style: command.style,

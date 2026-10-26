@@ -1,6 +1,7 @@
 // @vitest-environment happy-dom
 import { describe, expect, it } from "vitest";
 import { DEFAULT_CURSOR_RENDER_OPTIONS } from "../src/core/cursor/consts/cursor-defaults.const";
+import { createInitialState } from "../src/core/state/index";
 
 import { createTypewriter } from "../src/index";
 import { DomRenderer, domRenderer } from "../src/renderers/dom/dom-renderer";
@@ -142,13 +143,10 @@ describe("domRenderer", () => {
     expect(el.textContent).toBe("Make this word| pop.");
   });
 
-  it("does not render when target element is not found (null selector)", async () => {
+  it("throws a clear error when the selector matches no element", () => {
     const renderer = domRenderer("#nonexistent-element");
-    const tw = createTypewriter({ renderer });
 
-    // Should not throw even if selector doesn't match
-    tw.timeline.type("Hi", { by: "char", interval: 1 });
-    await expect(tw.play()).resolves.toBeUndefined();
+    expect(() => renderer.mount(createInitialState())).toThrow(/no element matches the selector "#nonexistent-element"/);
   });
 
   it("unmount() releases the target reference (no render after unmount)", () => {
@@ -159,9 +157,11 @@ describe("domRenderer", () => {
     renderer.mount({ document: { text: "", styles: [] }, cursors: { main: { id: "main", index: 0, visible: true, renderOptions: DEFAULT_CURSOR_RENDER_OPTIONS } }, selections: {} });
     renderer.unmount();
 
+    const before = el.innerHTML;
+
     // After unmount, render should not throw (target is null, _paint returns early)
     expect(() => renderer.render({ document: { text: "X", styles: [] }, cursors: { main: { id: "main", index: 1, visible: true, renderOptions: DEFAULT_CURSOR_RENDER_OPTIONS } }, selections: {} })).not.toThrow();
-    expect(el.textContent).toBe(""); // el was set before unmount but render is no-op after
+    expect(el.innerHTML).toBe(before);
   });
 
   it("renders multiple cursors", async () => {

@@ -1,3 +1,7 @@
+import type { TValueOf } from "@eoussama/core";
+
+
+
 /**
  * @description
  * Built-in cursor visual kinds
@@ -11,4 +15,4 @@ export const ECursorKind = {
   CUSTOM: "custom",
 } as const;
 
-export type TCursorKind = (typeof ECursorKind)[keyof typeof ECursorKind];
+export type TCursorKind = TValueOf<typeof ECursorKind>;

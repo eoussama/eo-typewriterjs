@@ -1,13 +1,14 @@
-import type { TCommand } from "../../commands";
 import type { TCallbackFn } from "../../commands/types/callback-hook.type";
 import type { TDeleteValue } from "../../commands/types/delete-command.type";
 import type { TMoveValue } from "../../commands/types/move-command.type";
 import type { TSelectValue } from "../../commands/types/select-command.type";
 import type { TStyleRange } from "../../commands/types/style-command.type";
+import type { TCommand } from "../../compiler/types/command.type";
 import type { TStyleRef } from "../../state/types/rich-text-document.type";
 import type { TCommandHookOptions, TDeleteOptions, TMoveOptions, TSelectOptions, TStyleOptions, TTypeOptions, TUnselectOptions, TUnstyleOptions, TWaitOptions } from "../types/timeline-options.type";
 
 import { ECommandKind } from "../../commands/enums/command-kind.enum";
+import { assertCount, assertDuration, assertStyleRange } from "../helpers/validate-command.helper";
 
 
 
@@ -59,6 +60,8 @@ export class TimelineBuilder {
    * @returns This builder instance for future chaining
    */
   wait(duration: number, options?: TWaitOptions): this {
+    assertDuration(duration, "wait duration");
+
     this._commands.push({
       id: `cmd_${++commandCounter}`,
       kind: ECommandKind.WAIT,
@@ -82,6 +85,9 @@ export class TimelineBuilder {
    * @returns This builder instance for future chaining
    */
   select(count: TSelectValue, options?: TSelectOptions): this {
+    assertCount(count, "select count");
+    assertDuration(options?.interval, "interval");
+
     this._commands.push({
       id: `cmd_${++commandCounter}`,
       kind: ECommandKind.SELECT,
@@ -108,6 +114,9 @@ export class TimelineBuilder {
    * @returns This builder instance for future chaining
    */
   move(offset: TMoveValue, options?: TMoveOptions): this {
+    assertCount(offset, "move offset");
+    assertDuration(options?.interval, "interval");
+
     this._commands.push({
       id: `cmd_${++commandCounter}`,
       kind: ECommandKind.MOVE,
@@ -134,6 +143,9 @@ export class TimelineBuilder {
    * @returns This builder instance for future chaining
    */
   delete(count: TDeleteValue, options?: TDeleteOptions): this {
+    assertCount(count, "delete count");
+    assertDuration(options?.interval, "interval");
+
     this._commands.push({
       id: `cmd_${++commandCounter}`,
       kind: ECommandKind.DELETE,
@@ -160,6 +172,8 @@ export class TimelineBuilder {
    * @returns This builder instance for future chaining
    */
   type(text: string, options?: TTypeOptions): this {
+    assertDuration(options?.interval, "interval");
+
     this._commands.push({
       id: `cmd_${++commandCounter}`,
       kind: ECommandKind.TYPE,
@@ -188,6 +202,8 @@ export class TimelineBuilder {
    * @returns This builder instance for future chaining
    */
   style(styleRef: TStyleRef, range: TStyleRange | "selection", options?: TStyleOptions): this {
+    assertStyleRange(range);
+
     this._commands.push({
       id: `cmd_${++commandCounter}`,
       kind: ECommandKind.STYLE,
@@ -235,6 +251,8 @@ export class TimelineBuilder {
    * @returns This builder instance for future chaining
    */
   unstyle(range: TStyleRange | "selection", options?: TUnstyleOptions): this {
+    assertStyleRange(range);
+
     this._commands.push({
       id: `cmd_${++commandCounter}`,
       kind: ECommandKind.UNSTYLE,

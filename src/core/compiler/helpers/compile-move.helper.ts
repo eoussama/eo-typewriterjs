@@ -61,7 +61,7 @@ export function compileMove(command: TMoveCommand, startTime: number): TCompileR
   }
 
   const mode = resolveMotionAdvanceMode(command.by, "move");
-  const amount = Math.max(1, mode.amount);
+  const amount = mode.amount;
   const direction: 1 | -1 = command.offset > 0 ? 1 : -1;
   const totalUnits = Math.abs(command.offset);
   const steps = Math.ceil(totalUnits / amount);
@@ -85,8 +85,7 @@ export function compileMove(command: TMoveCommand, startTime: number): TCompileR
     }
   }
 
-  /* v8 ignore next */
-  const endTime = steps > 0 ? startTime + (steps - 1) * interval + interval : startTime;
+  const endTime = startTime + steps * interval;
 
   return { events, endTime };
 }

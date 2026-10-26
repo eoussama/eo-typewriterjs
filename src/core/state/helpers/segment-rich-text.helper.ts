@@ -1,4 +1,4 @@
-import type { TRichTextDocument, TStyleObject, TStyleRef, TTextStyle } from "../types/rich-text-document.type";
+import type { TRichTextDocument, TStyleObject, TStyleRef } from "../types/rich-text-document.type";
 import type { TRichTextSegment } from "../types/rich-text-segment.type";
 
 
@@ -94,28 +94,24 @@ export function segmentRichText(document: TRichTextDocument): TRichTextSegment[]
     return [{ text, from: 0, to: text.length, styles: [] }];
   }
 
+  const clamp = (point: number): number => Math.max(0, Math.min(text.length, point));
   const boundarySet = new Set<number>([0, text.length]);
 
   for (const entry of styles) {
-    boundarySet.add(Math.max(0, entry.from));
-    boundarySet.add(Math.min(text.length, entry.to));
+    boundarySet.add(clamp(entry.from));
+    boundarySet.add(clamp(entry.to));
   }
 
   const boundaries = [...boundarySet].sort((a, b) => a - b);
   const segments: TRichTextSegment[] = [];
 
   for (let i = 0; i < boundaries.length - 1; i++) {
+    // Boundaries are unique and sorted, so every segment is non-empty.
     const from = boundaries[i]!;
     const to = boundaries[i + 1]!;
-
-    /* v8 ignore next 3 */
-    if (from >= to) {
-      continue;
-    }
-
     const activeStyles: TStyleRef[] = [];
 
-    for (const entry of styles as readonly TTextStyle[]) {
+    for (const entry of styles) {
       if (entry.from <= from && entry.to >= to) {
         activeStyles.push(entry.style);
       }

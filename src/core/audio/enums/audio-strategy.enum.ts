@@ -1,3 +1,7 @@
+import type { TValueOf } from "@eoussama/core";
+
+
+
 /**
  * @description
  * Sample selection strategy used when an sfx has multiple samples
@@ -23,4 +27,4 @@ export const EAudioStrategy = {
   SHUFFLE_BAG: "shuffleBag",
 } as const;
 
-export type TAudioStrategy = (typeof EAudioStrategy)[keyof typeof EAudioStrategy];
+export type TAudioStrategy = TValueOf<typeof EAudioStrategy>;

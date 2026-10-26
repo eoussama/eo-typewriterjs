@@ -36,6 +36,8 @@ import { resolveMotionAdvanceMode } from "./resolve-advance-mode.helper";
 export function compileDelete(command: TDeleteCommand, startTime: number): TCompileResult<TDeleteEvent> {
   const cursorIds = normalizeCursors(command.cursor);
 
+  const interval = command.interval ?? DEFAULT_INTERVAL;
+
   if (typeof command.count === "string") {
     const boundary = command.count;
 
@@ -55,12 +57,11 @@ export function compileDelete(command: TDeleteCommand, startTime: number): TComp
       sourceCommandId: command.id,
     }));
 
-    return { events, endTime: startTime + DEFAULT_INTERVAL };
+    return { events, endTime: startTime + interval };
   }
 
   const mode = resolveMotionAdvanceMode(command.by, "delete");
-  const interval = command.interval ?? DEFAULT_INTERVAL;
-  const amount = Math.max(1, mode.amount);
+  const amount = mode.amount;
 
   const direction: 1 | -1 = command.count >= 0 ? 1 : -1;
   const totalUnits = Math.abs(command.count);
@@ -86,8 +87,7 @@ export function compileDelete(command: TDeleteCommand, startTime: number): TComp
     }
   }
 
-  /* v8 ignore next */
-  const endTime = steps > 0 ? startTime + (steps - 1) * interval + interval : startTime;
+  const endTime = startTime + steps * interval;
 
   return { events, endTime };
 }

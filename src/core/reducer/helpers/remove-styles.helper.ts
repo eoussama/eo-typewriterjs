@@ -3,6 +3,7 @@ import type { TTextStyle } from "../../state/types/rich-text-document.type";
 import type { TTypewriterState } from "../../state/types/typewriter-state.type";
 
 import { withSelectionCleared } from "../../state/helpers/typewriter-state.helper";
+import { resolveStyleTarget } from "./resolve-style-target.helper";
 
 
 
@@ -45,8 +46,8 @@ function clipStyles(styles: readonly TTextStyle[], from: number, to: number): re
  * @description
  * Apply an unstyle event to the typewriter state by removing or clipping all styles
  * that overlap the target range.
- * When the event is selection-based (`from === -1 && to === -1`), the actual range is
- * resolved from the named cursor's active selection. If the cursor has no active selection
+ * Fixed ranges are clamped to the current text. Selection-based events use the named
+ * cursor's active selection, which is then cleared. When the resolved range is empty
  * the state is returned unchanged.
  *
  * @param state - The current typewriter state
@@ -54,30 +55,9 @@ function clipStyles(styles: readonly TTextStyle[], from: number, to: number): re
  * @returns A new TTypewriterState with styles in the range removed or clipped
  */
 export function removeStyles(state: TTypewriterState, event: TUnstyleEvent): TTypewriterState {
-  let from = event.from;
-  let to = event.to;
+  const range = resolveStyleTarget(state, event);
 
-  let clearedSelection = false;
-
-  if (from === -1 && to === -1) {
-    const cursorId = event.cursorId;
-
-    if (cursorId === undefined) {
-      return state;
-    }
-
-    const selection = state.selections[cursorId];
-
-    if (selection === undefined) {
-      return state;
-    }
-
-    from = selection.from;
-    to = selection.to;
-    clearedSelection = true;
-  }
-
-  if (from >= to) {
+  if (range === null) {
     return state;
   }
 
@@ -85,13 +65,9 @@ export function removeStyles(state: TTypewriterState, event: TUnstyleEvent): TTy
     ...state,
     document: {
       ...state.document,
-      styles: clipStyles(state.document.styles, from, to),
+      styles: clipStyles(state.document.styles, range.from, range.to),
     },
   };
 
-  if (clearedSelection && event.cursorId !== undefined) {
-    return withSelectionCleared(withUpdatedStyles, event.cursorId);
-  }
-
-  return withUpdatedStyles;
+  return event.mode === "selection" ? withSelectionCleared(withUpdatedStyles, event.cursorId) : withUpdatedStyles;
 }

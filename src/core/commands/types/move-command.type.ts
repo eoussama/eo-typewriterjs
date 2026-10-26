@@ -1,3 +1,4 @@
+import type { ECommandKind } from "../enums/command-kind.enum";
 import type { TBaseCommand } from "./base-command.type";
 import type { TAdvanceModeInput, TCursorSelector } from "./type-command.type";
 
@@ -27,6 +28,7 @@ export type TMoveValue = number | "start" | "end";
  * A zero numeric offset is a no-op and does not advance the clock regardless of interval.
  */
 export type TMoveCommand = TBaseCommand & {
+  readonly kind: typeof ECommandKind.MOVE;
   readonly cursor: TCursorSelector;
   readonly offset: TMoveValue;
   readonly by?: TAdvanceModeInput;

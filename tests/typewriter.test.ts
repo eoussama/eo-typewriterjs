@@ -1,10 +1,10 @@
 import type { TDeleteEvent } from "../src/core/events/types/delete-event.type";
 import type { TInsertEvent } from "../src/core/events/types/insert-event.type";
 import type { TStyleEvent } from "../src/core/events/types/style-event.type";
+import type { TTimelineEvent } from "../src/core/events/types/timeline-event.type";
 import type { TUnstyleEvent } from "../src/core/events/types/unstyle-event.type";
 import { describe, expect, it } from "vitest";
 import { compile } from "../src/core/compiler/helpers/compile.helper";
-import { play } from "../src/core/player/helpers/player.helper";
 import { applyStyle } from "../src/core/reducer/helpers/apply-style.helper";
 import { reduce } from "../src/core/reducer/helpers/reduce.helper";
 import { removeStyles } from "../src/core/reducer/helpers/remove-styles.helper";
@@ -16,6 +16,19 @@ import { chunkSteps } from "../src/core/stepping/helpers/chunk-steps.helper";
 import { segmentText } from "../src/core/stepping/helpers/segment-text.helper";
 
 import { createTypewriter, EPlaybackStatus, stringRenderer, StringRenderer } from "../src/index";
+
+
+
+/**
+ * @description
+ * Read the cursor id of an event, for event kinds that carry one
+ *
+ * @param event - The event to inspect
+ * @returns The event's cursor id, or undefined
+ */
+function cursorOf(event: TTimelineEvent): string | undefined {
+  return "cursorId" in event ? event.cursorId : undefined;
+}
 
 
 
@@ -377,7 +390,7 @@ describe("compile (style)", () => {
       { id: "mk2", kind: "style", cursor: "main", style: "tw-highlight", range: { from: 2, to: 9 } },
     ]);
 
-    const evt = events[0] as TStyleEvent;
+    const evt = events[0] as Extract<TStyleEvent, { mode: "range" }>;
 
     expect(evt.from).toBe(2);
     expect(evt.to).toBe(9);
@@ -407,7 +420,7 @@ describe("compile (style)", () => {
     expect(events.filter(e => e.kind === "style")[0]?.time).toBe(500);
   });
 
-  it("selection-range style emits one event per cursor with sentinel from/to of -1", () => {
+  it("selection-range style emits one selection-mode event per cursor", () => {
     const events = compile([
       { id: "mk5", kind: "style", cursor: ["a", "b"], style: "tw-highlight", range: "selection" as const },
     ]);
@@ -416,10 +429,9 @@ describe("compile (style)", () => {
 
     expect(styleEvents).toHaveLength(2);
     styleEvents.forEach((e) => {
-      expect(e.from).toBe(-1);
-      expect(e.to).toBe(-1);
+      expect(e.mode).toBe("selection");
     });
-    expect(styleEvents.map(e => e.cursorId).sort()).toEqual(["a", "b"]);
+    expect(styleEvents.map(e => cursorOf(e)).sort()).toEqual(["a", "b"]);
   });
 
   it("single-cursor selection-range style emits one event with cursorId", () => {
@@ -430,9 +442,8 @@ describe("compile (style)", () => {
     const styleEvents = events.filter(e => e.kind === "style") as TStyleEvent[];
 
     expect(styleEvents).toHaveLength(1);
-    expect(styleEvents[0]?.cursorId).toBe("main");
-    expect(styleEvents[0]?.from).toBe(-1);
-    expect(styleEvents[0]?.to).toBe(-1);
+    expect(cursorOf(styleEvents[0]!)).toBe("main");
+    expect(styleEvents[0]?.mode).toBe("selection");
   });
 
   it("accepts a TStyleObject as style value", () => {
@@ -452,8 +463,8 @@ describe("compile (multi-cursor)", () => {
       { id: "mca", kind: "type", cursor: ["a", "b"], text: "Hi", by: "char", interval: 100 },
     ]);
 
-    const aEvents = events.filter(e => e.cursorId === "a");
-    const bEvents = events.filter(e => e.cursorId === "b");
+    const aEvents = events.filter(e => cursorOf(e) === "a");
+    const bEvents = events.filter(e => cursorOf(e) === "b");
 
     expect(aEvents).toHaveLength(2);
     expect(bEvents).toHaveLength(2);
@@ -467,7 +478,7 @@ describe("compile (multi-cursor)", () => {
       { id: "mcb2", kind: "type", cursor: "main", text: "X", by: "char", interval: 50 },
     ]);
 
-    const mainEvents = events.filter(e => e.cursorId === "main");
+    const mainEvents = events.filter(e => cursorOf(e) === "main");
 
     expect(mainEvents).toHaveLength(1);
     expect(mainEvents[0]?.time).toBe(200);
@@ -482,8 +493,8 @@ describe("compile (multi-cursor)", () => {
     expect(events).toHaveLength(10);
     expect(events.every(e => e.kind === "move")).toBe(true);
     // every cursor should appear at every step
-    const xEvents = events.filter(e => e.cursorId === "x");
-    const yEvents = events.filter(e => e.cursorId === "y");
+    const xEvents = events.filter(e => cursorOf(e) === "x");
+    const yEvents = events.filter(e => cursorOf(e) === "y");
 
     expect(xEvents).toHaveLength(5);
     expect(yEvents).toHaveLength(5);
@@ -498,8 +509,8 @@ describe("compile (multi-cursor)", () => {
     expect(events).toHaveLength(6);
     expect(events.every(e => e.kind === "select")).toBe(true);
 
-    const pEvents = events.filter(e => e.cursorId === "p");
-    const qEvents = events.filter(e => e.cursorId === "q");
+    const pEvents = events.filter(e => cursorOf(e) === "p");
+    const qEvents = events.filter(e => cursorOf(e) === "q");
 
     expect(pEvents).toHaveLength(3);
     expect(qEvents).toHaveLength(3);
@@ -793,7 +804,7 @@ describe("reduce (style)", () => {
 
   it("applyStyle with selection-based event but no cursorId returns state unchanged", () => {
     const state = createInitialState();
-    const event = { id: "e1", kind: "style" as const, time: 0, cursorId: undefined as unknown as string, from: -1, to: -1, style: "x", sourceCommandId: "c" };
+    const event = { id: "e1", kind: "style" as const, time: 0, mode: "selection" as const, cursorId: undefined as unknown as string, style: "x", sourceCommandId: "c" };
     const next = applyStyle(state, event);
 
     expect(next).toBe(state);
@@ -1099,32 +1110,6 @@ describe("timelineBuilder.select", () => {
     await tw.play();
 
     expect(renderer.toString()).toBe("Hello");
-  });
-});
-
-
-describe("player.helper, play()", () => {
-  it("plays events through a renderer and resolves to final state", async () => {
-    const events = compile([
-      { id: "p1", kind: "type", cursor: "main", text: "Hi", by: "char", interval: 1 },
-    ]);
-
-    let lastText = "";
-    const renderer = {
-      mount: (state: Parameters<typeof play>[1]["renderer"]["render"] extends (s: infer S) => unknown ? S : never) => { void state; },
-      render: (state: { document: { text: string } }) => { lastText = state.document.text; },
-      unmount: () => {},
-    };
-
-    await play(events, { renderer: renderer as Parameters<typeof play>[1]["renderer"], initialState: createInitialState() });
-
-    expect(lastText).toBe("Hi");
-  });
-
-  it("play with empty events list resolves immediately", async () => {
-    const renderer = { render: () => {} };
-
-    await expect(play([], { renderer, initialState: createInitialState() })).resolves.toBeUndefined();
   });
 });
 
@@ -1716,12 +1701,16 @@ describe("delete (unit handling)", () => {
   it("delete backward by grapheme removes one grapheme cluster per step", async () => {
     const renderer = stringRenderer();
     const tw = createTypewriter({ renderer });
+    const snapshots: string[] = [];
 
     tw.timeline
-      .type("hi\u{1F4A9}", { by: "char", interval: 1 })
-      .delete(-2, { by: "char", interval: 1 });
+      .type("hi\u{1F4A9}\u{1F468}\u200D\u{1F469}\u200D\u{1F467}", { by: "char", interval: 1 })
+      .delete(-1, { by: "grapheme", interval: 1 })
+      .wait(1, { after: ({ state }) => { snapshots.push(state.document.text); } })
+      .delete(-1, { by: "char", interval: 1 });
     await tw.play();
 
+    expect(snapshots).toEqual(["hi\u{1F4A9}"]);
     expect(renderer.toString()).toBe("hi");
   });
 
@@ -2522,7 +2511,7 @@ describe("compile (unselect)", () => {
 
     expect(events).toHaveLength(1);
     expect(events[0]?.kind).toBe("unselect");
-    expect(events[0]?.cursorId).toBe("main");
+    expect(cursorOf(events[0]!)).toBe("main");
   });
 
   it("fans out one event per cursor for multi-cursor unselect", () => {
@@ -2532,7 +2521,7 @@ describe("compile (unselect)", () => {
 
     expect(events).toHaveLength(2);
     expect(events.every(e => e.kind === "unselect")).toBe(true);
-    expect(events.map(e => e.cursorId).sort()).toEqual(["a", "b"]);
+    expect(events.map(e => cursorOf(e)).sort()).toEqual(["a", "b"]);
   });
 
   it("does not advance the clock", () => {
@@ -2565,7 +2554,7 @@ describe("compile (unstyle)", () => {
       { id: "um2", kind: "unstyle" as const, cursor: "main", range: { from: 2, to: 9 } },
     ]);
 
-    const evt = events[0] as TUnstyleEvent;
+    const evt = events[0] as Extract<TUnstyleEvent, { mode: "range" }>;
 
     expect(evt.from).toBe(2);
     expect(evt.to).toBe(9);
@@ -2591,10 +2580,9 @@ describe("compile (unstyle)", () => {
 
     expect(unstyleEvents).toHaveLength(2);
     unstyleEvents.forEach((e) => {
-      expect(e.from).toBe(-1);
-      expect(e.to).toBe(-1);
+      expect(e.mode).toBe("selection");
     });
-    expect(unstyleEvents.map(e => e.cursorId).sort()).toEqual(["a", "b"]);
+    expect(unstyleEvents.map(e => cursorOf(e)).sort()).toEqual(["a", "b"]);
   });
 });
 
@@ -2646,7 +2634,7 @@ describe("reduce (removeStyles / unstyle)", () => {
       },
     };
 
-    const event: TUnstyleEvent = { id: "e1", kind: "unstyle" as const, time: 0, from: 0, to: 11, sourceCommandId: "c1" };
+    const event: TUnstyleEvent = { id: "e1", kind: "unstyle" as const, time: 0, mode: "range" as const, from: 0, to: 11, sourceCommandId: "c1" };
     const next = removeStyles(state, event);
 
     expect(next.document.styles).toHaveLength(0);
@@ -2664,7 +2652,7 @@ describe("reduce (removeStyles / unstyle)", () => {
       },
     };
 
-    const event: TUnstyleEvent = { id: "e1", kind: "unstyle" as const, time: 0, from: 6, to: 11, sourceCommandId: "c1" };
+    const event: TUnstyleEvent = { id: "e1", kind: "unstyle" as const, time: 0, mode: "range" as const, from: 6, to: 11, sourceCommandId: "c1" };
     const next = removeStyles(state, event);
 
     expect(next.document.styles).toHaveLength(1);
@@ -2683,7 +2671,7 @@ describe("reduce (removeStyles / unstyle)", () => {
       },
     };
 
-    const event: TUnstyleEvent = { id: "e1", kind: "unstyle" as const, time: 0, from: 5, to: 11, sourceCommandId: "c1" };
+    const event: TUnstyleEvent = { id: "e1", kind: "unstyle" as const, time: 0, mode: "range" as const, from: 5, to: 11, sourceCommandId: "c1" };
     const next = removeStyles(state, event);
 
     expect(next.document.styles).toHaveLength(1);
@@ -2702,7 +2690,7 @@ describe("reduce (removeStyles / unstyle)", () => {
       },
     };
 
-    const event: TUnstyleEvent = { id: "e1", kind: "unstyle" as const, time: 0, from: 0, to: 6, sourceCommandId: "c1" };
+    const event: TUnstyleEvent = { id: "e1", kind: "unstyle" as const, time: 0, mode: "range" as const, from: 0, to: 6, sourceCommandId: "c1" };
     const next = removeStyles(state, event);
 
     expect(next.document.styles).toHaveLength(1);
@@ -2721,7 +2709,7 @@ describe("reduce (removeStyles / unstyle)", () => {
       },
     };
 
-    const event: TUnstyleEvent = { id: "e1", kind: "unstyle" as const, time: 0, from: 3, to: 8, sourceCommandId: "c1" };
+    const event: TUnstyleEvent = { id: "e1", kind: "unstyle" as const, time: 0, mode: "range" as const, from: 3, to: 8, sourceCommandId: "c1" };
     const next = removeStyles(state, event);
 
     expect(next.document.styles).toHaveLength(2);
@@ -2742,7 +2730,7 @@ describe("reduce (removeStyles / unstyle)", () => {
       },
     };
 
-    const event: TUnstyleEvent = { id: "e1", kind: "unstyle" as const, time: 0, from: -1, to: -1, cursorId: "main", sourceCommandId: "c1" };
+    const event: TUnstyleEvent = { id: "e1", kind: "unstyle" as const, time: 0, mode: "selection" as const, cursorId: "main", sourceCommandId: "c1" };
     const next = removeStyles(state, event);
 
     expect(next.selections.main).toBeUndefined();
@@ -2752,7 +2740,7 @@ describe("reduce (removeStyles / unstyle)", () => {
 
   it("selection-based unstyle with no active selection returns state unchanged", () => {
     const state = createInitialState();
-    const event: TUnstyleEvent = { id: "e1", kind: "unstyle" as const, time: 0, from: -1, to: -1, cursorId: "main", sourceCommandId: "c1" };
+    const event: TUnstyleEvent = { id: "e1", kind: "unstyle" as const, time: 0, mode: "selection" as const, cursorId: "main", sourceCommandId: "c1" };
     const next = removeStyles(state, event);
 
     expect(next).toBe(state);
@@ -2760,7 +2748,7 @@ describe("reduce (removeStyles / unstyle)", () => {
 
   it("selection-based unstyle with missing cursorId returns state unchanged", () => {
     const state = createInitialState();
-    const event = { id: "e1", kind: "unstyle" as const, time: 0, from: -1, to: -1, cursorId: undefined as unknown as string, sourceCommandId: "c1" };
+    const event = { id: "e1", kind: "unstyle" as const, time: 0, mode: "selection" as const, cursorId: undefined as unknown as string, sourceCommandId: "c1" };
     const next = removeStyles(state, event as TUnstyleEvent);
 
     expect(next).toBe(state);
@@ -2778,7 +2766,7 @@ describe("reduce (removeStyles / unstyle)", () => {
       },
     };
 
-    const event: TUnstyleEvent = { id: "e1", kind: "unstyle" as const, time: 0, from: 3, to: 3, sourceCommandId: "c1" };
+    const event: TUnstyleEvent = { id: "e1", kind: "unstyle" as const, time: 0, mode: "range" as const, from: 3, to: 3, sourceCommandId: "c1" };
     const next = removeStyles(state, event);
 
     expect(next.document.styles).toHaveLength(1);
@@ -2796,7 +2784,7 @@ describe("reduce (removeStyles / unstyle)", () => {
       },
     };
 
-    const event: TUnstyleEvent = { id: "e1", kind: "unstyle" as const, time: 0, from: 0, to: 5, sourceCommandId: "c1" };
+    const event: TUnstyleEvent = { id: "e1", kind: "unstyle" as const, time: 0, mode: "range" as const, from: 0, to: 5, sourceCommandId: "c1" };
     const next = reduce(state, event);
 
     expect(next.document.styles).toHaveLength(0);

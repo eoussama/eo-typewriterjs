@@ -1,3 +1,5 @@
+import type { TMaybePromise } from "@eoussama/core";
+
 import type { TTypewriterState } from "../../state/types/typewriter-state.type";
 
 import type { TAdvanceUnit } from "./type-command.type";
@@ -44,7 +46,7 @@ export type TCallbackContext = {
  * @description
  * Callback function signature - may return a promise for async support
  */
-export type TCallbackFn = (context: TCallbackContext) => void | Promise<void>;
+export type TCallbackFn = (context: TCallbackContext) => TMaybePromise<void>;
 
 /**
  * @description

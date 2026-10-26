@@ -11,8 +11,8 @@ import { nextEventId } from "./event-id.helper";
 /**
  * @description
  * Compile a single TUnstyleCommand into TUnstyleEvents scheduled at the given start time.
- * When the range is `"selection"`, one event per cursor is emitted using a placeholder
- * range of `{ from: -1, to: -1 }` - the reducer resolves the actual selection at play time.
+ * When the range is `"selection"`, one selection-mode event per cursor is emitted -
+ * the reducer resolves the actual selection at play time.
  * When the range is a fixed `TStyleRange`, a single event is emitted regardless of cursors.
  *
  * @param command - The unstyle command to compile
@@ -30,10 +30,9 @@ export function compileUnstyle(command: TUnstyleCommand, startTime: number): TCo
         id: nextEventId("unstyle"),
         kind: EEventKind.UNSTYLE,
         time: startTime,
-        from: -1,
-        to: -1,
-        sourceCommandId: command.id,
+        mode: "selection",
         cursorId,
+        sourceCommandId: command.id,
       });
     }
   }
@@ -42,6 +41,7 @@ export function compileUnstyle(command: TUnstyleCommand, startTime: number): TCo
       id: nextEventId("unstyle"),
       kind: EEventKind.UNSTYLE,
       time: startTime,
+      mode: "range",
       from: command.range.from,
       to: command.range.to,
       sourceCommandId: command.id,

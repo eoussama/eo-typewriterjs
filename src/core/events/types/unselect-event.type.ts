@@ -1,3 +1,4 @@
+import type { EEventKind } from "../enums/event-kind.enum";
 import type { TBaseEvent } from "./base-event.type";
 
 
@@ -8,6 +9,7 @@ import type { TBaseEvent } from "./base-event.type";
  * This event is instant and does not consume any timeline duration.
  */
 export type TUnselectEvent = TBaseEvent & {
+  readonly kind: typeof EEventKind.UNSELECT;
   readonly time: number;
   readonly cursorId: string;
   readonly sourceCommandId: string;

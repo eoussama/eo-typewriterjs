@@ -7,6 +7,7 @@ export type { TInsertEvent } from "./types/insert-event.type";
 export type { TMoveEvent } from "./types/move-event.type";
 export type { TSelectEvent } from "./types/select-event.type";
 export type { TStyleEvent } from "./types/style-event.type";
+export type { TStyleTarget } from "./types/style-target.type";
 export type { TTimelineEvent } from "./types/timeline-event.type";
 export type { TUnselectEvent } from "./types/unselect-event.type";
 export type { TUnstyleEvent } from "./types/unstyle-event.type";

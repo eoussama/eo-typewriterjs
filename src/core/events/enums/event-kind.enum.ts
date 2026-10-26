@@ -1,3 +1,7 @@
+import type { TValueOf } from "@eoussama/core";
+
+
+
 /**
  * @description
  * Enum-like map of all supported event kind identifiers
@@ -16,4 +20,4 @@ export const EEventKind = {
  * @description
  * Union of all valid event kind string values
  */
-export type TEventKind = (typeof EEventKind)[keyof typeof EEventKind];
+export type TEventKind = TValueOf<typeof EEventKind>;

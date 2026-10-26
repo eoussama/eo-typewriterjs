@@ -34,7 +34,7 @@ export type { TCursorAnimation, TCursorAnimationOptions, TCursorKind, TCursorRen
 
 export { EEventKind } from "./core/events/index";
 export type { TBaseEvent } from "./core/events/index";
-export type { TDeleteEvent, TEventKind, TInsertEvent, TMoveEvent, TSelectEvent, TStyleEvent, TTimelineEvent, TUnselectEvent, TUnstyleEvent } from "./core/events/index";
+export type { TDeleteEvent, TEventKind, TInsertEvent, TMoveEvent, TSelectEvent, TStyleEvent, TStyleTarget, TTimelineEvent, TUnselectEvent, TUnstyleEvent } from "./core/events/index";
 
 export { EPlaybackStatus } from "./core/player/index";
 export type { TCheckpoint, TPlaybackControllerState, TPlaybackStatus } from "./core/player/index";
@@ -135,9 +135,9 @@ export type TTypewriter = {
    * @description
    * Return a snapshot of the current audio options
    *
-   * @returns The current TAudioOptions, or null if audio was never configured
+   * @returns The current TAudioOptions
    */
-  getAudioOptions: () => TAudioOptions | null;
+  getAudioOptions: () => TAudioOptions;
 
   /**
    * @description
@@ -183,10 +183,7 @@ export function createTypewriter(options: TTypewriterOptions): TTypewriter {
 
   // Audio is disabled by default when no audio config is provided.
   // Passing audio: { enabled: true } (or any options) opts into sound.
-  const audioManager: AudioManagerHelper | null
-    = audioOptions === undefined
-      ? new AudioManagerHelper({ enabled: false })
-      : new AudioManagerHelper(audioOptions);
+  const audioManager = new AudioManagerHelper(audioOptions ?? { enabled: false });
 
   const controller = new PlaybackController(renderer, currentState, audioManager);
 
@@ -272,10 +269,9 @@ export function createTypewriter(options: TTypewriterOptions): TTypewriter {
 
     setAudioOptions(opts: TAudioOptions): void {
       audioManager.setOptions(opts);
-      controller.setAudioManager(audioManager);
     },
 
-    getAudioOptions(): TAudioOptions | null {
+    getAudioOptions(): TAudioOptions {
       return audioManager.getOptions();
     },
 

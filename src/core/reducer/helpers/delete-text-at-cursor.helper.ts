@@ -4,6 +4,8 @@ import type { TTypewriterState } from "../../state/types/typewriter-state.type";
 
 import { getSelection, withCursor, withSelectionCleared } from "../../state/helpers/typewriter-state.helper";
 import { segmentText } from "../../stepping/helpers/segment-text.helper";
+import { advanceIndex } from "./advance-index.helper";
+import { removeRange } from "./remove-range.helper";
 
 
 
@@ -15,104 +17,44 @@ import { segmentText } from "../../stepping/helpers/segment-text.helper";
  * @returns A new TTypewriterState with empty text and all cursors at 0
  */
 function applyWholeDelete(state: TTypewriterState): TTypewriterState {
-  const updatedCursors = Object.fromEntries(
+  const cursors = Object.fromEntries(
     Object.entries(state.cursors).map(([id, cur]) => [id, { ...cur, index: 0 }]),
-  ) as TTypewriterState["cursors"];
+  );
 
-  let next: TTypewriterState = {
-    ...state,
+  return {
     document: { text: "", styles: [] },
-    cursors: updatedCursors,
+    cursors,
+    selections: {},
   };
-
-  for (const id of Object.keys(state.selections)) {
-    next = withSelectionCleared(next, id);
-  }
-
-  return next;
 }
 
 /**
  * @description
- * Delete the text covered by the cursor's active selection and clear the selection.
- * The cursor is placed at the start of the removed range.
- * Other cursors and selections are reflowed around the removed range.
+ * Resolve the `[start, end)` range removed by a numeric delete event.
  *
- * @param state - The current typewriter state (cursor already ensured, selection present)
- * @param event - The originating delete event (used only for cursorId)
- * @param removeStart - The start index of the selection (inclusive)
- * @param removeEnd - The end index of the selection (exclusive)
- * @returns A new TTypewriterState with the selection range removed
+ * Deleting by line is special-cased at the edges of the text: a backward line delete
+ * with no line before the cursor removes the line after it, and a forward line delete
+ * with no line after the cursor removes back to the start of the current line.
+ *
+ * @param text - The document text
+ * @param cursorIndex - The deleting cursor's index
+ * @param event - The numeric delete event
+ * @returns The range to remove
  */
-function applySelectionDelete(
-  state: TTypewriterState,
-  event: TDeleteEvent,
-  removeStart: number,
-  removeEnd: number,
-): TTypewriterState {
-  const text = state.document.text;
-  const deletedLength = removeEnd - removeStart;
-  const nextText = text.slice(0, removeStart) + text.slice(removeEnd);
-  const nextIndex = removeStart;
+function resolveDeleteRange(text: string, cursorIndex: number, event: TDeleteEvent): [number, number] {
+  if (event.unit === "line") {
+    if (event.direction === -1 && cursorIndex < text.length && segmentText(text.slice(0, cursorIndex), "line").length === 0) {
+      return [cursorIndex, advanceIndex(text, cursorIndex, event.count, "line")];
+    }
 
-  const nextStyles = state.document.styles
-    .filter(entry => !(entry.from >= removeStart && entry.to <= removeEnd))
-    .map(entry => ({
-      ...entry,
-      /* v8 ignore next */
-      from: entry.from > removeStart ? Math.max(removeStart, entry.from - deletedLength) : entry.from,
-      /* v8 ignore next */
-      to: entry.to > removeStart ? Math.max(removeStart, entry.to - deletedLength) : entry.to,
-    }));
+    if (event.direction === 1 && cursorIndex > 0 && segmentText(text.slice(cursorIndex), "line").length === 0) {
+      return [text.lastIndexOf("\n", cursorIndex - 1) + 1, cursorIndex];
+    }
+  }
 
-  const updatedCursors = Object.fromEntries(
-    Object.entries(state.cursors).map(([id, cur]) => {
-      if (id === event.cursorId) {
-        return [id, { ...cur, index: nextIndex }];
-      }
+  const target = advanceIndex(text, cursorIndex, event.direction * event.count, event.unit);
 
-      if (cur.index >= removeEnd) {
-        return [id, { ...cur, index: cur.index - deletedLength }];
-      }
-
-      if (cur.index > removeStart) {
-        return [id, { ...cur, index: removeStart }];
-      }
-
-      return [id, cur];
-    }),
-  ) as TTypewriterState["cursors"];
-
-  const updatedSelections = Object.fromEntries(
-    Object.entries(state.selections).map(([id, sel]) => {
-      if (id === event.cursorId || sel === undefined) {
-        return [id, sel];
-      }
-
-      const shiftedFrom = sel.from >= removeEnd
-        ? sel.from - deletedLength
-        : sel.from > removeStart
-          ? removeStart
-          : sel.from;
-
-      const shiftedTo = sel.to >= removeEnd
-        ? sel.to - deletedLength
-        : sel.to > removeStart
-          ? removeStart
-          : sel.to;
-
-      return [id, { from: shiftedFrom, to: shiftedTo }];
-    }),
-  ) as TTypewriterState["selections"];
-
-  const afterDelete: TTypewriterState = {
-    ...state,
-    document: { text: nextText, styles: nextStyles },
-    cursors: updatedCursors,
-    selections: updatedSelections,
-  };
-
-  return withSelectionCleared(afterDelete, event.cursorId);
+  return event.direction === -1 ? [target, cursorIndex] : [cursorIndex, target];
 }
 
 /**
@@ -131,6 +73,7 @@ function applySelectionDelete(
  * - direction === -1 (backward): removes `count` units before the cursor
  * - direction === 1 (forward): removes `count` units after the cursor
  *
+ * Character and grapheme deletes always remove whole grapheme clusters.
  * The cursor's active selection is cleared.
  * All other cursors whose index overlaps or follows the deleted range are adjusted.
  *
@@ -140,8 +83,7 @@ function applySelectionDelete(
  */
 export function deleteTextAtCursor(state: TTypewriterState, event: TDeleteEvent): TTypewriterState {
   const ensured = withCursor(state, event.cursorId);
-  const cursor = ensured.cursors[event.cursorId] as TCursorState;
-  const cursorIndex = cursor.index;
+  const cursorIndex = (ensured.cursors[event.cursorId] as TCursorState).index;
   const text = ensured.document.text;
 
   // "whole" always clears everything regardless of selection
@@ -153,166 +95,25 @@ export function deleteTextAtCursor(state: TTypewriterState, event: TDeleteEvent)
   const selection = getSelection(ensured, event.cursorId);
 
   if (selection !== null) {
-    return applySelectionDelete(ensured, event, selection.from, selection.to);
+    return removeRange(ensured, event.cursorId, selection.from, selection.to);
   }
 
-  // No active selection: apply directional / boundary semantics as before
-  if (event.boundary === "start") {
-    if (cursorIndex === 0) {
-      return withSelectionCleared(ensured, event.cursorId);
-    }
-
-    return deleteTextAtCursor(ensured, {
-      ...event,
-      boundary: undefined,
-      count: cursorIndex,
-      unit: "char",
-      direction: -1,
-    });
-  }
-
-  if (event.boundary === "end") {
-    const remaining = text.length - cursorIndex;
-
-    if (remaining <= 0) {
-      return withSelectionCleared(ensured, event.cursorId);
-    }
-
-    return deleteTextAtCursor(ensured, {
-      ...event,
-      boundary: undefined,
-      count: remaining,
-      unit: "char",
-      direction: 1,
-    });
-  }
-
-  // Numeric deletion
   let removeStart: number;
   let removeEnd: number;
 
-  if (event.direction === -1) {
-    const unit = event.unit;
-
-    if (unit === "char" || unit === "grapheme") {
-      removeEnd = cursorIndex;
-      removeStart = Math.max(0, cursorIndex - event.count);
-    }
-    else {
-      const head = text.slice(0, cursorIndex);
-      const segments = segmentText(head, unit);
-
-      if (unit === "line" && segments.length === 0 && cursorIndex < text.length) {
-        // Cursor is at document start on a line with no preceding newline; consume forward.
-        const tail = text.slice(cursorIndex);
-        const fwdSegments = segmentText(tail, "line");
-        const taken = fwdSegments.slice(0, event.count);
-
-        removeStart = cursorIndex;
-        removeEnd = Math.min(text.length, cursorIndex + taken.join("").length);
-      }
-      else {
-        const taken = segments.slice(Math.max(0, segments.length - event.count));
-
-        removeEnd = cursorIndex;
-        removeStart = Math.max(0, cursorIndex - taken.join("").length);
-      }
-    }
+  if (event.boundary === "start") {
+    [removeStart, removeEnd] = [0, cursorIndex];
+  }
+  else if (event.boundary === "end") {
+    [removeStart, removeEnd] = [cursorIndex, text.length];
   }
   else {
-    const unit = event.unit;
-
-    if (unit === "char" || unit === "grapheme") {
-      removeStart = cursorIndex;
-      removeEnd = Math.min(text.length, cursorIndex + event.count);
-    }
-    else {
-      const tail = text.slice(cursorIndex);
-      const segments = segmentText(tail, unit);
-
-      if (unit === "line" && segments.length === 0 && cursorIndex > 0) {
-        // Cursor is at end of a line with no trailing newline; consume backward to line start.
-        const lineStart = text.lastIndexOf("\n", cursorIndex - 1) + 1;
-
-        removeStart = lineStart;
-        removeEnd = cursorIndex;
-      }
-      else {
-        const taken = segments.slice(0, event.count);
-
-        removeStart = cursorIndex;
-        removeEnd = Math.min(text.length, cursorIndex + taken.join("").length);
-      }
-    }
+    [removeStart, removeEnd] = resolveDeleteRange(text, cursorIndex, event);
   }
 
   if (removeStart === removeEnd) {
     return withSelectionCleared(ensured, event.cursorId);
   }
 
-  const deletedLength = removeEnd - removeStart;
-  const nextText = text.slice(0, removeStart) + text.slice(removeEnd);
-  const nextIndex = removeStart;
-
-  const nextStyles = ensured.document.styles
-    .filter(entry => !(entry.from >= removeStart && entry.to <= removeEnd))
-    .map(entry => ({
-      ...entry,
-      /* v8 ignore next */
-      from: entry.from > removeStart ? Math.max(removeStart, entry.from - (removeEnd - removeStart)) : entry.from,
-      /* v8 ignore next */
-      to: entry.to > removeStart ? Math.max(removeStart, entry.to - (removeEnd - removeStart)) : entry.to,
-    }));
-
-  const updatedCursors = Object.fromEntries(
-    Object.entries(ensured.cursors).map(([id, cur]) => {
-      if (id === event.cursorId) {
-        return [id, { ...cur, index: nextIndex }];
-      }
-
-      if (cur.index >= removeEnd) {
-        return [id, { ...cur, index: cur.index - deletedLength }];
-      }
-
-      if (cur.index > removeStart) {
-        return [id, { ...cur, index: removeStart }];
-      }
-
-      return [id, cur];
-    }),
-  ) as TTypewriterState["cursors"];
-
-  const updatedSelections = Object.fromEntries(
-    Object.entries(ensured.selections).map(([id, sel]) => {
-      if (id === event.cursorId || sel === undefined) {
-        return [id, sel];
-      }
-
-      const shiftedFrom = sel.from >= removeEnd
-        ? sel.from - deletedLength
-        : sel.from > removeStart
-          ? removeStart
-          : sel.from;
-
-      const shiftedTo = sel.to >= removeEnd
-        ? sel.to - deletedLength
-        : sel.to > removeStart
-          ? removeStart
-          : sel.to;
-
-      return [id, { from: shiftedFrom, to: shiftedTo }];
-    }),
-  ) as TTypewriterState["selections"];
-
-  const afterDelete: TTypewriterState = {
-    ...ensured,
-    document: {
-      text: nextText,
-      styles: nextStyles,
-    },
-    cursors: updatedCursors,
-    selections: updatedSelections,
-  };
-
-  return withSelectionCleared(afterDelete, event.cursorId);
+  return removeRange(ensured, event.cursorId, removeStart, removeEnd);
 }

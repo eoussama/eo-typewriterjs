@@ -2,8 +2,8 @@ import type { TAudioChannelOptions } from "../types/audio-channel-options.type";
 import type { TAudioCommandOverride } from "../types/audio-command-override.type";
 import type { TAudioOptions } from "../types/audio-options.type";
 
-import { DEFAULT_SFX_PACK } from "../consts/default-sfx-pack.const";
 import { EAudioStrategy } from "../enums/audio-strategy.enum";
+import { getLoadedDefaultSfxPack, loadDefaultSfxPack } from "./load-default-sfx-pack.helper";
 
 
 
@@ -52,15 +52,6 @@ class ShuffleBagHelper {
 
   /**
    * @description
-   * Reset the bag and discard last-played memory
-   */
-  reset(): void {
-    this._bag = [];
-    this._lastPlayed = null;
-  }
-
-  /**
-   * @description
    * Fisher-Yates in-place shuffle
    *
    * @param arr - The array to shuffle
@@ -99,30 +90,68 @@ class RoundRobinHelper {
 
     return sample;
   }
-
-  /**
-   * @description
-   * Reset the round-robin index to the beginning
-   */
-  reset(): void {
-    this._index = 0;
-  }
 }
 
-type TChannelState = {
+/**
+ * @description
+ * Selection state for one sample pool. Each distinct pool keeps its own bag and
+ * round-robin position, so switching pools never plays leftovers from another one.
+ */
+type TPoolState = {
   readonly bag: ShuffleBagHelper;
   readonly roundRobin: RoundRobinHelper;
+};
+
+/**
+ * @description
+ * Mutable playback state of one audio channel
+ */
+type TChannelState = {
+  readonly pools: Map<string, TPoolState>;
   currentAudio: HTMLAudioElement | null;
   lastPlayed: string | null;
 };
 
+/**
+ * @description
+ * A resolved sample pool, keyed by the sfx names it was built from
+ */
+type TSamplePool = {
+  readonly key: string;
+  readonly samples: readonly string[];
+};
+
+/**
+ * @description
+ * The audio channels a sound can be played on
+ */
+type TAudioChannel = "typing" | "delete";
+
 function createChannelState(): TChannelState {
   return {
-    bag: new ShuffleBagHelper(),
-    roundRobin: new RoundRobinHelper(),
+    pools: new Map(),
     currentAudio: null,
     lastPlayed: null,
   };
+}
+
+/**
+ * @description
+ * Return the selection state of a pool, creating it on first use
+ *
+ * @param state - The channel state owning the pools
+ * @param key - The pool key
+ * @returns The pool's selection state
+ */
+function getPoolState(state: TChannelState, key: string): TPoolState {
+  let pool = state.pools.get(key);
+
+  if (pool === undefined) {
+    pool = { bag: new ShuffleBagHelper(), roundRobin: new RoundRobinHelper() };
+    state.pools.set(key, pool);
+  }
+
+  return pool;
 }
 
 /**
@@ -176,6 +205,21 @@ export class AudioManagerHelper {
     this._options = options;
     this._typing = createChannelState();
     this._delete = createChannelState();
+    void this.ready();
+  }
+
+  /**
+   * @description
+   * Wait until the samples needed by the current options are available.
+   * The built-in pack is loaded lazily the first time audio is enabled without custom
+   * sfxs; sounds requested before it has loaded are skipped.
+   *
+   * @returns A promise that resolves once playback can produce sound
+   */
+  async ready(): Promise<void> {
+    if (this._options.enabled !== false && this._options.sfxs === undefined) {
+      await loadDefaultSfxPack();
+    }
   }
 
   /**
@@ -188,10 +232,9 @@ export class AudioManagerHelper {
    */
   setOptions(options: TAudioOptions): void {
     this._options = options;
-    this._typing.bag.reset();
-    this._typing.roundRobin.reset();
-    this._delete.bag.reset();
-    this._delete.roundRobin.reset();
+    this._typing = createChannelState();
+    this._delete = createChannelState();
+    void this.ready();
   }
 
   /**
@@ -202,6 +245,7 @@ export class AudioManagerHelper {
    */
   setEnabled(enabled: boolean): void {
     this._options = { ...this._options, enabled };
+    void this.ready();
   }
 
   /**
@@ -255,7 +299,7 @@ export class AudioManagerHelper {
    * @param channel - Which channel to play ("typing" or "delete")
    * @param override - Optional per-command override
    */
-  private _play(channel: "typing" | "delete", override?: TAudioCommandOverride): void {
+  private _play(channel: TAudioChannel, override?: TAudioCommandOverride): void {
     if (this._options.enabled === false) {
       return;
     }
@@ -266,7 +310,7 @@ export class AudioManagerHelper {
 
     const pool = this._resolveSamples(channel, override);
 
-    if (pool.length === 0) {
+    if (pool.samples.length === 0) {
       return;
     }
 
@@ -308,7 +352,7 @@ export class AudioManagerHelper {
    * @param channel - The channel name
    * @returns The resolved channel options, or undefined if none are set
    */
-  private _resolveChannelOpts(channel: "typing" | "delete"): TAudioChannelOptions | undefined {
+  private _resolveChannelOpts(channel: TAudioChannel): TAudioChannelOptions | undefined {
     return channel === "typing"
       ? this._options.typing
       : (this._options.delete ?? this._options.typing);
@@ -321,10 +365,10 @@ export class AudioManagerHelper {
    *
    * @param channel - The channel being played
    * @param override - Optional command override (never `false` at this point)
-   * @returns Flat list of sample URL strings
+   * @returns The sample pool and the key identifying it
    */
-  private _resolveSamples(channel: "typing" | "delete", override?: Exclude<TAudioCommandOverride, false>): string[] {
-    const sfxs = this._options.sfxs ?? DEFAULT_SFX_PACK;
+  private _resolveSamples(channel: TAudioChannel, override?: Exclude<TAudioCommandOverride, false>): TSamplePool {
+    const sfxs = this._options.sfxs ?? getLoadedDefaultSfxPack() ?? {};
     const channelOpts = this._resolveChannelOpts(channel);
 
     let sfxNames: readonly string[];
@@ -355,43 +399,40 @@ export class AudioManagerHelper {
       }
     }
 
-    return samples;
+    return { key: sfxNames.join("\n"), samples };
   }
 
   /**
    * @description
    * Pick the next sample URL from the pool using the configured strategy
    *
-   * @param pool - The available sample URLs
+   * @param pool - The sample pool to pick from
    * @param channelOpts - The channel configuration
-   * @param state - The mutable channel state (bag / round-robin / last-played)
+   * @param state - The mutable channel state (pool selection state and last-played sample)
    * @returns The selected sample URL
    */
   private _pickSample(
-    pool: readonly string[],
+    pool: TSamplePool,
     channelOpts: TAudioChannelOptions | undefined,
     state: TChannelState,
   ): string {
-    if (pool.length === 1) {
-      return pool[0]!;
+    const samples = pool.samples;
+
+    if (samples.length === 1) {
+      return samples[0]!;
     }
 
-    const strategy = channelOpts?.strategy ?? EAudioStrategy.SHUFFLE_BAG;
     const avoidRepeat = channelOpts?.avoidImmediateRepeat ?? true;
 
-    switch (strategy) {
-      case EAudioStrategy.SHUFFLE_BAG:
-        return state.bag.next(pool, avoidRepeat);
-
+    switch (channelOpts?.strategy ?? EAudioStrategy.SHUFFLE_BAG) {
       case EAudioStrategy.ROUND_ROBIN:
-        return state.roundRobin.next(pool);
+        return getPoolState(state, pool.key).roundRobin.next(samples);
 
       case EAudioStrategy.RANDOM:
-        return pickRandom(pool, state.lastPlayed, avoidRepeat);
+        return pickRandom(samples, state.lastPlayed, avoidRepeat);
 
-      /* v8 ignore next */
       default:
-        return state.bag.next(pool, avoidRepeat);
+        return getPoolState(state, pool.key).bag.next(samples, avoidRepeat);
     }
   }
 
@@ -438,10 +479,11 @@ export class AudioManagerHelper {
       audio.volume = volume;
       audio.playbackRate = playbackRate;
 
-      void audio.play();
+      // Autoplay policy rejects play() until the user interacts with the page.
+      audio.play().catch(() => {});
     }
     catch {
-      // Swallow DOMException from autoplay policy and any other play errors
+      // Swallow synchronous errors such as unsupported sources
     }
     /* v8 ignore stop */
   }

@@ -1,11 +1,4 @@
-import type { TDeleteEvent } from "../../events/types/delete-event.type";
-import type { TInsertEvent } from "../../events/types/insert-event.type";
-import type { TMoveEvent } from "../../events/types/move-event.type";
-import type { TSelectEvent } from "../../events/types/select-event.type";
-import type { TStyleEvent } from "../../events/types/style-event.type";
 import type { TTimelineEvent } from "../../events/types/timeline-event.type";
-import type { TUnselectEvent } from "../../events/types/unselect-event.type";
-import type { TUnstyleEvent } from "../../events/types/unstyle-event.type";
 import type { TTypewriterState } from "../../state/types/typewriter-state.type";
 
 import { EEventKind } from "../../events/enums/event-kind.enum";
@@ -31,25 +24,25 @@ import { unselect } from "./unselect.helper";
 export function reduce(state: TTypewriterState, event: TTimelineEvent): TTypewriterState {
   switch (event.kind) {
     case EEventKind.INSERT:
-      return insertTextAtCursor(state, event as TInsertEvent);
+      return insertTextAtCursor(state, event);
 
     case EEventKind.DELETE:
-      return deleteTextAtCursor(state, event as TDeleteEvent);
+      return deleteTextAtCursor(state, event);
 
     case EEventKind.MOVE:
-      return move(state, event as TMoveEvent);
+      return move(state, event);
 
     case EEventKind.SELECT:
-      return selectText(state, event as TSelectEvent);
+      return selectText(state, event);
 
     case EEventKind.UNSELECT:
-      return unselect(state, event as TUnselectEvent);
+      return unselect(state, event);
 
     case EEventKind.STYLE:
-      return applyStyle(state, event as TStyleEvent);
+      return applyStyle(state, event);
 
     case EEventKind.UNSTYLE:
-      return removeStyles(state, event as TUnstyleEvent);
+      return removeStyles(state, event);
 
     default:
       return state;

@@ -1,19 +1,17 @@
+import type { EEventKind } from "../enums/event-kind.enum";
 import type { TBaseEvent } from "./base-event.type";
+import type { TStyleTarget } from "./style-target.type";
 
 
 
 /**
  * @description
  * A low-level scheduled event that removes styles overlapping a document range.
- * When `from` and `to` are both `-1`, the event is selection-based and `cursorId`
- * must be present - the reducer resolves the actual range from the cursor's selection.
+ * The range is either fixed or resolved from a cursor's selection, see `TStyleTarget`.
  * Styles that partially overlap the range are clipped rather than fully removed.
  */
-export type TUnstyleEvent = TBaseEvent & {
+export type TUnstyleEvent = TBaseEvent & TStyleTarget & {
+  readonly kind: typeof EEventKind.UNSTYLE;
   readonly time: number;
-  readonly from: number;
-  readonly to: number;
   readonly sourceCommandId: string;
-  /** Present only for selection-based unstyle events (from === -1 && to === -1) */
-  readonly cursorId?: string;
 };

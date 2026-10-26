@@ -1,3 +1,4 @@
+import type { ECommandKind } from "../enums/command-kind.enum";
 import type { TBaseCommand } from "./base-command.type";
 import type { TAdvanceModeInput, TCursorSelector } from "./type-command.type";
 
@@ -27,6 +28,7 @@ export type TDeleteValue = number | "start" | "end" | "whole";
  * - `"whole"`: delete the entire document
  */
 export type TDeleteCommand = TBaseCommand & {
+  readonly kind: typeof ECommandKind.DELETE;
   readonly cursor: TCursorSelector;
   readonly count: TDeleteValue;
   readonly by?: TAdvanceModeInput;

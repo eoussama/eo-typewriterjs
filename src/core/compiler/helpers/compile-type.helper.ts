@@ -46,7 +46,7 @@ export function compileType(command: TTypeCommand, startTime: number): TCompileR
     }
   }
 
-  const endTime = chunks.length > 0 ? startTime + (chunks.length - 1) * interval + interval : startTime;
+  const endTime = startTime + chunks.length * interval;
 
   return { events, endTime };
 }
