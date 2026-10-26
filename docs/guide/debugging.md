@@ -13,8 +13,8 @@ Returns the current playback metadata:
 ```ts
 const state = tw.getState();
 
-console.log(state.status);      // "idle" | "playing" | "paused" | "stopped"
-console.log(state.currentTime); // ms elapsed since the animation started
+console.log(state.status);      // "idle" | "playing" | "paused" | "stopped" | "completed" | "cancelled"
+console.log(state.currentTime); // the playhead in timeline ms, live while playing
 console.log(state.duration);    // total compiled duration in ms
 console.log(state.rate);        // current playback speed multiplier
 ```
@@ -38,7 +38,7 @@ Both methods return a snapshot. Mutating the returned objects has no effect on t
 
 ## Stepping through a timeline
 
-Pause an animation and step through events one group at a time. This is useful for understanding exactly what each command does to the document:
+Step through a timeline one step at a time, without playing it. This is useful for understanding exactly what each command does to the document:
 
 ```ts
 tw.timeline
@@ -46,11 +46,7 @@ tw.timeline
   .wait(500)
   .delete(-5, { by: "char", interval: 40 });
 
-// Start and immediately pause
-await tw.play();
-tw.pause();
-
-// Step forward one event group at a time
+// Step forward one step at a time (this also mounts the renderer)
 tw.stepForward();
 console.log(tw.getLiveState().document.text); // "H"
 
@@ -61,7 +57,7 @@ tw.stepBackward();
 console.log(tw.getLiveState().document.text); // "H"
 ```
 
-`stepForward()` and `stepBackward()` use the compiled event stream, not the command list, so `.call()` callbacks do not fire during stepping.
+Stepping applies state changes only: hooks, `.call()` callbacks and sounds do not run. Steps that share a timestamp are applied together.
 
 ## Seeking to a specific point
 
@@ -80,9 +76,9 @@ tw.seek(duration);
 tw.seek(1000);
 ```
 
-Seeking uses a checkpoint system: the player snapshots state every 50 events, then replays forward from the nearest checkpoint. Seeking to a position near a checkpoint is fast; seeking backward from a late position may replay more events.
+Seeking uses a checkpoint system: the player keeps a snapshot of the state every 50 steps and replays forward from the nearest one, so seeking stays fast on long timelines. The steps it jumps over do not run their hooks, callbacks or sounds.
 
-After seeking, the player is paused. Call `tw.play()` to resume from that position.
+If the typewriter was playing, it keeps playing from the new position, and the promise returned by `play()` settles when playback really ends. Otherwise it pauses there, or completes when you seek to the end; call `tw.play()` to resume. `NaN` is ignored and infinite values are clamped.
 
 ## Using hooks to log steps
 
@@ -103,7 +99,7 @@ tw.timeline.type("Hello world", {
 
 For instant commands, hooks fire once. For segmented commands (`type`, `delete`, `move` with a numeric offset, `select` with a numeric count) they fire once per step.
 
-Hooks only run during sequential playback (`play()` / `replay()`). They are skipped during `seek()` and stepping.
+Hooks run whenever playback runs a step, including after a pause or a seek made while playing. They are skipped for the steps that `seek()` and stepping jump over.
 
 ## Using `.call()` as a breakpoint
 
@@ -219,7 +215,15 @@ If a selection is active when `.delete()` fires, the selected range is deleted a
 
 ### `.call()` not firing during `seek()` or stepping
 
-This is expected. `.call()` callbacks are runtime-only and do not have compiled events. They only run during sequential `play()` / `replay()` execution.
+This is expected. Seeking and stepping jump to a position by rebuilding the state, so callbacks, hooks and sounds of the steps they skip do not run. Playback that continues after a seek runs every later step normally.
+
+### `play()` rejected with an error
+
+A hook, `.call()` callback or the renderer threw. Playback is cancelled (status `"cancelled"`) and keeps what was rendered; fix the callback and call `play()` again to start over.
+
+### `DomRenderer: no element matches the selector`
+
+The selector passed to `domRenderer()` did not match any element when playback started. Make sure the element exists before calling `play()`, or pass the element itself.
 
 ## Type reference
 

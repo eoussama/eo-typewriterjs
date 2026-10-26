@@ -229,8 +229,10 @@ For async callbacks, the wall-clock time advances while the promise is pending, 
 
 ## Edge cases
 
-- **Throwing synchronously** - if the callback throws, playback stops and the error propagates from `tw.play()`.
-- **Rejected promise** - if the returned promise rejects, playback stops and the rejection propagates from `tw.play()`.
+- **Throwing synchronously** - if the callback throws, playback is cancelled (status `"cancelled"`) and the promise returned by `tw.play()` rejects with the error. Calling `play()` again starts over.
+- **Rejected promise** - if the returned promise rejects, playback is cancelled the same way and `tw.play()` rejects with the reason.
+- **Paused while pending** - pausing aborts the callback's `signal`. Resuming continues after the callback without calling it again.
+- **Skipped by seeking** - a `seek()` or step that jumps past a `call()` does not run it.
 - **Already cancelled before the callback fires** - the `signal` passed to the callback is already aborted. The callback still runs; check `signal.aborted` to skip work.
 - **`tw.cancel()` called inside a synchronous callback** - playback stops cleanly after the callback returns.
 - **No return value** - if the callback returns `undefined` (or nothing), playback continues immediately on the next tick.

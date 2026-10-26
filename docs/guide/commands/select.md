@@ -318,6 +318,8 @@ The **string renderer**'s `toString()` returns plain text without selection mark
 - **`.select()` called twice** - the second call replaces the first selection entirely.
 - **Unknown boundary string** - passing a string operand other than `"start"`, `"end"`, or `"whole"` throws an error at compile time.
 - **Unknown `by` unit** - passing an unrecognised advance unit for the `by` option throws an error at compile time. Only `"char"`, `"grapheme"`, `"word"`, and `"line"` are accepted. `"whole"` is not valid for `by` - use `.select("whole")` instead.
+- **Fractional or invalid numbers** - the count must be an integer, `by.amount` a positive integer and `interval` a finite number, `0` or more; anything else throws.
+
 
 ## Type reference
 

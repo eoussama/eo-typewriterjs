@@ -18,11 +18,14 @@ Please read and follow our [Code of Conduct](CODE_OF_CONDUCT.md) before contribu
 
 ## Getting Started
 
+You need Node.js 24 or later and pnpm 12.15.0. npm is refused by the project's `devEngines`.
+
 1. Fork the repository on GitHub
-2. Clone your forked repository: `git clone https://github.com/eoussama/eo-typewriterjs.git`
+2. Clone your fork: `git clone https://github.com/<your-username>/eo-typewriterjs.git`
 3. Navigate to the project directory: `cd eo-typewriterjs`
 4. Install dependencies: `pnpm install`
-5. Create a new branch for your feature: `git checkout -b feature/your-feature-name`
+5. Install the browser used by the end-to-end tests: `pnpm exec playwright install chromium`
+6. Create a new branch for your feature: `git checkout -b feature/your-feature-name`
 
 ## How to Contribute
 
@@ -46,7 +49,7 @@ Please read and follow our [Code of Conduct](CODE_OF_CONDUCT.md) before contribu
 
 1. Ensure your code follows our [Coding Standards](#coding-standards)
 2. Update the README.md with details of changes if applicable
-3. Make sure all tests pass before submitting: `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm test:e2e` (or `pnpm check` for everything)
+3. Make sure every check passes before submitting: `pnpm check` runs the audit, type check, lint, unit tests (100% coverage), build, smoke tests, docs build, end-to-end tests and mutation tests (95% or more)
 4. Your pull request will be reviewed by maintainers
 5. Once approved, your pull request will be merged
 
@@ -56,7 +59,8 @@ Please read and follow our [Code of Conduct](CODE_OF_CONDUCT.md) before contribu
 - Use meaningful variable and function names
 - Write comments only for non-obvious logic
 - Follow the existing project code style and linting rules: `pnpm lint`
-- Write unit tests for new features
+- Write unit tests for new features and keep coverage at 100%
+- Add a sandbox recipe or docs example when a feature is user-facing
 
 ## Reporting Bugs
 

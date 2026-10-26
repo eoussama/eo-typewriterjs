@@ -279,6 +279,9 @@ A move like `.move(-5, { by: "char", interval: 100 })` occupies `5 × 100 = 500 
 - **Empty document** - any move clamps to `0`.
 - **Unknown boundary string** - passing a string operand other than `"start"` or `"end"` throws an error at compile time.
 - **Unknown `by` unit** - passing an unrecognised advance unit for the `by` option throws an error at compile time. Only `"char"`, `"grapheme"`, `"word"`, and `"line"` are accepted. `"whole"` is not valid for `by`.
+- **Fractional or invalid numbers** - the offset must be an integer, `by.amount` a positive integer and `interval` a finite number, `0` or more; anything else throws.
+- **Moving past the edge** - once the cursor reaches the start or end of the text, the remaining steps are dropped and take no time, so `move(999)` ends as soon as the cursor stops.
+
 
 ## Type reference
 

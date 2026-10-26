@@ -57,7 +57,7 @@ Named cursors make `getLiveState()` calls and hook logging easier to read, and t
 
 ## Prefer explicit index ranges in `.style()`
 
-Style ranges use absolute character indices in the document. If the document changes before a `.style()` fires (it always fires at the clock position it was added), the indices may drift. Use `.style("selection")` paired with `.select()` for dynamic ranges:
+Style ranges use absolute character indices in the document. If the document changes before a `.style()` fires (it always fires at the clock position it was added), the indices may drift. Use `.style(ref, "selection")` paired with `.select()` for dynamic ranges:
 
 ```ts
 // Fragile: document length must be exactly right at compile time
@@ -98,12 +98,12 @@ tw2.timeline.type(result, { by: "char", interval: 60 });
 await tw2.play();
 ```
 
-## Use `"grapheme"` by default for user-visible text
+## Unicode needs no special handling
 
-`"char"` is fine for ASCII-only strings. For any text that may contain emoji, accented characters, or non-Latin scripts, `"grapheme"` is safer and the performance difference is negligible:
+Every mode steps over whole user-perceived characters, so user input with emoji, accented characters or non-Latin scripts types and deletes cleanly with the default `"char"` mode (`"grapheme"` is an alias):
 
 ```ts
-tw.timeline.type(userInputText, { by: "grapheme", interval: 60 });
+tw.timeline.type(userInputText, { interval: 60 });
 ```
 
 See [Unicode and Advance Modes](/guide/unicode-and-advance-modes) for details.

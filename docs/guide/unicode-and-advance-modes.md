@@ -104,28 +104,28 @@ The `by` option on `.type()`, `.delete()`, `.move()`, and `.select()` controls h
 
 ## Why it matters
 
-JavaScript strings are UTF-16 sequences. A single user-perceived character can occupy one or two code units (`char`), one code point (`grapheme` simple case), or multiple code points joined by zero-width joiner sequences or combining marks. Stepping through a string by naive index will split composite characters mid-sequence, producing corrupted output.
+JavaScript strings are UTF-16 sequences. A single user-perceived character can occupy one or two code units, or several code points joined by zero-width joiners or combining marks. Stepping through a string by naive index would split such characters mid-sequence and show corrupted output.
 
-The `by` option lets you choose the right segmentation granularity for your content.
+The library never does that: every mode steps over whole grapheme clusters (user-perceived characters), whether you type, delete, move or select. The `by` option only chooses how big each step is.
 
 ## Advance modes
 
 ### `"char"` (default)
 
-Steps one UTF-16 code unit at a time. Fast, but not safe for content that contains multi-code-unit characters (emoji above U+FFFF, flags, ZWJ sequences).
+Steps one character at a time. A character is a grapheme cluster, so emoji, flags and accented letters each count as one step.
 
 ```ts
 tw.timeline.type("Hello!", { by: "char", interval: 60 });
 // steps: "H" → "He" → "Hel" → "Hell" → "Hello" → "Hello!"
 ```
 
-**When to use:** ASCII or Latin text where every character maps to a single code unit.
+**When to use:** character-by-character typing, for any text.
 
 <DocsPlayground :code="charModeCode" />
 
 ### `"grapheme"`
 
-Steps one user-perceived character (grapheme cluster) at a time. Safe for all Unicode content.
+Exactly the same as `"char"`: one user-perceived character (grapheme cluster) per step. Use whichever name reads better in your code.
 
 ```ts
 tw.timeline.type("I ❤️ open source 🚀", { by: "grapheme", interval: 80 });
@@ -134,7 +134,7 @@ tw.timeline.type("I ❤️ open source 🚀", { by: "grapheme", interval: 80 });
 
 Under the hood this uses the `Intl.Segmenter` API with `granularity: "grapheme"`.
 
-**When to use:** Any text that may contain emoji, combining characters, accented letters, or content from scripts with complex composition rules. Prefer `"grapheme"` when in doubt.
+**When to use:** when you want to make it explicit that the text contains emoji, combining characters or scripts with complex composition rules.
 
 <DocsPlayground :code="graphemeModeCode" />
 
@@ -205,8 +205,8 @@ This also works with `.delete()` and `.move()`.
 
 | Mode | Unit | Unicode-safe | Typical use |
 |---|---|---|---|
-| `"char"` | UTF-16 code unit | ⚠️ Latin/ASCII only | Fast character typing |
-| `"grapheme"` | Grapheme cluster | ✅ | General text, emoji, multilingual |
+| `"char"` | Grapheme cluster | ✅ | Character-by-character typing (default) |
+| `"grapheme"` | Grapheme cluster | ✅ | Same as `"char"` |
 | `"word"` | Word segment | ✅ | Subtitle-style, flowing text |
 | `"line"` | Newline-delimited line | ✅ | Terminal output, code blocks |
 | `"whole"` | Full string | ✅ | Instant display, SSR, tests |
@@ -216,21 +216,19 @@ This also works with `.delete()` and `.move()`.
 
 ### Emoji (ZWJ sequences)
 
-A family emoji `👨‍👩‍👧` is a ZWJ sequence of multiple code points. `"char"` steps through each code unit individually, breaking the sequence. `"grapheme"` keeps it together:
+A family emoji `👨‍👩‍👧` is a ZWJ sequence of several code points, but it is one visible character, so it takes one step to type and one step to delete:
 
 ```ts
-// Safe: one step per visible character
-tw.timeline.type("Hello 👨‍👩‍👧!", { by: "grapheme", interval: 80 });
-
-// Unsafe: may produce corrupted intermediate states
-tw.timeline.type("Hello 👨‍👩‍👧!", { by: "char", interval: 80 });
+tw.timeline
+  .type("Hello 👨‍👩‍👧!", { by: "grapheme", interval: 80 })
+  .delete(-2, { interval: 80 }); // removes "!" and then the whole family
 ```
 
 <DocsPlayground :code="unicodeZwjCode" />
 
 ### Flag emoji
 
-Country flags are pairs of regional indicator symbols. `"char"` splits the pair; `"grapheme"` treats the pair as one unit:
+Country flags are pairs of regional indicator symbols, typed and deleted as one unit:
 
 ```ts
 tw.timeline.type("🇺🇸 🇯🇵 🇩🇪", { by: "grapheme", interval: 150 });

@@ -41,8 +41,8 @@ features:
     details: Lean playback core with minimal overhead and no renderer lock-in. Keep animations responsive while targeting the DOM, strings, or any custom output.
   - icon: 🔊
     title: Built-in audio engine
-    details: Add audio to typing and deletion with configurable sound effects, strategies, and per-command overrides for a more tactile playback experience.
+    details: Opt-in typing sounds where typing, deleting and moving the cursor each sound different, with configurable samples, strategies and per-command overrides. The samples load only when you turn sound on.
   - icon: 🧪
     title: Tested end to end
-    details: Vitest unit tests and a full Playwright browser harness cover reducers, renderers, cursor movement, styling, editing, and callbacks.
+    details: Every line of the library is covered by unit tests and checked by mutation testing, and Playwright plays every playback scenario, docs example and sandbox recipe in a real browser.
 ---

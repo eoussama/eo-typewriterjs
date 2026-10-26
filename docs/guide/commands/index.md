@@ -144,11 +144,11 @@ Segmented commands (`type`, `delete`, `move`, `select`) all accept a `by` option
 
 | Value | Meaning |
 |---|---|
-| `"char"` | One Unicode code unit per step (default) |
-| `"grapheme"` | One grapheme cluster per step, safe for emoji and composed characters |
-| `"word"` | One whitespace-delimited word per step |
+| `"char"` | One character (grapheme cluster) per step (default) |
+| `"grapheme"` | Same as `"char"` |
+| `"word"` | One word per step, with its trailing spaces and punctuation |
 | `"line"` | One newline-delimited line per step |
-| `"whole"` | The entire input as a single step |
+| `"whole"` | The entire input as a single step (`type` only) |
 
 ### Object form - multiple units per step
 
@@ -168,7 +168,7 @@ tw.timeline.type("one two three four", { by: { unit: "word", amount: 2 } });
 
 ## Composition patterns
 
-Commands compose by chaining. `select` advances the clock by `interval` (default `50 ms`). `move` advances the clock by `steps × interval` for numeric offsets, or `interval` for string boundaries. `style`, `unstyle`, and `unselect` are instant and do not advance the clock, so multiple instant operations stack at the same timestamp:
+Commands compose by chaining. `move`, `select` and `delete` advance the clock by `steps × interval` (default `50 ms`) for numeric counts, or by `interval` for string boundaries. Once a cursor stops moving at the edge of the text, the remaining steps are skipped and take no time, so `move(999)` does not idle. `style`, `unstyle`, and `unselect` are instant and do not advance the clock, so multiple instant operations stack at the same timestamp:
 
 ```ts
 tw.timeline
@@ -259,8 +259,8 @@ tw.timeline.move("start", {
 | `state` | `TTypewriterState` | Current document and cursor snapshot at the time of invocation |
 | `stepIndex` | `number` | Zero-based index of the current step within the command |
 | `stepCount` | `number` | Total number of steps the command will produce |
-| `unit` | `TAdvanceUnit \| null` | The text chunk typed or deleted in this step, or `null` for instant commands |
-| `signal` | `AbortSignal` | Aborted when `tw.cancel()` is called |
+| `unit` | `TAdvanceUnit \| null` | The advance unit of the command (for example `"word"`), or `null` for instant commands and boundaries |
+| `signal` | `AbortSignal` | Aborted when playback is paused, stopped, cancelled or sought |
 
 The `state` is a read-only snapshot. Mutating it does not affect the running animation. Use `tw.cancel()` or the `signal` to respond to cancellation.
 

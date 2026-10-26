@@ -73,39 +73,34 @@ Commands are appended in the order they are called.
 | [Delete](/guide/commands/delete) | `.delete(value, options?)` | One event per step for numeric counts; one instant event for boundary strings |
 | [Move](/guide/commands/move) | `.move(value, options?)` | One event per step per cursor for numeric offsets; one event per cursor for boundaries; advances clock |
 | [Wait](/guide/commands/wait) | `.wait(duration)` | No events, advances clock |
-| [Select](/guide/commands/select) | `.select(value, options?)` | One event per cursor, advances clock |
+| [Select](/guide/commands/select) | `.select(value, options?)` | One event per step per cursor for numeric counts; one event per cursor for boundaries; advances clock |
 | [Unselect](/guide/commands/unselect) | `.unselect(options?)` | One instant event per cursor, does not advance clock |
 | [Style](/guide/commands/style) | `.style(style, range, options?)` | One instant event; one per cursor when range is `"selection"`, does not advance clock |
 | [Unstyle](/guide/commands/unstyle) | `.unstyle(range, options?)` | One instant event; one per cursor when range is `"selection"`, does not advance clock |
-| [Call](/guide/commands/call) | `.call(fn, options?)` | No compiled events, runtime only |
+| [Call](/guide/commands/call) | `.call(fn, options?)` | A step without state events; the clock waits for its promise |
 
 See the [Commands overview](/guide/commands/) for the full reference.
 
 ## Timing model
 
-The compiler maintains an internal clock cursor starting at `0 ms`. Each command is placed relative to that cursor:
+The compiler keeps a clock starting at `0 ms`. Each command starts when the previous one ends:
 
-- `type` advances the clock by the total duration of all its steps.
-- `delete` advances the clock when given a numeric count (`steps × interval`). When given a boundary string (`"start"`, `"end"`, `"whole"`), it compiles to a single event and advances the clock by the default interval (50 ms).
-- `move` with a string boundary (`"start"` or `"end"`) compiles to one event per cursor and advances the clock by `interval` (or the default 50 ms). With a numeric offset it compiles to `ceil(|offset| / amount)` events per cursor and advances the clock by `steps × interval`. A zero offset emits no events and does not advance the clock.
-- `wait` advances the clock by its `duration` without producing any state-changing events.
-- `select` compiles to one event per cursor and advances the clock by `interval` (or the default 50 ms).
-- `unselect`, `style`, and `unstyle` are compiled at the current clock position without advancing it. If one of these follows a timed command, its compiled event is placed at that command's ending timestamp.
-- `call` has no compiled representation at all. It does not appear in the event stream and does not affect the clock.
+- `type` advances the clock by `steps × interval`.
+- `delete`, `move` and `select` advance the clock by `steps × interval` for numeric counts, and by `interval` (50 ms by default) for string boundaries. Once a step has no effect because the cursor reached the edge of the text, the command's remaining steps are dropped and take no time.
+- A zero `move` or `select` produces no state change and does not advance the clock.
+- `wait` advances the clock by its `duration`. Durations must be finite and `0` or more.
+- `unselect`, `style` and `unstyle` happen at the current time without advancing the clock.
+- `call` happens at the current time. While its promise is pending, the clock is frozen.
 
-## Playback paths
+The timeline's `duration` is the time of its last step, so a trailing `wait` counts.
 
-The player uses two distinct paths depending on the operation:
+## Playback
 
-**Sequential execution**: used by `play()` and `replay()`
+Every command compiles to **steps**. A step runs at its time and, in order: fires the `before` hook, runs the `call()` callback, applies its state change and renders, plays its sound, then fires the `after` hook. A single scheduler runs these steps for `play()`, `replay()`, resuming after `pause()`, and continuing after a `seek()` made while playing, so hooks, callbacks and sounds behave the same wherever playback starts.
 
-Commands are run one by one through an async executor. Each step applies a state mutation, calls `renderer.render()`, and honors any configured `before`/`after` hooks. Async `.call()` callbacks are awaited before the next command begins.
-
-**Event-based navigation**: used by `seek()`, `stepForward()`, and `stepBackward()`
-
-The player reconstructs state by replaying compiled events up to a target position. It uses a checkpoint system (a snapshot stored every 50 events) to avoid reprocessing the full event list on every operation.
-
-Because `.call()` has no compiled events, it does not fire during event-based navigation. Lifecycle hooks also only run during sequential execution, not during seek or step reconstruction.
+- `pause()` keeps exactly what is on screen. Resuming continues the step that was interrupted without running its hooks or callback a second time.
+- `seek()`, `stepForward()` and `stepBackward()` jump to a position by rebuilding the state from checkpoints (a snapshot every 50 steps). The steps they jump over are applied silently: their hooks, callbacks and sounds do not run.
+- `getState().currentTime` follows the playhead live while playing.
 
 ## Replaying
 
@@ -126,9 +121,9 @@ console.log(tw.timeline.commands); // ReadonlyArray<TCommand>
 
 ## Lifecycle hooks
 
-Every command accepts optional `before` and `after` hooks. For segmented commands (`type`, `delete`, and `move` with a numeric offset) they fire once per step. For all other commands they fire once around the single operation. `.move(0)` is a special case: no state change occurs and no clock advance happens, but hooks still fire once during sequential playback.
+Every command accepts optional `before` and `after` hooks. For segmented commands (`type`, and `delete`, `move` and `select` with a numeric count) they fire once per step. For all other commands they fire once around the single operation. `.move(0)` is a special case: no state change occurs and no clock advance happens, but hooks still fire once.
 
-These hooks only execute during sequential playback (`play()`, `replay()`). They are not invoked during `seek()` or stepping.
+Hooks run whenever playback runs a step, including after a pause or a seek made while playing. They do not run for the steps that `seek()` or stepping jump over.
 
 See [Hooks & Context](/guide/commands/#hooks-and-context) for the full reference.
 

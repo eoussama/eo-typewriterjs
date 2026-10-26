@@ -6,15 +6,15 @@ Answers to common questions and issues.
 
 ### Which environments does it run in?
 
-The library works in any modern browser and in Node.js 18+. The DOM renderer requires a browser environment (or a DOM emulation layer). The string renderer works anywhere.
+The library targets ES2022: it works in any modern browser and in Node.js 24 or later. The DOM renderer requires a browser environment (or a DOM emulation layer). The string renderer works anywhere.
 
 ### Does it support CommonJS?
 
-Yes. The package ships both an ES module (`dist/index.js`) and a CommonJS bundle (`dist/index.cjs`). Node.js and bundlers resolve the right format automatically based on the `exports` field in `package.json`.
+Yes. The package ships an ES module (`dist/index.mjs`) and a CommonJS build (`dist/index.cjs`); Node.js and bundlers pick the right one through the `exports` field in `package.json`. Browser bundles (`index.iife.js`, `index.umd.js` and `index.browser.mjs`) are included for use without a bundler.
 
 ### Can I use it without TypeScript?
 
-Yes. The distribution includes compiled JavaScript. TypeScript types are bundled in `.d.ts` files and picked up automatically if you are using TypeScript. Plain JavaScript projects can import and use the library without any type configuration.
+Yes. The distribution includes compiled JavaScript. TypeScript declarations (`.d.mts` and `.d.cts`) ship alongside and are picked up automatically if you are using TypeScript. Plain JavaScript projects can import and use the library without any type configuration.
 
 ## Playback behavior
 
@@ -70,7 +70,7 @@ No. Each `DomRenderer` targets one element and rewrites its `innerHTML` on every
 
 ### Which `by` mode should I use for emoji?
 
-Use `"grapheme"`. The default `"char"` mode steps by UTF-16 code units, which splits multi-codepoint emoji (flags, ZWJ sequences, skin tone modifiers) into broken intermediates. `"grapheme"` steps one user-perceived character at a time.
+Any of them. The default `"char"` mode and its alias `"grapheme"` both step one user-perceived character at a time, so flags, ZWJ sequences and skin tone modifiers are never split, whether you type, delete, move or select.
 
 ```ts
 tw.timeline.type("Hello 🚀", { by: "grapheme", interval: 80 });
@@ -109,7 +109,7 @@ The selection span gets the class `typewriter-selection`. Add a background color
 
 ### How do I remove all styles from the document?
 
-Use `.unstyle()` with `"whole"` as the range after selecting the whole document:
+Select the whole document, then pass `"selection"` to `.unstyle()`:
 
 ```ts
 tw.timeline
@@ -128,17 +128,17 @@ tw.timeline.unstyle({ from: 0, to: tw.getLiveState().document.text.length });
 ### Audio is enabled but I hear nothing
 
 Check that:
-1. The page has received a user gesture (click, key press) before `play()` is called. Browsers block `AudioContext` auto-play without a user interaction.
+1. The page has received a user gesture (click, key press) before `play()` is called. Browsers block audio playback until the user interacts with the page; the library ignores the blocked attempts silently.
 2. The volume is above `0`.
 3. The `sfxs` sample URLs are reachable and the audio files are in a format the browser supports.
 
-If no custom `sfxs` are provided, the audio engine automatically uses the built-in keyboard-click samples at runtime. To reference or extend that pack in your own code, import it from the dedicated subpath:
+4. The command makes sound: only typing, deleting and moving the cursor do by default. Give other commands an `audio` override to hear them.
+
+If no custom `sfxs` are provided, the audio engine uses the built-in keyboard-click samples. They are downloaded the first time audio is enabled, so the first keystrokes right after enabling it can be silent. To reference or extend the pack in your own code, import it from the dedicated subpath:
 
 ```ts
 import { DEFAULT_SFX_PACK } from "eo-typewriterjs/audio-pack";
 ```
-
-The pack is code-split from the main bundle so it is only loaded when explicitly imported.
 
 ### How do I silence one command while keeping audio on globally?
 
@@ -212,21 +212,21 @@ const tw = createTypewriter({ renderer: multiRenderer });
 
 ### Can I add more commands after `play()` has started?
 
-Commands added to the timeline after `play()` has been called will be included in the **next** `replay()` call (which triggers recompilation). They are not appended to an in-progress animation.
+Commands added after playback started are picked up the next time you call `play()`, `replay()`, `seek()` or a step method: the timeline is recompiled and starts over from the beginning. They are not appended to an animation that is already running.
 
 ### What happens if I call `play()` while already playing?
 
-`play()` resumes from the current position if the typewriter is paused, or does nothing if it is already playing.
+It returns the promise of the playback already in progress. `play()` resumes from the current position when paused, and replays from the beginning once completed.
 
 ### How do I get the final text without running the animation?
 
-Use `stringRenderer` with `by: "whole"` and `interval: 0` to produce the final state instantly:
+Seek to the end. Seeking applies every step instantly, without waiting (hooks and callbacks of the skipped steps do not run):
 
 ```ts
 const renderer = stringRenderer();
 const tw = createTypewriter({ renderer });
 
-tw.timeline.type("Hello, World!", { by: "whole", interval: 0 });
-await tw.play();
+tw.timeline.type("Hello, World!", { interval: 80 }).wait(500);
+tw.seek(Infinity);
 
 console.log(renderer.toString()); // "Hello, World!"

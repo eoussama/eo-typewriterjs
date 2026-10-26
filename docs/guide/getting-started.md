@@ -36,11 +36,31 @@ Then install as usual:
 pnpm add @eoussama/eo-typewriterjs
 ```
 
+### Without a bundler
+
+Browser bundles are included for a plain `<script>` tag. The IIFE build exposes everything on the `EOTypewriterJS` global:
+
+```html
+<div id="output"></div>
+<script src="https://cdn.jsdelivr.net/npm/eo-typewriterjs@6/dist/index.iife.js"></script>
+<script>
+  const { createTypewriter, domRenderer } = EOTypewriterJS;
+  const tw = createTypewriter({ renderer: domRenderer("#output") });
+
+  tw.timeline.type("Hello from a script tag!");
+  tw.play();
+</script>
+```
+
+A minified ES module (`dist/index.browser.mjs`) and a UMD build (`dist/index.umd.js`) are available as well.
+
+The package targets ES2022 and needs Node.js 24 or later on the server.
+
 ## Quick start
 
 ### In the browser (DOM renderer)
 
-The DOM renderer writes directly into a target element. Each render call updates the element's `innerHTML`, so the output reacts to every step of the animation in real time.
+The DOM renderer writes directly into a target element, given as an element or a CSS selector. Each render rebuilds the element's content, so the output follows every step of the animation in real time. A selector that matches nothing throws a clear error when playback starts.
 
 ```ts
 import { createTypewriter, domRenderer } from "eo-typewriterjs";
@@ -116,15 +136,21 @@ await tw.play(); // plays both in sequence
 
 ## Playback controls
 
-`tw.play()` returns a `Promise<void>` that resolves when all events finish. The same instance also exposes pause, stop, and replay:
+`tw.play()` returns a `Promise<void>` that resolves when playback completes, or when it is paused, stopped or cancelled. It rejects when a hook, a `call()` callback or the renderer throws; playback is then cancelled. Calling `play()` while already playing returns the same promise.
 
 ```ts
-await tw.play();    // start - resolves on completion
-tw.pause();         // pause at the current position
-tw.stop();          // stop and reset to blank
-await tw.replay();  // restart from the beginning
-tw.cancel();        // stop and keep current output on screen
+const playing = tw.play(); // start without waiting
+
+tw.pause();                // pause on exactly what is on screen
+tw.play();                 // resume: hooks, callbacks and sounds keep firing
+tw.seek(1200);             // jump to 1.2 s into the timeline
+tw.setRate(2);             // play at double speed
+tw.cancel();               // stop and keep the current output on screen
+tw.stop();                 // stop and reset to the initial state
+await tw.replay();         // restart from the beginning
 ```
+
+When the typewriter is no longer needed, for example when its element is removed, call `tw.destroy()` to stop playback and unmount the renderer.
 
 ## Inline callbacks
 
@@ -155,13 +181,13 @@ const tw = createTypewriter({
 });
 ```
 
-When no custom `sfxs` are provided the library automatically uses a built-in pack of keyboard-click samples. To reference or extend that pack explicitly, import it from the subpath entry:
+Typing, deleting and moving the cursor each have their own sound: typing clicks naturally, deleting sounds lower and heavier, and moving is a light, quiet tick. Other commands are silent unless you give them an `audio` override.
+
+When no custom `sfxs` are provided, the library uses a built-in pack of keyboard-click samples. The pack lives in its own chunk and is only downloaded the first time a typewriter enables audio without custom sfxs. To reference or extend it explicitly, import it from the subpath entry:
 
 ```ts
 import { DEFAULT_SFX_PACK } from "eo-typewriterjs/audio-pack";
 ```
-
-The pack is code-split from the main bundle so it is only loaded when you import it.
 
 You can adjust or toggle audio at any point during playback. Changes take effect immediately on the next sound event:
 
@@ -177,7 +203,7 @@ tw.setAudioEnabled(true);
 tw.setAudioVolume(1);
 ```
 
-You can also replace the full audio configuration in one call:
+You can also replace the full audio configuration in one call. The new options replace the old ones entirely:
 
 ```ts
 tw.setAudioOptions({

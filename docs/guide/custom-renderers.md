@@ -8,19 +8,21 @@ This page walks through building a complete custom renderer from scratch.
 
 ```ts
 interface IRenderer {
-  render(state: TTypewriterState): void;
-  mount?(state: TTypewriterState): void;
-  unmount?(): void;
+  render: (state: TTypewriterState) => void | PromiseLike<void>;
+  mount?: (state: TTypewriterState) => void | PromiseLike<void>;
+  unmount?: () => void | PromiseLike<void>;
 }
 ```
 
-Only `render` is required. `mount` and `unmount` are optional.
+Only `render` is required. `mount` and `unmount` are optional, and every method may return a promise.
 
 | Method | When called | Typical use |
 |---|---|---|
-| `mount(state)` | Before rendering begins (on `play()`, `replay()`, or `seek()` from idle) | Prepare the output target (clear it, inject styles, etc.) |
-| `render(state)` | After every compiled event | Write the updated document to the target |
-| `unmount()` | When explicitly torn down | Release resources, flush buffers |
+| `mount(state)` | Once, before the first render (on the first `play()`, `seek()` or step) | Prepare the output target (clear it, inject styles, etc.) |
+| `render(state)` | After every step that changes the state, and after seeks and steps | Write the updated document to the target |
+| `unmount()` | On `tw.destroy()` | Release resources, flush buffers |
+
+During playback, the player waits for a returned promise before running the next step, so an asynchronous renderer never falls behind. Errors thrown or rejected during playback reject `play()` and cancel it.
 
 The same `state` is passed to both `mount` and `render`. It contains:
 
@@ -251,14 +253,14 @@ import { createTypewriter } from "eo-typewriterjs";
 const tw = createTypewriter({ renderer: new TerminalRenderer() });
 ```
 
-The renderer lifecycle is tied to playback:
-- `mount` is called once when playback begins (or resumes from idle via `seek`).
-- `render` is called after every event.
-- `unmount` is called when the renderer is explicitly torn down (if the API exposes that path).
+The renderer lifecycle is tied to the typewriter:
+- `mount` is called once, before the first render. After `tw.destroy()`, playing again mounts the renderer afresh.
+- `render` is called after every step that changes the state.
+- `unmount` is called by `tw.destroy()`.
 
 ## Tips
 
-**Avoid heavy work inside `render`.** It is called on every event, which may be many times per second. Keep `render` fast; offload heavy computation to `mount` or outside the renderer.
+**Avoid heavy work inside `render`.** It is called on every step, which may be many times per second. Keep `render` fast; offload heavy computation to `mount` or outside the renderer.
 
 **Batch DOM updates.** If your renderer writes to the DOM, build the output in memory (e.g., a `DocumentFragment`) before inserting it. This matches what `DomRenderer` does internally.
 

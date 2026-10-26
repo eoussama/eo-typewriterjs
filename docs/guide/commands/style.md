@@ -318,6 +318,8 @@ When `.delete()` removes text that overlaps a styled range:
 - **`"selection"` with no active selection** - the state is returned unchanged; no style is applied.
 - **Multiple styles on the same range** - all accumulate as nested spans in the DOM renderer; no deduplication is performed.
 - **Out-of-bounds range** - the style is stored with the given indices. Renderers clip to visible text length.
+- **Invalid ranges** - a fixed range needs integer bounds with `0 <= from <= to`; anything else throws when the command is added. A range reaching past the end of the text is clamped to it when the style is applied.
+
 
 ## Type reference
 

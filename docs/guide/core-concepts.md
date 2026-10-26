@@ -124,13 +124,13 @@ const merged = mergeStyles(segments[0]!.styles);
 
 ## Advance modes
 
-The `by` option on `.type()` and `.delete()` controls how text is segmented:
+The `by` option on `.type()`, `.delete()`, `.move()` and `.select()` controls how text is segmented. `"whole"` is only valid for `.type()`:
 
 | Value | Description |
 |---|---|
-| `"char"` | One event per character (Unicode code-point based; suitable for most Latin text) |
-| `"grapheme"` | One event per user-perceived character (Unicode grapheme cluster, handles composite emoji, ZWJ sequences, accented characters, etc.) |
-| `"word"` | One event per word (trailing whitespace attached to the preceding word) |
+| `"char"` | One event per character; a character is a grapheme cluster, so emoji are never split (default) |
+| `"grapheme"` | Same as `"char"`: one user-perceived character per event |
+| `"word"` | One event per word, with its trailing whitespace and punctuation (`"Hello, world!"` types as `"Hello, "` then `"world!"`) |
 | `"line"` | One event per line (newline attached to the preceding line) |
 | `"whole"` | Entire text as a single event |
 | `{ unit, amount }` | `amount` consecutive segments of the given unit joined into one event |
@@ -200,13 +200,11 @@ const tw = createTypewriter({
 });
 ```
 
-When no custom `sfxs` are provided the audio engine automatically uses a built-in pack of keyboard-click samples. To reference or extend that pack in your own code, import it from the subpath entry:
+Typing, deleting and moving the cursor each have their own sound; other commands are silent unless they set an `audio` override. When no custom `sfxs` are provided, the audio engine uses a built-in pack of keyboard-click samples. It lives in its own chunk and is only downloaded the first time a typewriter enables audio, so pages without sound pay nothing for it. To reference or extend that pack in your own code, import it from the subpath entry:
 
 ```ts
 import { DEFAULT_SFX_PACK } from "eo-typewriterjs/audio-pack";
 ```
-
-The pack is code-split from the main bundle and only loaded when imported, so consumers who do not use audio pay no bundle cost.
 
 You can control audio at runtime without stopping playback:
 
@@ -259,16 +257,17 @@ The `TTypewriter` object returned by `createTypewriter()` exposes full playback 
 
 | Method | Description |
 |---|---|
-| `play()` | Start or resume, returns `Promise<void>` |
-| `pause()` | Pause at the current position |
-| `stop()` | Stop and reset to the initial blank state |
+| `play()` | Start, resume or replay once completed; returns `Promise<void>` that rejects if a hook or callback throws |
+| `pause()` | Pause on exactly what is rendered |
+| `stop()` | Stop and reset to the initial state |
 | `cancel()` | Stop but preserve the current rendered output |
 | `replay()` | Restart from the beginning, returns `Promise<void>` |
-| `seek(ms)` | Jump to an absolute timeline position |
-| `stepForward()` | Apply the next event group and pause |
-| `stepBackward()` | Undo the last event group and pause |
+| `seek(ms)` | Jump to a timeline position; keeps playing if playing |
+| `stepForward()` | Apply the next step and pause |
+| `stepBackward()` | Undo the last step and pause |
 | `setRate(n)` | Set playback speed multiplier (e.g. `2` for double speed) |
-| `getState()` | Current playback metadata: `status`, `currentTime`, `duration`, `rate` |
+| `destroy()` | Stop playback and unmount the renderer |
+| `getState()` | Playback metadata: `status`, live `currentTime`, `duration`, `rate` |
 | `getLiveState()` | Current document, cursor positions, and selections |
 
 See [Timeline](./timeline) for the full command reference.

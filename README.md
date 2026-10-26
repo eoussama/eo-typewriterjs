@@ -18,17 +18,28 @@
 
 ```bash
 pnpm add eo-typewriterjs
+# or: npm install eo-typewriterjs / yarn add eo-typewriterjs
+```
+
+The package is also published to GitHub Packages as `@eoussama/eo-typewriterjs`, and ships browser bundles for a plain `<script>` tag:
+
+```html
+<script src="https://cdn.jsdelivr.net/npm/eo-typewriterjs@6/dist/index.iife.js"></script>
+<script>
+  const { createTypewriter, domRenderer } = EOTypewriterJS;
+</script>
 ```
 
 ## Why eo-typewriterjs
 
 - **Composable timeline**: chain type, delete, wait, move, select, unselect, style, unstyle, and call commands in any order.
-- **Flexible advance modes**: type by character, word, line, grapheme, or custom chunk size.
-- **Rich text support**: apply styles to ranges during playback.
-- **Full Unicode**: handles emoji, accented characters, and complex grapheme clusters correctly.
+- **Full playback control**: play, pause, resume, seek, step, change speed, replay or cancel at any point; hooks, callbacks and sounds keep firing wherever playback resumes.
+- **Flexible advance modes**: type by grapheme, word, line, the whole text, or a custom chunk size.
+- **Full Unicode**: emoji, flags, ZWJ sequences and accented text are never split.
+- **Rich text**: style ranges while typing or afterwards, with nested styles and selections.
+- **Typing sounds**: opt-in audio with distinct sounds for typing, deleting and moving the cursor.
 - **Renderer-agnostic**: built-in DOM and string renderers; implement `IRenderer` to target anything.
-- **TypeScript-first**: fully typed public API with no `any`.
-- **Playback controls**: play, pause, stop, replay, and cancel from any point.
+- **TypeScript-first**: fully typed public API, ESM and CommonJS builds with type declarations.
 
 ## Quick start
 
@@ -37,17 +48,15 @@ import { createTypewriter, domRenderer } from "eo-typewriterjs";
 
 
 
-const el = document.getElementById("output")!;
-
 const tw = createTypewriter({
-  renderer: domRenderer(el),
+  renderer: domRenderer("#output"),
 });
 
 tw.timeline
   .type("Hello, ")
   .type("world!", { by: "word", interval: 120 })
   .wait(400)
-  .delete(6)
+  .delete(-6)
   .type("EO TypewriterJS.");
 
 await tw.play();
@@ -71,23 +80,24 @@ Try the library live in the interactive [sandbox](https://eo-typewriterjs.ouss.e
 
 ## Testing
 
-The library is covered by two test layers:
-
-- **Unit tests** (`pnpm test`): Vitest suite covering core logic, reducers, renderers, and edge cases.
-- **End-to-end tests** (`pnpm test:e2e`): Playwright suite running real playback scenarios in a browser harness, including typing flows, waiting, multiline output, cursor movement, selection, editing, and callbacks.
+- **Unit and integration tests** (`pnpm test`): Vitest, with a 100% coverage threshold.
+- **Smoke tests** (`pnpm test:smoke`): import the built ESM and CommonJS packages.
+- **End-to-end tests** (`pnpm test:e2e`): Playwright, covering a browser harness of playback scenarios, the docs site and every sandbox recipe. Build the docs first with `pnpm docs:build`.
+- **Mutation tests** (`pnpm test:mutation`): Stryker, failing below a 95% mutation score.
 
 ## Development
 
+Requires Node.js 24 or later and pnpm 12.15.0. Recent pnpm versions switch to the pinned version from `package.json` on their own; npm is refused.
+
 ```bash
+pnpm install
 pnpm dev           # rebuild the library on change
 pnpm build         # build the library
 pnpm typecheck     # type check with TypeScript 7
-pnpm test          # run unit tests with coverage
-pnpm test:smoke    # test the built package
-pnpm test:e2e      # run end-to-end tests
 pnpm lint          # lint
+pnpm test          # run unit and integration tests with coverage
+pnpm docs:dev      # start the docs site, sandbox included (/sandbox)
 pnpm check         # run every check CI runs
-pnpm docs:dev      # start the docs site and the sandbox (/sandbox)
 ```
 
 ## License

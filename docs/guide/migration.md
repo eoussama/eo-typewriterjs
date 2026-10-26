@@ -27,7 +27,7 @@ pnpm add eo-typewriterjs@^6.0.0
 
 ### Entry point
 
-Version 6 is an ES module with named exports. There is no default export.
+Version 6 uses named exports only; there is no default export. It ships as an ES module and as CommonJS, with TypeScript declarations for both, plus browser bundles exposing the `EOTypewriterJS` global.
 
 ```ts
 // v6
@@ -150,8 +150,10 @@ In v6, the equivalents are `.pause()` and `.play()`:
 // v6
 tw.timeline.type("Long text...", { by: "char", interval: 60 });
 
-await tw.play();
-tw.pause();   // pause at current position
+const playing = tw.play();
+setTimeout(() => tw.pause(), 1000); // pause on exactly what is on screen
+
+await playing;   // resolves when paused
 await tw.play(); // resume from where it stopped
 ```
 
@@ -296,10 +298,14 @@ import { createTypewriter, domRenderer, EAudioStrategy } from "eo-typewriterjs";
 const tw = createTypewriter({
   renderer: domRenderer(el),
   audio: {
-    enabled: true,
     volume: 0.5,
+    typing: { strategy: EAudioStrategy.RANDOM },
   },
 });
+
+tw.timeline
+  .type("Clicks while typing")
+  .delete(-6, { audio: false }); // this deletion is silent
 ```
 
 ### Looping
@@ -307,9 +313,15 @@ const tw = createTypewriter({
 v5 had no built-in loop option. You would chain recursive promise calls manually. v6 is the same, loop control is explicit:
 
 ```ts
-// v6 looping
-await tw.play();
-while (true) {
+// v6 looping: replay() resolves when the run completes or is stopped
+let looping = true;
+
+stopButton.addEventListener("click", () => {
+  looping = false;
+  tw.stop();
+});
+
+while (looping) {
   await tw.replay();
 }
 ```

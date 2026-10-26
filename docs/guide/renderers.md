@@ -23,16 +23,16 @@ tw.timeline.type("Hello, DOM!");
 await tw.play();
 ```
 
-`domRenderer(element)` returns a [`DomRenderer`](/api/classes/DomRenderer) instance. The target may be an `Element` reference or a CSS selector string.
+`domRenderer(element)` returns a [`DomRenderer`](/api/classes/DomRenderer) instance. The target may be an `Element` reference or a CSS selector string; a selector is resolved when the renderer mounts, and one that matches nothing throws `DomRenderer: no element matches the selector`. Creating a `DomRenderer` during server-side rendering (without a `document`) is safe.
 
 #### How the DOM is rendered
 
-On every render call, `DomRenderer` segments the document by its text styles and then splits each segment at every cursor and selection boundary. The result is a mix of plain text nodes, styled `<span>` elements, and cursor marker `<span>` elements, all assembled into a `DocumentFragment` before replacing the target's `innerHTML`.
+On every render call, `DomRenderer` segments the document by its text styles and then splits each segment at every cursor and selection boundary. The result is a mix of plain text nodes, styled `<span>` elements, and cursor marker `<span>` elements, all assembled into a `DocumentFragment` that replaces the target's children. Text is always inserted as text nodes, never parsed as HTML.
 
 - Text without any active style or selection is emitted as a bare text node.
 - Text with an active style is wrapped in one `<span>` per style ref (nested outward in application order - first applied is outermost). Adjacent characters that share the same style stack are coalesced into a single DOM subtree.
 - Text inside an active selection is additionally wrapped in an outermost `<span class="typewriter-selection">`. Selection and style spans are always separate elements - the selection span is the outermost wrapper.
-- Each visible cursor is rendered as `<span class="typewriter-cursor" aria-hidden="true" data-cursor-id="...">`.
+- Each visible cursor is rendered as `<span class="typewriter-cursor" aria-hidden="true" data-cursor-id="...">`, including on an empty document.
 
 ```html
 <!-- example: text = "Hello world", style on "world" (class "highlight"), cursor at 5 -->
@@ -54,8 +54,8 @@ When a `TStyleObject` is applied to a segment, the renderer maps its fields onto
 | `TStyleObject` field | DOM effect |
 |---|---|
 | `className` | `classList.add(...)` (space-separated classes) |
-| `css` | `el.style[prop] = value` (inline styles) |
-| `attrs` | `el.setAttribute(key, value)` (HTML attributes) |
+| `css` | Inline styles: camelCase names (`fontWeight`) and CSS names (`font-weight`, custom properties like `--accent`) both work |
+| `attrs` | `el.setAttribute(key, value)`. Event handler attributes (`on*`) and `javascript:` or `vbscript:` URLs in `href`, `src`, `action` and `formaction` are dropped, so style data cannot run code |
 | `ansi` | Ignored by `DomRenderer` (terminal-only) |
 | `meta` | Ignored by `DomRenderer` |
 
@@ -148,7 +148,7 @@ console.log(renderer.toString()); // "Hello world"
 
 #### ANSI output
 
-Use the `ansi` field in a `TStyleObject` to provide ANSI code segments. The renderer collects all `ansi` map values for a segment, joins them with `;`, and wraps the text in `\x1B[<codes>m...\x1B[0m`:
+Use the `ansi` field in a `TStyleObject` to provide ANSI code segments. The renderer collects the `ansi` map values of a segment that are valid SGR parameters (digits separated by `;`, such as `"1"` or `"38;5;208"`), joins them with `;`, and wraps the text in `\x1B[<codes>m...\x1B[0m`. Control characters inside the text itself are removed, so typed content cannot inject terminal escape sequences:
 
 ```ts
 const renderer = stringRenderer();

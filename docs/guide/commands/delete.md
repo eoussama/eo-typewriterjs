@@ -70,7 +70,7 @@ The first argument determines both **how much** to delete and **in which directi
 | `"end"` | Delete from cursor forward to document **end** | 1 |
 | `"whole"` | Delete the **entire document** | 1 |
 
-Numeric counts advance the timeline clock by `steps × interval` ms. Boundary strings (`"start"`, `"end"`, `"whole"`) compile to a single event and use the default interval (`50ms`) for their duration.
+Numeric counts advance the timeline clock by `steps × interval` ms; counts must be integers. Boundary strings (`"start"`, `"end"`, `"whole"`) compile to a single event and advance the clock by `interval` (50 ms by default). Once a step deletes nothing because the cursor reached the edge of the text, the remaining steps are dropped and take no time.
 
 ## Options
 
@@ -289,6 +289,9 @@ await tw.play();
 - **Unknown `by` value** - passing an unrecognised advance unit such as `"custom"` throws an error at compile time. Only `"char"`, `"grapheme"`, `"word"`, and `"line"` are accepted for `by`. `"whole"` is not a valid `by` unit - use `.delete("whole")` instead.
 - **`by: "line"` on text without newlines** - the whole text is treated as a single line. Forward delete from the end (or backward delete from the start) consumes the entire line's content.
 - **Unknown boundary string** - passing a string operand other than `"whole"`, `"start"`, or `"end"` throws an error at compile time.
+- **Fractional or invalid numbers** - the count must be an integer, `by.amount` a positive integer and `interval` a finite number, `0` or more; anything else throws.
+- **Emoji and combining marks** - deleting by `"char"` or `"grapheme"` always removes whole user-perceived characters.
+
 
 ## Type reference
 

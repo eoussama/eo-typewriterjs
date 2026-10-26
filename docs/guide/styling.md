@@ -114,7 +114,7 @@ tw.timeline
   .unstyle("selection");
 ```
 
-`.unstyle()` removes any style whose range **overlaps** the given range, including styles that only partially overlap. It does not trim; it removes the entire entry.
+`.unstyle()` clears styles from the given range only. Styles entirely inside it are removed, styles that partially overlap it are clipped, and a style spanning across it is split into the parts before and after the range.
 
 ## How delete affects styles
 

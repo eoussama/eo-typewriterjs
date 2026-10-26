@@ -78,9 +78,9 @@ The `by` option controls how the input text is split into steps. The default is 
 
 | Value | Step unit |
 |---|---|
-| `"char"` | One Unicode code unit per step |
-| `"grapheme"` | One grapheme cluster per step, safe for emoji and composed characters |
-| `"word"` | One whitespace-delimited word per step |
+| `"char"` | One character (grapheme cluster) per step (default) |
+| `"grapheme"` | Same as `"char"` |
+| `"word"` | One word per step, with its trailing spaces and punctuation |
 | `"line"` | One newline-delimited segment per step |
 | `"whole"` | Entire text as a single step |
 
@@ -119,13 +119,13 @@ If the remaining text does not fill a full chunk, the last step types whatever i
 
 ## Unicode and emoji
 
-Use `"grapheme"` whenever the text contains multi-codepoint sequences. The `"char"` mode operates on JavaScript string indices (UTF-16 code units), which can split composite emoji or characters with combining marks.
+Every mode steps over whole grapheme clusters, so emoji built from several code points and characters with combining marks are always typed in one step. `"grapheme"` is an alias of `"char"` that makes this explicit.
 
 ```ts
 // ✅ Each flag emoji is one grapheme cluster - types cleanly
 tw.timeline.type("🇺🇸🇬🇧🇲🇦", { by: "grapheme", interval: 200 });
 
-// ⚠️ This family emoji is a multi-codepoint sequence - use "grapheme"
+// This family emoji is a multi-codepoint sequence, still typed in one step
 tw.timeline.type("👨‍👩‍👧‍👦", { by: "grapheme" });
 
 // ✅ Accented character with a combining mark
@@ -309,6 +309,8 @@ await tw.play();
 - **Newlines** - `\n` is inserted verbatim. Use `white-space: pre` or `<pre>` in the DOM for visual line breaks.
 - **Oversized `amount`** - if `amount` exceeds remaining units, the last step types whatever remains without error.
 - **Unknown `by` value** - passing an unrecognised string such as `"custom"` throws an error at compile time. Only `"char"`, `"grapheme"`, `"word"`, `"line"`, and `"whole"` are accepted.
+- **Invalid `amount` or `interval`** - `by.amount` must be a positive integer and `interval` a finite number, `0` or more. Anything else throws when the timeline is compiled (`amount`) or when the command is added (`interval`).
+
 
 ## Type reference
 

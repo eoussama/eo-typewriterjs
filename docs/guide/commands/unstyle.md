@@ -247,6 +247,8 @@ await tw.play();
 - **`from === to`** - empty range; no styles are affected.
 - **`"selection"` with no active selection** - the state is returned unchanged; no styles removed, no error.
 - **Range exceeds document bounds** - styles are evaluated against the provided indices numerically; out-of-bounds values produce correct results.
+- **Invalid ranges** - a fixed range needs integer bounds with `0 <= from <= to`; anything else throws when the command is added. A range reaching past the end of the text is clamped to it.
+
 
 ## Type reference
 

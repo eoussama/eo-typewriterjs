@@ -76,10 +76,10 @@ type TWaitOptions = {
 - Advances the clock by exactly `duration` ms.
 - No state mutations occur: no document, cursor, selection, or style changes are produced, and no render update is triggered.
 - `before` fires once before the delay starts. `after` fires once after the delay ends.
-- The `audio` option, if set, triggers playback through the typing audio channel at the start of the wait.
+- A wait is silent. An `audio` object plays the typing sound once, at the start of the wait.
 - Any command placed after `.wait()` begins `duration` ms later than it otherwise would.
 - A duration of `0` is valid; the clock does not move and no delay is introduced.
-- Negative durations are treated as zero at runtime; use only non-negative values.
+- The duration must be a finite number, `0` or more; anything else throws when the command is added.
 - Multiple consecutive `.wait()` calls are additive: `.wait(300).wait(200)` is equivalent to `.wait(500)`.
 
 ## Examples
@@ -195,7 +195,7 @@ await tw.play();
 ## Edge cases
 
 - **`duration = 0`** - valid no-op. No delay is introduced; the clock does not move. `before` and `after` hooks still fire.
-- **`duration < 0`** - treated as zero at runtime. Use only non-negative values.
+- **`duration < 0`, `NaN` or `Infinity`** - throws `Invalid wait duration` as soon as `.wait()` is called.
 - **Multiple consecutive waits** - durations accumulate: `.wait(200).wait(300)` produces a 500 ms pause.
 - **Wait followed by instant commands** - instant commands all fire at the same timestamp as the wait's end.
 
