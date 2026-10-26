@@ -4,13 +4,13 @@ import type { TAudioStrategy } from "../enums/audio-strategy.enum";
 
 /**
  * @description
- * Configuration for a single audio channel (typing or delete)
+ * Configuration for a single audio channel (typing, delete or move)
  */
 export type TAudioChannelOptions = {
   /**
    * @description
    * Name of the default sfx to use from the sfx pack.
-   * When not set, the first sfx in the pack is used.
+   * When neither `sfx` nor `sfxs` is set, samples are drawn from every sfx in the pack.
    */
   readonly sfx?: string;
 
@@ -39,9 +39,10 @@ export type TAudioChannelOptions = {
 
   /**
    * @description
-   * Optional playback-rate jitter applied to each sample for extra variance.
+   * Playback-rate jitter applied to each sample. The rate also shifts the pitch.
    * Both `min` and `max` must be positive. Example: `{ min: 0.9, max: 1.1 }`.
-   * When omitted, no jitter is applied.
+   * Defaults to a channel-specific range: around 1 for typing, lower for delete,
+   * higher for move.
    */
   readonly playbackRateJitter?: {
     readonly min: number;
@@ -50,9 +51,9 @@ export type TAudioChannelOptions = {
 
   /**
    * @description
-   * Optional per-play volume jitter relative to the resolved channel volume.
+   * Per-play volume factor relative to the resolved channel volume.
    * Range [0, 1] for both `min` and `max`. Example: `{ min: 0.8, max: 1.0 }`.
-   * When omitted, no jitter is applied.
+   * Defaults to a channel-specific range; moves are quieter than typing.
    */
   readonly volumeJitter?: {
     readonly min: number;

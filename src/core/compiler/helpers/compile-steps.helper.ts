@@ -76,12 +76,13 @@ function resolveUnit(command: TCommand): TAdvanceUnit | null {
 function resolveSound(command: TCommand): TPlaybackSound | null {
   switch (command.kind) {
     case ECommandKind.TYPE:
-
-    case ECommandKind.MOVE:
       return "typing";
 
     case ECommandKind.DELETE:
       return "delete";
+
+    case ECommandKind.MOVE:
+      return "move";
 
     default:
       return typeof command.audio === "object" ? "typing" : null;

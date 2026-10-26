@@ -1,7 +1,9 @@
 import type { TAudioChannelOptions } from "../types/audio-channel-options.type";
+import type { TAudioChannel } from "../types/audio-channel.type";
 import type { TAudioCommandOverride } from "../types/audio-command-override.type";
 import type { TAudioOptions } from "../types/audio-options.type";
 
+import { DEFAULT_CHANNEL_VARIANCE } from "../consts/channel-variance.const";
 import { EAudioStrategy } from "../enums/audio-strategy.enum";
 import { getLoadedDefaultSfxPack, loadDefaultSfxPack } from "./load-default-sfx-pack.helper";
 
@@ -121,18 +123,39 @@ type TSamplePool = {
   readonly samples: readonly string[];
 };
 
-/**
- * @description
- * The audio channels a sound can be played on
- */
-type TAudioChannel = "typing" | "delete";
-
 function createChannelState(): TChannelState {
   return {
     pools: new Map(),
     currentAudio: null,
     lastPlayed: null,
   };
+}
+
+/**
+ * @description
+ * Create fresh playback state for every channel
+ *
+ * @returns The channel states
+ */
+function createChannelStates(): Record<TAudioChannel, TChannelState> {
+  return { typing: createChannelState(), delete: createChannelState(), move: createChannelState() };
+}
+
+/**
+ * @description
+ * Sample selection settings that the delete and move channels inherit from typing
+ *
+ * @param options - The typing channel options
+ * @returns The inheritable subset
+ */
+function pickSelection(options: TAudioChannelOptions | undefined): TAudioChannelOptions {
+  if (options === undefined) {
+    return {};
+  }
+
+  const { playbackRateJitter: _rate, volumeJitter: _volume, ...selection } = options;
+
+  return selection;
 }
 
 /**
@@ -192,8 +215,7 @@ function pickRandom(
  */
 export class AudioManagerHelper {
   private _options: TAudioOptions;
-  private _typing: TChannelState;
-  private _delete: TChannelState;
+  private _channels: Record<TAudioChannel, TChannelState>;
 
   /**
    * @description
@@ -203,8 +225,7 @@ export class AudioManagerHelper {
    */
   constructor(options: TAudioOptions = {}) {
     this._options = options;
-    this._typing = createChannelState();
-    this._delete = createChannelState();
+    this._channels = createChannelStates();
     void this.ready();
   }
 
@@ -232,8 +253,7 @@ export class AudioManagerHelper {
    */
   setOptions(options: TAudioOptions): void {
     this._options = options;
-    this._typing = createChannelState();
-    this._delete = createChannelState();
+    this._channels = createChannelStates();
     void this.ready();
   }
 
@@ -282,8 +302,7 @@ export class AudioManagerHelper {
 
   /**
    * @description
-   * Play a delete sound.
-   * Falls back to typing sounds when no dedicated delete channel is configured.
+   * Play a delete sound: the typing samples, pitched lower by default.
    * Pass `false` to silence this specific deletion regardless of global settings.
    *
    * @param override - Optional per-command audio override
@@ -294,9 +313,20 @@ export class AudioManagerHelper {
 
   /**
    * @description
-   * Core play dispatch used by playTyping and playDelete
+   * Play a cursor move sound: the typing samples, lighter and quieter by default.
+   * Pass `false` to silence this specific move regardless of global settings.
    *
-   * @param channel - Which channel to play ("typing" or "delete")
+   * @param override - Optional per-command audio override
+   */
+  playMove(override?: TAudioCommandOverride): void {
+    this._play("move", override);
+  }
+
+  /**
+   * @description
+   * Core play dispatch used by playTyping, playDelete and playMove
+   *
+   * @param channel - Which channel to play
    * @param override - Optional per-command override
    */
   private _play(channel: TAudioChannel, override?: TAudioCommandOverride): void {
@@ -315,7 +345,7 @@ export class AudioManagerHelper {
     }
 
     const channelOpts = this._resolveChannelOpts(channel);
-    const state = channel === "typing" ? this._typing : this._delete;
+    const state = this._channels[channel];
     const sample = this._pickSample(pool, channelOpts, state);
 
     state.lastPlayed = sample;
@@ -324,7 +354,7 @@ export class AudioManagerHelper {
     const commandVolume = override !== undefined ? (override as Exclude<TAudioCommandOverride, false>).volume : undefined;
     let volume = masterVolume * (commandVolume ?? 1);
 
-    if (channelOpts?.volumeJitter !== undefined) {
+    if (channelOpts.volumeJitter !== undefined) {
       const { min, max } = channelOpts.volumeJitter;
 
       volume *= min + Math.random() * (max - min);
@@ -334,28 +364,30 @@ export class AudioManagerHelper {
 
     let playbackRate = 1;
 
-    if (channelOpts?.playbackRateJitter !== undefined) {
+    if (channelOpts.playbackRateJitter !== undefined) {
       const { min, max } = channelOpts.playbackRateJitter;
 
       playbackRate = min + Math.random() * (max - min);
       playbackRate = Math.max(Number.EPSILON, playbackRate);
     }
 
-    this._emit(sample, volume, playbackRate, channelOpts?.overlap ?? true, state);
+    this._emit(sample, volume, playbackRate, channelOpts.overlap ?? true, state);
   }
 
   /**
    * @description
-   * Resolve the effective channel options for a given channel.
-   * The delete channel falls back to the typing channel when not configured.
+   * Resolve the effective options of a channel.
+   * Pitch and volume variance start from the channel's defaults. The delete and move
+   * channels inherit typing's sample selection (sfx, strategy, overlap) unless they set
+   * their own. The channel's own options always win.
    *
    * @param channel - The channel name
-   * @returns The resolved channel options, or undefined if none are set
+   * @returns The resolved channel options
    */
-  private _resolveChannelOpts(channel: TAudioChannel): TAudioChannelOptions | undefined {
-    return channel === "typing"
-      ? this._options.typing
-      : (this._options.delete ?? this._options.typing);
+  private _resolveChannelOpts(channel: TAudioChannel): TAudioChannelOptions {
+    const inherited = channel === "typing" ? {} : pickSelection(this._options.typing);
+
+    return { ...DEFAULT_CHANNEL_VARIANCE[channel], ...inherited, ...this._options[channel] };
   }
 
   /**
@@ -379,10 +411,10 @@ export class AudioManagerHelper {
     else if (override?.sfx !== undefined) {
       sfxNames = [override.sfx];
     }
-    else if (channelOpts?.sfxs !== undefined && channelOpts.sfxs.length > 0) {
+    else if (channelOpts.sfxs !== undefined && channelOpts.sfxs.length > 0) {
       sfxNames = channelOpts.sfxs;
     }
-    else if (channelOpts?.sfx !== undefined) {
+    else if (channelOpts.sfx !== undefined) {
       sfxNames = [channelOpts.sfx];
     }
     else {
@@ -413,7 +445,7 @@ export class AudioManagerHelper {
    */
   private _pickSample(
     pool: TSamplePool,
-    channelOpts: TAudioChannelOptions | undefined,
+    channelOpts: TAudioChannelOptions,
     state: TChannelState,
   ): string {
     const samples = pool.samples;
@@ -422,9 +454,9 @@ export class AudioManagerHelper {
       return samples[0]!;
     }
 
-    const avoidRepeat = channelOpts?.avoidImmediateRepeat ?? true;
+    const avoidRepeat = channelOpts.avoidImmediateRepeat ?? true;
 
-    switch (channelOpts?.strategy ?? EAudioStrategy.SHUFFLE_BAG) {
+    switch (channelOpts.strategy ?? EAudioStrategy.SHUFFLE_BAG) {
       case EAudioStrategy.ROUND_ROBIN:
         return getPoolState(state, pool.key).roundRobin.next(samples);
 
@@ -477,6 +509,8 @@ export class AudioManagerHelper {
       }
 
       audio.volume = volume;
+      // Let the rate change the pitch too, which is what makes the channels sound distinct.
+      audio.preservesPitch = false;
       audio.playbackRate = playbackRate;
 
       // Autoplay policy rejects play() until the user interacts with the page.

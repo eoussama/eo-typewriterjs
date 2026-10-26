@@ -1,3 +1,4 @@
+import type { TAudioChannel } from "../../audio/types/audio-channel.type";
 import type { TAdvanceUnit } from "../../commands/types/type-command.type";
 import type { TTimelineEvent } from "../../events/types/timeline-event.type";
 import type { TCommand } from "./command.type";
@@ -8,7 +9,7 @@ import type { TCommand } from "./command.type";
  * @description
  * The audio cue played when a step changes the document or moves a cursor
  */
-export type TPlaybackSound = "typing" | "delete";
+export type TPlaybackSound = TAudioChannel;
 
 /**
  * @description

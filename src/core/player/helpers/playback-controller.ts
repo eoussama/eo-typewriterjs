@@ -657,11 +657,17 @@ export class PlaybackController {
    * @param step - The step whose sound to play
    */
   private _playSound(step: TPlaybackStep): void {
-    if (step.sound === "delete") {
-      this._audioManager?.playDelete(step.command.audio);
-    }
-    else {
-      this._audioManager?.playTyping(step.command.audio);
+    switch (step.sound) {
+      case "delete":
+        this._audioManager?.playDelete(step.command.audio);
+        break;
+
+      case "move":
+        this._audioManager?.playMove(step.command.audio);
+        break;
+
+      default:
+        this._audioManager?.playTyping(step.command.audio);
     }
   }
 

@@ -40,7 +40,14 @@ export type TAudioOptions = {
   /**
    * @description
    * Options for the delete audio channel.
-   * When not provided, typing sounds are used for deletions as well.
+   * Deletions reuse the typing channel's sample selection, pitched lower by default.
    */
   readonly delete?: TAudioChannelOptions;
+
+  /**
+   * @description
+   * Options for the cursor move audio channel.
+   * Moves reuse the typing channel's sample selection as a lighter, quieter tick by default.
+   */
+  readonly move?: TAudioChannelOptions;
 };

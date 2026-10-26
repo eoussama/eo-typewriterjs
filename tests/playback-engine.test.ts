@@ -105,7 +105,7 @@ describe("compileSteps", () => {
 
     const sounds = compileSteps(tw.timeline.commands).steps.map(s => s.sound);
 
-    expect(sounds).toEqual(["typing", "delete", "typing", null, null, null, "typing", "typing", null]);
+    expect(sounds).toEqual(["typing", "delete", "move", null, null, null, "typing", "typing", null]);
   });
 });
 
