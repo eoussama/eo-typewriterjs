@@ -13,7 +13,6 @@
     "src/**/*.ts",
     "!src/core/**/index.ts",
     "!src/renderers/**/index.ts",
-    "!src/devtools/**",
     "!src/core/audio/consts/default-sfx-pack.const.ts"
   ],
   "coverageAnalysis": "perTest",

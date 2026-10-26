@@ -67,7 +67,7 @@ Full documentation, guides, and the API reference are available on the docs site
 
 ## Sandbox
 
-Try the library live in the interactive [sandbox](https://eo-typewriterjs.ouss.es/sandbox/), write timelines, run them, and see output in real time without any setup.
+Try the library live in the interactive [sandbox](https://eo-typewriterjs.ouss.es/sandbox), write timelines, run them, and see output in real time without any setup.
 
 ## Testing
 
@@ -87,8 +87,7 @@ pnpm test:smoke    # test the built package
 pnpm test:e2e      # run end-to-end tests
 pnpm lint          # lint
 pnpm check         # run every check CI runs
-pnpm sandbox       # start the sandbox
-pnpm docs:dev      # start the docs site
+pnpm docs:dev      # start the docs site and the sandbox (/sandbox)
 ```
 
 ## License

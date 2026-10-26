@@ -70,7 +70,7 @@ await tw.play();`;
 Common patterns and real-world usage examples.
 
 ::: tip Try it interactively
-More recipes are available in the **[live sandbox](https://eo-typewriterjs.ouss.es/sandbox/)**, an interactive editor where you can run, tweak, and experiment with every example in the browser.
+More recipes are available in the **[live sandbox](/sandbox)**, an interactive editor where you can run, tweak, and experiment with every example in the browser.
 :::
 
 ## Looping animation

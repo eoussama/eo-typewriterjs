@@ -31,8 +31,6 @@ const config: ViteUserConfig = defineConfig({
         // Barrel files only re-export; they hold no executable logic.
         "src/core/**/index.ts",
         "src/renderers/**/index.ts",
-        // Snippet runner used by the docs playground and sandbox, not part of the published library.
-        "src/devtools/**",
       ],
       reporter: ["text", "html", "lcov", "json-summary"],
       reportsDirectory: "coverage",

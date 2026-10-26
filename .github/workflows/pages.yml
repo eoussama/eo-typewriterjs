@@ -43,14 +43,6 @@ jobs:
     - name: Build Docs
       run: pnpm docs:build
 
-    - name: Build Sandbox
-      run: pnpm sandbox:build
-      env:
-        VITE_BASE: /sandbox/
-
-    - name: Copy Sandbox into Docs Output
-      run: cp -r dist-sandbox/. docs/.vitepress/dist/sandbox/
-
     - name: Setup Pages
       uses: actions/configure-pages@v6
 

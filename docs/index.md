@@ -17,7 +17,7 @@ hero:
       link: /api/
     - theme: alt
       text: "Sandbox ↗\uFE0E"
-      link: https://eo-typewriterjs.ouss.es/sandbox/
+      link: /sandbox
       target: _blank
 
 features:
